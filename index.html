@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: black;
+  }
+
+  main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  canvas {
+    border: 5px solid brown;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.js"></script>
+<script type="module">
+  import {main} from "./build/dev/javascript/render/render.mjs";
+  main();
+</script>
