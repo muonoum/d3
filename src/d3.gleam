@@ -3,6 +3,8 @@ import gleam_community/maths/elementary.{cos, pi, sin, tan}
 import matrix.{type M4, M4, R4}
 import v3.{type V3}
 
+// import gleam_community/maths/conversion.{degrees_to_radians as rad}
+
 pub fn scale(x: Float, y: Float, z: Float) -> M4 {
   M4(
     R4(x, 0.0, 0.0, 0.0),
@@ -50,7 +52,7 @@ pub fn rotate_x(a: Float) -> M4 {
 
 pub fn rotate_y(a: Float) -> M4 {
   M4(
-    R4(cos(a), negate(sin(a)), 0.0, 0.0),
+    R4(cos(a), 0.0, negate(sin(a)), 0.0),
     R4(0.0, 1.0, 0.0, 0.0),
     R4(sin(a), 0.0, cos(a), 0.0),
     R4(0.0, 0.0, 0.0, 1.0),
@@ -96,6 +98,6 @@ pub fn perspective(aspect: Float, fov: Float, near: Float, far: Float) -> M4 {
     R4(m11, 0.0, 0.0, 0.0),
     R4(0.0, m22, 0.0, 0.0),
     R4(m31, m32, m33, -1.0),
-    R4(0.0, 0.0, m43, 1.0),
+    R4(0.0, 0.0, m43, 0.0),
   )
 }

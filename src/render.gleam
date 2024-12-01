@@ -1,6 +1,7 @@
 import d3
 import gleam/dict.{type Dict}
 import gleam/float.{negate}
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import matrix.{type M4}
@@ -17,6 +18,7 @@ pub fn update_object(object: Object) -> Object {
     d3.scale_v3(object.scale)
     |> matrix.m4xm4(d3.rotate_v3(object.rotation))
     |> matrix.m4xm4(d3.translate_v3(object.position))
+
   Object(..object, world: Some(world))
 }
 
@@ -46,6 +48,7 @@ pub fn update_camera(camera: Camera) -> Camera {
 
 pub type Model {
   Model(
+    move: V3,
     canvas_width: Float,
     canvas_height: Float,
     camera: Camera,
@@ -60,8 +63,50 @@ pub type Face {
 
 const up_vector = V3(0.0, 1.0, 0.0)
 
+const move_delta = 0.05
+
 pub fn main() {
-  p5.start(init:, draw:, update:)
+  let config =
+    p5.Config(
+      init:,
+      update:,
+      draw:,
+      key_pressed: Some(key_pressed),
+      key_released: Some(key_released),
+      mouse_moved: Some(mouse_moved),
+    )
+
+  p5.start(config)
+}
+
+pub fn mouse_moved(x: Float, y: Float, model: Model) -> Model {
+  io.debug(#("mouse", x, y))
+  model
+}
+
+pub fn key_pressed(key: String, _code: Int, model: Model) -> Model {
+  io.debug(#("press", key))
+
+  case key {
+    "w" -> Model(..model, move: V3(..model.move, z: move_delta))
+    "a" -> Model(..model, move: V3(..model.move, x: negate(move_delta)))
+    "s" -> Model(..model, move: V3(..model.move, z: negate(move_delta)))
+    "d" -> Model(..model, move: V3(..model.move, x: move_delta))
+    _ -> model
+  }
+}
+
+pub fn key_released(key: String, _code: Int, model: Model) -> Model {
+  io.debug(#("release", key))
+
+  case key {
+    "w" -> Model(..model, move: V3(..model.move, z: 0.0))
+    "a" -> Model(..model, move: V3(..model.move, x: 0.0))
+    "s" -> Model(..model, move: V3(..model.move, z: 0.0))
+    "d" -> Model(..model, move: V3(..model.move, x: 0.0))
+
+    _ -> model
+  }
 }
 
 pub fn init(p: P5) -> Model {
@@ -86,7 +131,7 @@ pub fn init(p: P5) -> Model {
       target: V3(0.0, 0.0, 0.0),
       scale: V3(1.0, 1.0, 1.0),
       rotation: V3(0.0, 0.0, 0.0),
-      projection: d3.perspective(canvas_width /. canvas_height, 50.0, 0.1, 10.0),
+      projection: d3.perspective(canvas_width /. canvas_height, 70.0, 0.1, 10.0),
       world: None,
       view: None,
     )
@@ -94,24 +139,13 @@ pub fn init(p: P5) -> Model {
   let world = dict.from_list([#("cube", cube)])
 
   Model(
+    move: V3(0.0, 0.0, 0.0),
     canvas_width:,
     canvas_height:,
     camera: update_camera(camera1),
     world:,
     scene: [],
   )
-}
-
-pub fn draw(p: P5, model: Model) {
-  p5.background(p, "black")
-  p5.stroke(p, "white")
-  p5.stroke_weight(p, 10)
-
-  use Face(#(p1, _), #(p2, _), #(p3, _)) <- list.each(model.scene)
-
-  p5.line(p, p1.x, p1.y, p2.x, p2.y)
-  p5.line(p, p2.x, p2.y, p3.x, p3.y)
-  p5.line(p, p3.x, p3.y, p1.x, p1.y)
 }
 
 pub fn update(model: Model) -> Model {
@@ -124,6 +158,20 @@ pub fn update(model: Model) -> Model {
     )
 
   let world = dict.insert(model.world, "cube", cube)
+
+  let camera = case model.move {
+    V3(0.0, 0.0, 0.0) -> model.camera
+
+    v -> {
+      let camera = model.camera
+      let position = v3.add(camera.position, v)
+      let target = v3.add(camera.target, v)
+      let camera = Camera(..camera, position:, target:)
+      update_camera(camera)
+    }
+  }
+
+  let model = Model(..model, camera:)
 
   let scene = {
     use scene, _name, object <- dict.fold(world, [])
@@ -141,6 +189,7 @@ pub fn update(model: Model) -> Model {
       let h = v3.to_h(v)
       let clip = v3.multiply_matrix4(h, mat)
       let ndc = v3.from_h(clip)
+
       #(
         ndc,
         V3(
@@ -177,4 +226,16 @@ fn clipped(v: V3) -> Bool {
   || v.y >. 1.0
   || v.z <. -1.0
   || v.z >. 1.0
+}
+
+pub fn draw(p: P5, model: Model) {
+  p5.background(p, "black")
+  p5.stroke(p, "white")
+  p5.stroke_weight(p, 3)
+
+  use Face(#(p1, _), #(p2, _), #(p3, _)) <- list.each(model.scene)
+
+  p5.line(p, p1.x, p1.y, p2.x, p2.y)
+  p5.line(p, p2.x, p2.y, p3.x, p3.y)
+  p5.line(p, p3.x, p3.y, p1.x, p1.y)
 }

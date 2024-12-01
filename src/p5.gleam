@@ -1,3 +1,5 @@
+import gleam/option.{type Option, Some}
+
 pub type P5
 
 pub type Config(model, x) {
@@ -5,15 +7,14 @@ pub type Config(model, x) {
     init: fn(P5) -> model,
     update: fn(model) -> model,
     draw: fn(P5, model) -> x,
+    key_pressed: Option(fn(String, Int, model) -> model),
+    key_released: Option(fn(String, Int, model) -> model),
+    mouse_moved: Option(fn(Float, Float, model) -> model),
   )
 }
 
-pub fn start(
-  init init: fn(P5) -> model,
-  update update: fn(model) -> model,
-  draw draw: fn(P5, model) -> x,
-) -> Nil {
-  glue_start(Config(init:, update:, draw:))
+pub fn start(config: Config(model, x)) -> Nil {
+  glue_start(config)
 }
 
 @external(javascript, "./glue.mjs", "start")
