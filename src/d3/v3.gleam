@@ -1,6 +1,6 @@
 import gleam_community/maths/elementary.{square_root as sqrt}
 
-import d3/matrix.{type M4, M4, R4}
+import d3/m4.{type M4, M4, R4}
 
 pub type V3 {
   V3(x: Float, y: Float, z: Float)

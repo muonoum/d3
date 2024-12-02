@@ -16,7 +16,7 @@ pub type Mesh {
   Mesh(vertices: Dict(Int, V3), faces: List(Face))
 }
 
-pub type Obj {
+type Obj {
   ObjX
   ObjV(V3)
   ObjF(Face)

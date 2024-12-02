@@ -1,7 +1,7 @@
 import gleam/float.{negate}
 import gleam_community/maths/elementary.{cos, pi, sin, tan}
 
-import d3/matrix.{type M4, M4, R4}
+import d3/m4.{type M4, M4, R4}
 import d3/v3.{type V3}
 
 pub fn scale(x: Float, y: Float, z: Float) -> M4 {
@@ -32,8 +32,8 @@ pub fn translate_v3(v: V3) -> M4 {
 
 pub fn rotate(x: Float, y: Float, z: Float) -> M4 {
   rotate_z(z)
-  |> matrix.m4xm4(rotate_y(y))
-  |> matrix.m4xm4(rotate_x(x))
+  |> m4.multiply(rotate_y(y))
+  |> m4.multiply(rotate_x(x))
 }
 
 pub fn rotate_v3(v: V3) -> M4 {

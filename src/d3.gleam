@@ -3,7 +3,7 @@ import gleam/float.{negate}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 
-import d3/matrix.{type M4}
+import d3/m4.{type M4}
 import d3/object.{type Mesh}
 import d3/transform
 import d3/v3.{type V3, V3}
@@ -48,8 +48,8 @@ pub type Entity {
 pub fn update_object(object: Object) -> Object {
   let world =
     transform.scale_v3(object.scale)
-    |> matrix.m4xm4(transform.rotate_v3(object.rotation))
-    |> matrix.m4xm4(transform.translate_v3(object.position))
+    |> m4.multiply(transform.rotate_v3(object.rotation))
+    |> m4.multiply(transform.translate_v3(object.position))
 
   Object(..object, world: Some(world))
 }
@@ -63,7 +63,7 @@ pub fn update_camera(camera: Camera) -> Camera {
     |> transform.look(camera.target, up_vector)
 
   // TODO
-  let assert Ok(view) = matrix.inv4(world)
+  let assert Ok(view) = m4.inv(world)
   Camera(..camera, world: Some(world), view: Some(view))
 }
 
@@ -173,14 +173,13 @@ pub fn update(model: Model) -> Model {
 
     let mat =
       world
-      |> matrix.m4xm4(view)
-      |> matrix.m4xm4(model.camera.projection)
+      |> m4.multiply(view)
+      |> m4.multiply(model.camera.projection)
 
     let point = fn(face) {
       // TODO
       let assert Ok(v) = dict.get(object.mesh.vertices, face)
-      let h = v3.to_h(v)
-      let clip = v3.multiply_matrix4(h, mat)
+      let clip = v3.to_h(v) |> v3.multiply_matrix4(mat)
       let ndc = v3.from_h(clip)
 
       #(
