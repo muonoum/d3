@@ -2,39 +2,17 @@ import gleam/bool
 import gleam/float
 import gleam/int
 
-pub type R1 {
-  R1(Float)
-}
-
-pub type R2 {
-  R2(Float, Float)
-}
-
-pub type R3 {
-  R3(Float, Float, Float)
-}
+import d3/m3.{type M3, M3, R3}
 
 pub type R4 {
   R4(Float, Float, Float, Float)
-}
-
-pub type M1 {
-  M1(R1)
-}
-
-pub type M2 {
-  M2(R2, R2)
-}
-
-pub type M3 {
-  M3(R3, R3, R3)
 }
 
 pub type M4 {
   M4(R4, R4, R4, R4)
 }
 
-pub fn zero4() -> M4 {
+pub fn zero() -> M4 {
   M4(
     R4(0.0, 0.0, 0.0, 0.0),
     R4(0.0, 0.0, 0.0, 0.0),
@@ -43,7 +21,7 @@ pub fn zero4() -> M4 {
   )
 }
 
-pub fn id4() -> M4 {
+pub fn id() -> M4 {
   M4(
     R4(1.0, 0.0, 0.0, 0.0),
     R4(0.0, 1.0, 0.0, 0.0),
@@ -52,145 +30,65 @@ pub fn id4() -> M4 {
   )
 }
 
-pub fn min2(m: M2, y: Int, x: Int) -> Float {
-  det1(sub2(m, y, x))
-}
-
-pub fn min3(m: M3, y: Int, x: Int) -> Float {
-  det2(sub3(m, y, x))
-}
-
-pub fn min4(m: M4, y: Int, x: Int) -> Float {
-  det3(sub4(m, y, x))
-}
-
-pub fn minm4(m: M4) -> M4 {
-  M4(
-    R4(min4(m, 1, 1), min4(m, 1, 2), min4(m, 1, 3), min4(m, 1, 4)),
-    R4(min4(m, 2, 1), min4(m, 2, 2), min4(m, 2, 3), min4(m, 2, 4)),
-    R4(min4(m, 3, 1), min4(m, 3, 2), min4(m, 3, 3), min4(m, 3, 4)),
-    R4(min4(m, 4, 1), min4(m, 4, 2), min4(m, 4, 3), min4(m, 4, 4)),
-  )
-}
-
-pub fn inv4(m: M4) -> Result(M4, Nil) {
-  let det = 1.0 /. det4(m)
-  use <- bool.guard(det == 0.0, Error(Nil))
-
-  let M4(m1, m2, m3, m4) = adj4(m)
+pub fn transpose(m: M4) -> M4 {
+  let M4(m1, m2, m3, m4) = m
   let R4(m11, m12, m13, m14) = m1
   let R4(m21, m22, m23, m24) = m2
   let R4(m31, m32, m33, m34) = m3
   let R4(m41, m42, m43, m44) = m4
 
-  Ok(M4(
-    R4(det *. m11, det *. m12, det *. m13, det *. m14),
-    R4(det *. m21, det *. m22, det *. m23, det *. m24),
-    R4(det *. m31, det *. m32, det *. m33, det *. m34),
-    R4(det *. m41, det *. m42, det *. m43, det *. m44),
-  ))
-}
-
-pub fn adj4(m: M4) -> M4 {
-  transpose4(cofm4(m))
-}
-
-pub fn cof4(m: M4, y: Int, x: Int) -> Float {
-  let assert Ok(pow) = float.power(-1.0, int.to_float(y) +. int.to_float(x))
-  pow *. min4(m, y, x)
-}
-
-pub fn cofm4(m: M4) -> M4 {
   M4(
-    R4(cof4(m, 1, 1), cof4(m, 1, 2), cof4(m, 1, 3), cof4(m, 1, 4)),
-    R4(cof4(m, 2, 1), cof4(m, 2, 2), cof4(m, 2, 3), cof4(m, 2, 4)),
-    R4(cof4(m, 3, 1), cof4(m, 3, 2), cof4(m, 3, 3), cof4(m, 3, 4)),
-    R4(cof4(m, 4, 1), cof4(m, 4, 2), cof4(m, 4, 3), cof4(m, 4, 4)),
+    R4(m11, m21, m31, m41),
+    R4(m12, m22, m32, m42),
+    R4(m13, m23, m33, m43),
+    R4(m14, m24, m34, m44),
   )
 }
 
-pub fn det1(m: M1) -> Float {
-  let M1(R1(m11)) = m
-  m11
+pub fn adj4(m: M4) -> M4 {
+  transpose(cofm(m))
 }
 
-pub fn det2(m: M2) -> Float {
-  let M2(m1, _m2) = m
-  let R2(m11, m12) = m1
-
-  let a = m11 *. min2(m, 1, 1)
-  let b = m12 *. min2(m, 1, 2)
-
-  a -. b
+pub fn cof(m: M4, y: Int, x: Int) -> Float {
+  let assert Ok(sign) = float.power(-1.0, int.to_float(y) +. int.to_float(x))
+  sign *. min(m, y, x)
 }
 
-pub fn det3(m: M3) -> Float {
-  let M3(m1, _m2, _m3) = m
-  let R3(m11, m12, m13) = m1
-
-  let a = m11 *. min3(m, 1, 1)
-  let b = m12 *. min3(m, 1, 2)
-  let c = m13 *. min3(m, 1, 3)
-
-  a -. b +. c
+pub fn cofm(m: M4) -> M4 {
+  M4(
+    R4(cof(m, 1, 1), cof(m, 1, 2), cof(m, 1, 3), cof(m, 1, 4)),
+    R4(cof(m, 2, 1), cof(m, 2, 2), cof(m, 2, 3), cof(m, 2, 4)),
+    R4(cof(m, 3, 1), cof(m, 3, 2), cof(m, 3, 3), cof(m, 3, 4)),
+    R4(cof(m, 4, 1), cof(m, 4, 2), cof(m, 4, 3), cof(m, 4, 4)),
+  )
 }
 
-pub fn det4(m: M4) -> Float {
+pub fn det(m: M4) -> Float {
   let M4(m1, _m2, _m3, _m4) = m
   let R4(m11, m12, m13, m14) = m1
 
-  let a = m11 *. min4(m, 1, 1)
-  let b = m12 *. min4(m, 1, 2)
-  let c = m13 *. min4(m, 1, 3)
-  let d = m14 *. min4(m, 1, 4)
+  let a = m11 *. min(m, 1, 1)
+  let b = m12 *. min(m, 1, 2)
+  let c = m13 *. min(m, 1, 3)
+  let d = m14 *. min(m, 1, 4)
 
   a -. b +. c -. d
 }
 
-pub fn sub2(m: M2, y: Int, x: Int) -> M1 {
-  let M2(m1, m2) = m
-  let R2(m11, m12) = m1
-  let R2(m21, m22) = m2
-
-  case y, x {
-    1, 1 -> M1(R1(m22))
-    2, 1 -> M1(R1(m12))
-
-    1, 2 -> M1(R1(m21))
-    2, 2 -> M1(R1(m11))
-
-    _, _ -> panic
-  }
+pub fn min(m: M4, y: Int, x: Int) -> Float {
+  m3.det(sub(m, y, x))
 }
 
-pub fn sub3(m: M3, y: Int, x: Int) -> M2 {
-  let M3(m1, m2, m3) = m
-  let R3(m11, m12, m13) = m1
-  let R3(m21, m22, m23) = m2
-  let R3(m31, m32, m33) = m3
-
-  case y, x {
-    1, 1 -> M2(R2(m22, m23), R2(m32, m33))
-    2, 1 -> M2(R2(m12, m13), R2(m32, m33))
-    3, 1 -> M2(R2(m12, m13), R2(m22, m23))
-
-    1, 2 -> M2(R2(m21, m23), R2(m31, m33))
-    2, 2 -> M2(R2(m11, m13), R2(m31, m33))
-    3, 2 -> M2(R2(m11, m13), R2(m21, m23))
-
-    1, 3 -> M2(R2(m21, m22), R2(m31, m32))
-    2, 3 -> M2(R2(m11, m12), R2(m31, m32))
-    3, 3 -> M2(R2(m11, m12), R2(m21, m22))
-
-    1, 4 -> M2(R2(m21, m22), R2(m31, m32))
-    2, 4 -> M2(R2(m11, m12), R2(m31, m32))
-    3, 4 -> M2(R2(m11, m12), R2(m21, m22))
-
-    _, _ -> panic
-  }
+pub fn minm(m: M4) -> M4 {
+  M4(
+    R4(min(m, 1, 1), min(m, 1, 2), min(m, 1, 3), min(m, 1, 4)),
+    R4(min(m, 2, 1), min(m, 2, 2), min(m, 2, 3), min(m, 2, 4)),
+    R4(min(m, 3, 1), min(m, 3, 2), min(m, 3, 3), min(m, 3, 4)),
+    R4(min(m, 4, 1), min(m, 4, 2), min(m, 4, 3), min(m, 4, 4)),
+  )
 }
 
-pub fn sub4(m: M4, y: Int, x: Int) {
+pub fn sub(m: M4, y: Int, x: Int) {
   let M4(m1, m2, m3, m4) = m
   let R4(m11, m12, m13, m14) = m1
   let R4(m21, m22, m23, m24) = m2
@@ -222,22 +120,25 @@ pub fn sub4(m: M4, y: Int, x: Int) {
   }
 }
 
-pub fn transpose4(m: M4) -> M4 {
-  let M4(m1, m2, m3, m4) = m
+pub fn inv(m: M4) -> Result(M4, Nil) {
+  let det = 1.0 /. det(m)
+  use <- bool.guard(det == 0.0, Error(Nil))
+
+  let M4(m1, m2, m3, m4) = adj4(m)
   let R4(m11, m12, m13, m14) = m1
   let R4(m21, m22, m23, m24) = m2
   let R4(m31, m32, m33, m34) = m3
   let R4(m41, m42, m43, m44) = m4
 
-  M4(
-    R4(m11, m21, m31, m41),
-    R4(m12, m22, m32, m42),
-    R4(m13, m23, m33, m43),
-    R4(m14, m24, m34, m44),
-  )
+  Ok(M4(
+    R4(det *. m11, det *. m12, det *. m13, det *. m14),
+    R4(det *. m21, det *. m22, det *. m23, det *. m24),
+    R4(det *. m31, det *. m32, det *. m33, det *. m34),
+    R4(det *. m41, det *. m42, det *. m43, det *. m44),
+  ))
 }
 
-pub fn m4xm4(a: M4, b: M4) -> M4 {
+pub fn multiply(a: M4, b: M4) -> M4 {
   let M4(a1, a2, a3, a4) = a
   let R4(a11, a12, a13, a14) = a1
   let R4(a21, a22, a23, a24) = a2
