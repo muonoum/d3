@@ -7,7 +7,7 @@ import d3/matrix.{type M4}
 import d3/object.{type Mesh}
 import d3/transform
 import d3/v3.{type V3, V3}
-import objects/cube
+import objects
 import p5.{type P5}
 
 const up_vector = V3(0.0, 1.0, 0.0)
@@ -86,7 +86,7 @@ pub fn init(p: P5) -> Model {
   let canvas_height = 500.0
   p5.create_canvas(p, canvas_width, canvas_height)
 
-  let assert Ok(cube_mesh) = object.load(cube.object)
+  let assert Ok(cube_mesh) = object.load(objects.cube)
 
   let cube =
     Object(

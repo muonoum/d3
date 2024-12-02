@@ -1,7 +1,6 @@
 import gleam/bool
 import gleam/float
 import gleam/int
-import gleam/string
 
 pub type R1 {
   R1(Float)
@@ -18,48 +17,6 @@ pub type R3 {
 pub type R4 {
   R4(Float, Float, Float, Float)
 }
-
-// pub type V3 {
-//   V3(x: Float, y: Float, z: Float)
-// }
-
-// pub fn mag(v: V3) -> Float {
-//   let assert Ok(mag) = sqrt(v.x *. v.x +. v.y *. v.y +. v.z *. v.z)
-//   mag
-// }
-
-// pub fn norm(v: V3) -> V3 {
-//   let mag = mag(v)
-//   V3(v.x /. mag, v.y /. mag, v.z /. mag)
-// }
-
-// pub fn cross(a: V3, b: V3) -> V3 {
-//   V3(
-//     a.y *. b.z -. a.z *. b.y,
-//     a.z *. b.x -. a.x *. b.z,
-//     a.x *. b.y -. a.y *. b.x,
-//   )
-// }
-
-// pub fn v3pv3(a: V3, b: V3) -> V3 {
-//   V3(a.x +. b.x, a.y +. b.y, a.z +. b.z)
-// }
-
-// pub fn v3mv3(a: V3, b: V3) -> V3 {
-//   V3(a.x -. b.x, a.y -. b.y, a.z -. b.z)
-// }
-
-// pub type VH {
-//   VH(x: Float, y: Float, z: Float, w: Float)
-// }
-
-// pub fn v3_to_vh(v: V3) -> VH {
-//   VH(v.x, v.y, v.z, 1.0)
-// }
-
-// pub fn vh_to_v3(v: VH) -> V3 {
-//   V3(v.x /. v.w, v.y /. v.w, v.z /. v.w)
-// }
 
 pub type M1 {
   M1(R1)
@@ -326,85 +283,4 @@ pub fn m4xm4(a: M4, b: M4) -> M4 {
     )
 
   M4(r1, r2, r3, r4)
-}
-
-pub fn m1_to_string(m: M1) -> String {
-  let M1(m1) = m
-  let R1(m11) = m1
-
-  let r1 = [float.to_string(m11)]
-  let rs = [string.join(r1, " ")]
-
-  string.join(rs, "\n")
-}
-
-pub fn m2_to_string(m: M2) -> String {
-  let M2(m1, m2) = m
-  let R2(m11, m12) = m1
-  let R2(m21, m22) = m2
-
-  let r1 = [float.to_string(m11), float.to_string(m12)]
-  let r2 = [float.to_string(m21), float.to_string(m22)]
-  let rs = [string.join(r1, " "), string.join(r2, " ")]
-
-  string.join(rs, "\n")
-}
-
-pub fn m3_to_string(m: M3) -> String {
-  let M3(m1, m2, m3) = m
-  let R3(m11, m12, m13) = m1
-  let R3(m21, m22, m23) = m2
-  let R3(m31, m32, m33) = m3
-
-  let r1 = [float.to_string(m11), float.to_string(m12), float.to_string(m13)]
-  let r2 = [float.to_string(m21), float.to_string(m22), float.to_string(m23)]
-  let r3 = [float.to_string(m31), float.to_string(m32), float.to_string(m33)]
-  let rs = [string.join(r1, " "), string.join(r2, " "), string.join(r3, " ")]
-
-  string.join(rs, "\n")
-}
-
-pub fn m4_to_string(m: M4) -> String {
-  let M4(m1, m2, m3, m4) = m
-  let R4(m11, m12, m13, m14) = m1
-  let R4(m21, m22, m23, m24) = m2
-  let R4(m31, m32, m33, m34) = m3
-  let R4(m41, m42, m43, m44) = m4
-
-  let r1 = [
-    float.to_string(m11),
-    float.to_string(m12),
-    float.to_string(m13),
-    float.to_string(m14),
-  ]
-
-  let r2 = [
-    float.to_string(m21),
-    float.to_string(m22),
-    float.to_string(m23),
-    float.to_string(m24),
-  ]
-
-  let r3 = [
-    float.to_string(m31),
-    float.to_string(m32),
-    float.to_string(m33),
-    float.to_string(m34),
-  ]
-
-  let r4 = [
-    float.to_string(m41),
-    float.to_string(m42),
-    float.to_string(m43),
-    float.to_string(m44),
-  ]
-
-  let rs = [
-    string.join(r1, " "),
-    string.join(r2, " "),
-    string.join(r3, " "),
-    string.join(r4, " "),
-  ]
-
-  string.join(rs, "\n")
 }

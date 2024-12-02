@@ -1,3 +1,4 @@
+pub const cube = "
 # Blender 4.3.0
 # www.blender.org
 mtllib cube.mtl
@@ -24,3 +25,4 @@ f 7 5 6
 f 2 4 8
 f 1 3 4
 f 5 1 2
+"

@@ -1,4 +1,4 @@
-import gleam/option.{type Option, Some}
+import gleam/option.{type Option}
 
 pub type P5
 
