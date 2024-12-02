@@ -1,103 +1,252 @@
+import gleam/dict.{type Dict}
 import gleam/float.{negate}
-import gleam_community/maths/elementary.{cos, pi, sin, tan}
-import matrix.{type M4, M4, R4}
-import v3.{type V3}
+import gleam/list
+import gleam/option.{type Option, None, Some}
 
-// import gleam_community/maths/conversion.{degrees_to_radians as rad}
+import d3/matrix.{type M4}
+import d3/object.{type Mesh}
+import d3/transform
+import d3/v3.{type V3, V3}
+import objects/cube
+import p5.{type P5}
 
-pub fn scale(x: Float, y: Float, z: Float) -> M4 {
-  M4(
-    R4(x, 0.0, 0.0, 0.0),
-    R4(0.0, y, 0.0, 0.0),
-    R4(0.0, 0.0, z, 0.0),
-    R4(0.0, 0.0, 0.0, 1.0),
+const up_vector = V3(0.0, 1.0, 0.0)
+
+const move_delta = 0.05
+
+pub type Model {
+  Model(
+    move: V3,
+    canvas_width: Float,
+    canvas_height: Float,
+    camera: Camera,
+    world: Dict(String, Object),
+    scene: List(Entity),
   )
 }
 
-pub fn scale_v3(v: V3) -> M4 {
-  scale(v.x, v.y, v.z)
+pub type Object {
+  Object(position: V3, scale: V3, rotation: V3, mesh: Mesh, world: Option(M4))
 }
 
-pub fn translate(x: Float, y: Float, z: Float) -> M4 {
-  M4(
-    R4(1.0, 0.0, 0.0, 0.0),
-    R4(0.0, 1.0, 0.0, 0.0),
-    R4(0.0, 0.0, 1.0, 0.0),
-    R4(x, y, z, 1.0),
+pub type Camera {
+  Camera(
+    position: V3,
+    target: V3,
+    scale: V3,
+    rotation: V3,
+    projection: M4,
+    world: Option(M4),
+    view: Option(M4),
   )
 }
 
-pub fn translate_v3(v: V3) -> M4 {
-  translate(v.x, v.y, v.z)
+pub type Entity {
+  Entity(p1: #(V3, V3), p2: #(V3, V3), p3: #(V3, V3))
 }
 
-pub fn rotate(x: Float, y: Float, z: Float) -> M4 {
-  rotate_z(z)
-  |> matrix.m4xm4(rotate_y(y))
-  |> matrix.m4xm4(rotate_x(x))
+pub fn update_object(object: Object) -> Object {
+  let world =
+    transform.scale_v3(object.scale)
+    |> matrix.m4xm4(transform.rotate_v3(object.rotation))
+    |> matrix.m4xm4(transform.translate_v3(object.position))
+
+  Object(..object, world: Some(world))
 }
 
-pub fn rotate_v3(v: V3) -> M4 {
-  rotate(v.x, v.y, v.z)
+pub fn update_camera(camera: Camera) -> Camera {
+  let world =
+    v3.to_h(camera.position)
+    |> v3.multiply_matrix4(transform.rotate_v3(camera.rotation))
+    |> v3.multiply_matrix4(transform.scale_v3(camera.scale))
+    |> v3.from_h
+    |> transform.look(camera.target, up_vector)
+
+  // TODO
+  let assert Ok(view) = matrix.inv4(world)
+  Camera(..camera, world: Some(world), view: Some(view))
 }
 
-pub fn rotate_x(a: Float) -> M4 {
-  M4(
-    R4(1.0, 0.0, 0.0, 0.0),
-    R4(0.0, cos(a), sin(a), 0.0),
-    R4(0.0, negate(sin(a)), cos(a), 0.0),
-    R4(0.0, 0.0, 0.0, 1.0),
+pub fn main() {
+  let config =
+    p5.Config(
+      init:,
+      update:,
+      draw:,
+      key_pressed: Some(key_pressed),
+      key_released: Some(key_released),
+      mouse_moved: Some(mouse_moved),
+    )
+
+  p5.start(config)
+}
+
+pub fn init(p: P5) -> Model {
+  let canvas_width = 500.0
+  let canvas_height = 500.0
+  p5.create_canvas(p, canvas_width, canvas_height)
+
+  let assert Ok(cube_mesh) = object.load(cube.object)
+
+  let cube =
+    Object(
+      position: V3(0.0, 0.0, 0.0),
+      scale: V3(0.5, 0.5, 0.5),
+      rotation: V3(0.0, 0.0, 0.0),
+      mesh: cube_mesh,
+      world: None,
+    )
+
+  let camera1 =
+    Camera(
+      position: V3(0.0, 0.0, -5.0),
+      target: V3(0.0, 0.0, 0.0),
+      scale: V3(1.0, 1.0, 1.0),
+      rotation: V3(0.0, 0.0, 0.0),
+      projection: transform.perspective(
+        aspect: canvas_width /. canvas_height,
+        fov: 70.0,
+        near: 0.1,
+        far: 10.0,
+      ),
+      world: None,
+      view: None,
+    )
+
+  let world = dict.from_list([#("cube", cube)])
+
+  Model(
+    move: V3(0.0, 0.0, 0.0),
+    canvas_width:,
+    canvas_height:,
+    camera: update_camera(camera1),
+    world:,
+    scene: [],
   )
 }
 
-pub fn rotate_y(a: Float) -> M4 {
-  M4(
-    R4(cos(a), 0.0, negate(sin(a)), 0.0),
-    R4(0.0, 1.0, 0.0, 0.0),
-    R4(sin(a), 0.0, cos(a), 0.0),
-    R4(0.0, 0.0, 0.0, 1.0),
+pub fn draw(p: P5, model: Model) {
+  p5.background(p, "black")
+  p5.stroke(p, "green")
+  p5.stroke_weight(p, 4)
+
+  use Entity(#(p1, _), #(p2, _), #(p3, _)) <- list.each(model.scene)
+
+  p5.line(p, p1.x, p1.y, p2.x, p2.y)
+  p5.line(p, p2.x, p2.y, p3.x, p3.y)
+  p5.line(p, p3.x, p3.y, p1.x, p1.y)
+}
+
+pub fn update(model: Model) -> Model {
+  // TODO
+  let assert Ok(cube) = dict.get(model.world, "cube")
+  let rotation = cube.rotation
+  let cube =
+    Object(
+      ..cube,
+      rotation: V3(..rotation, x: rotation.x +. 0.025, y: rotation.y +. 0.025),
+    )
+
+  let world = dict.insert(model.world, "cube", cube)
+
+  let camera = case model.move {
+    V3(0.0, 0.0, 0.0) -> model.camera
+
+    v -> {
+      let camera = model.camera
+      let position = v3.add(camera.position, v)
+      let target = v3.add(camera.target, v)
+      let camera = Camera(..camera, position:, target:)
+      update_camera(camera)
+    }
+  }
+
+  let model = Model(..model, camera:)
+
+  let scene = {
+    use scene, _name, object <- dict.fold(world, [])
+    let object = update_object(object)
+    // TODO
+    let assert Some(world) = object.world
+    // TODO
+    let assert Some(view) = model.camera.view
+
+    let mat =
+      world
+      |> matrix.m4xm4(view)
+      |> matrix.m4xm4(model.camera.projection)
+
+    let point = fn(face) {
+      // TODO
+      let assert Ok(v) = dict.get(object.mesh.vertices, face)
+      let h = v3.to_h(v)
+      let clip = v3.multiply_matrix4(h, mat)
+      let ndc = v3.from_h(clip)
+
+      #(
+        ndc,
+        V3(
+          { ndc.x +. 1.0 } /. 2.0 *. model.canvas_width,
+          { 1.0 -. ndc.y } /. 2.0 *. model.canvas_height,
+          negate(ndc.z),
+        ),
+      )
+    }
+
+    use scene, object.Face(f1, f2, f3) <- list.fold(object.mesh.faces, scene)
+    let #(n1, s1) = point(f1)
+    let #(n2, s2) = point(f2)
+    let #(n3, s3) = point(f3)
+
+    case clipped(n1) || clipped(n2) || clipped(n3) || culled(s1, s2, s3) {
+      True -> scene
+      False -> list.append(scene, [Entity(#(s1, n1), #(s2, n2), #(s3, n3))])
+    }
+  }
+
+  Model(..model, world:, scene:)
+}
+
+fn culled(v1: V3, v2: V3, v3: V3) -> Bool {
+  let normal = v3.cross(v3.subtract(v2, v1), v3.subtract(v3, v1))
+  normal.z >. 0.0
+}
+
+fn clipped(v: V3) -> Bool {
+  v.x <. -1.0
+  || v.x >. 1.0
+  || v.y <. -1.0
+  || v.y >. 1.0
+  || v.z <. -1.0
+  || v.z >. 1.0
+}
+
+pub fn mouse_moved(_x: Float, _y: Float, model: Model) -> Model {
+  model
+}
+
+pub fn key_pressed(key: String, _code: Int, model: Model) -> Model {
+  Model(
+    ..model,
+    move: case key {
+      "w" -> V3(..model.move, z: move_delta)
+      "a" -> V3(..model.move, x: negate(move_delta))
+      "s" -> V3(..model.move, z: negate(move_delta))
+      "d" -> V3(..model.move, x: move_delta)
+      _ -> model.move
+    },
   )
 }
 
-pub fn rotate_z(a: Float) -> M4 {
-  M4(
-    R4(cos(a), 0.0, negate(sin(a)), 0.0),
-    R4(0.0, 1.0, 0.0, 0.0),
-    R4(sin(a), 0.0, cos(a), 0.0),
-    R4(0.0, 0.0, 0.0, 1.0),
-  )
-}
-
-pub fn look(from: V3, to: V3, up: V3) -> M4 {
-  let forward = v3.norm(v3.subtract(from, to))
-  let right = v3.norm(v3.cross(up, forward))
-  let up = v3.cross(forward, right)
-
-  M4(
-    R4(right.x, right.y, right.z, 0.0),
-    R4(up.x, up.y, up.z, 0.0),
-    R4(forward.x, forward.y, forward.z, 0.0),
-    R4(from.x, from.y, from.z, 1.0),
-  )
-}
-
-pub fn perspective(aspect: Float, fov: Float, near: Float, far: Float) -> M4 {
-  let right = tan(fov *. 0.5 *. pi() /. 180.0) *. near
-  let left = negate(right)
-  let top = { { right -. left } /. aspect } /. 2.0
-  let bottom = negate(top)
-
-  let m11 = 2.0 *. near /. { right -. left }
-  let m22 = 2.0 *. near /. { top -. bottom }
-  let m31 = { right +. left } /. { right -. left }
-  let m32 = { top +. bottom } /. { top -. bottom }
-  let m33 = negate({ far +. near }) /. { far -. near }
-  let m43 = negate({ 2.0 *. far *. near }) /. { far -. near }
-
-  M4(
-    R4(m11, 0.0, 0.0, 0.0),
-    R4(0.0, m22, 0.0, 0.0),
-    R4(m31, m32, m33, -1.0),
-    R4(0.0, 0.0, m43, 0.0),
+pub fn key_released(key: String, _code: Int, model: Model) -> Model {
+  Model(
+    ..model,
+    move: case key {
+      "w" -> V3(..model.move, z: 0.0)
+      "a" -> V3(..model.move, x: 0.0)
+      "s" -> V3(..model.move, z: 0.0)
+      "d" -> V3(..model.move, x: 0.0)
+      _ -> model.move
+    },
   )
 }

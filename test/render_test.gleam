@@ -1,8 +1,8 @@
 import gleeunit
 import gleeunit/should
 
-import matrix
-import v3
+import d3/matrix
+import d3/v3
 
 pub fn main() {
   gleeunit.main()
