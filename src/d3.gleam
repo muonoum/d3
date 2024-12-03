@@ -1,70 +1,66 @@
-import gleam/dict.{type Dict}
+import gleam/bool
+import gleam/dict
 import gleam/float.{negate}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{Some}
 
 import d3/m4.{type M4}
 import d3/object.{type Mesh}
 import d3/transform
-import d3/v3.{type V3, V3}
+import d3/v3.{type V3, type VH, V3, VH}
 import objects
 import p5.{type P5}
 
 const up_vector = V3(0.0, 1.0, 0.0)
 
+@external(javascript, "./glue.mjs", "pixels")
+pub fn pixels(
+  x1: Float,
+  y1: Float,
+  x2: Float,
+  y2: Float,
+  a: a,
+  f: fn(Float, Float, a) -> a,
+) -> a
+
+const fps = 60
+
 const move_delta = 0.05
 
 pub type Model {
   Model(
-    move: V3,
-    canvas_width: Float,
-    canvas_height: Float,
+    angle: Float,
+    movement: V3,
+    width: Float,
+    height: Float,
     camera: Camera,
-    world: Dict(String, Object),
-    scene: List(Entity),
+    objects: List(Object),
+    render: List(Triangle),
   )
 }
 
 pub type Object {
-  Object(position: V3, scale: V3, rotation: V3, mesh: Mesh, world: Option(M4))
+  Object(position: V3, scale: V3, orientation: V3, mesh: Mesh, world: M4)
 }
 
 pub type Camera {
   Camera(
     position: V3,
+    orientation: V3,
     target: V3,
-    scale: V3,
-    rotation: V3,
+    world: M4,
+    view: M4,
     projection: M4,
-    world: Option(M4),
-    view: Option(M4),
   )
 }
 
-pub type Entity {
-  Entity(p1: #(V3, V3), p2: #(V3, V3), p3: #(V3, V3))
-}
-
-pub fn update_object(object: Object) -> Object {
-  let world =
-    transform.scale_v3(object.scale)
-    |> m4.multiply(transform.rotate_v3(object.rotation))
-    |> m4.multiply(transform.translate_v3(object.position))
-
-  Object(..object, world: Some(world))
-}
-
-pub fn update_camera(camera: Camera) -> Camera {
-  let world =
-    v3.to_h(camera.position)
-    |> v3.multiply_matrix4(transform.rotate_v3(camera.rotation))
-    |> v3.multiply_matrix4(transform.scale_v3(camera.scale))
-    |> v3.from_h
-    |> transform.look(camera.target, up_vector)
-
-  // TODO
-  let assert Ok(view) = m4.inv(world)
-  Camera(..camera, world: Some(world), view: Some(view))
+pub type Triangle {
+  Triangle(
+    clip: #(VH, VH, VH),
+    ndc: #(V3, V3, V3),
+    screen: #(V3, V3, V3),
+    box: #(Float, Float, Float, Float),
+  )
 }
 
 pub fn main() {
@@ -81,158 +77,27 @@ pub fn main() {
   p5.start(config)
 }
 
-pub fn init(p: P5) -> Model {
-  let canvas_width = 500.0
-  let canvas_height = 500.0
-  p5.create_canvas(p, canvas_width, canvas_height)
-
-  let assert Ok(cube_mesh) = object.load(objects.cube)
-
-  let cube =
-    Object(
-      position: V3(0.0, 0.0, 0.0),
-      scale: V3(0.5, 0.5, 0.5),
-      rotation: V3(0.0, 0.0, 0.0),
-      mesh: cube_mesh,
-      world: None,
-    )
-
-  let camera1 =
-    Camera(
-      position: V3(0.0, 0.0, -5.0),
-      target: V3(0.0, 0.0, 0.0),
-      scale: V3(1.0, 1.0, 1.0),
-      rotation: V3(0.0, 0.0, 0.0),
-      projection: transform.perspective(
-        aspect: canvas_width /. canvas_height,
-        fov: 70.0,
-        near: 0.1,
-        far: 10.0,
-      ),
-      world: None,
-      view: None,
-    )
-
-  let world = dict.from_list([#("cube", cube)])
-
-  Model(
-    move: V3(0.0, 0.0, 0.0),
-    canvas_width:,
-    canvas_height:,
-    camera: update_camera(camera1),
-    world:,
-    scene: [],
-  )
-}
-
-pub fn draw(p: P5, model: Model) {
-  p5.background(p, "black")
-  p5.stroke(p, "green")
-  p5.stroke_weight(p, 4)
-
-  use Entity(#(p1, _), #(p2, _), #(p3, _)) <- list.each(model.scene)
-
-  p5.line(p, p1.x, p1.y, p2.x, p2.y)
-  p5.line(p, p2.x, p2.y, p3.x, p3.y)
-  p5.line(p, p3.x, p3.y, p1.x, p1.y)
-}
-
-pub fn update(model: Model) -> Model {
-  // TODO
-  let assert Ok(cube) = dict.get(model.world, "cube")
-  let rotation = cube.rotation
-  let cube =
-    Object(
-      ..cube,
-      rotation: V3(..rotation, x: rotation.x +. 0.025, y: rotation.y +. 0.025),
-    )
-
-  let world = dict.insert(model.world, "cube", cube)
-
-  let camera = case model.move {
-    V3(0.0, 0.0, 0.0) -> model.camera
-
-    v -> {
-      let camera = model.camera
-      let position = v3.add(camera.position, v)
-      let target = v3.add(camera.target, v)
-      let camera = Camera(..camera, position:, target:)
-      update_camera(camera)
-    }
-  }
-
-  let model = Model(..model, camera:)
-
-  let scene = {
-    use scene, _name, object <- dict.fold(world, [])
-    let object = update_object(object)
-    // TODO
-    let assert Some(world) = object.world
-    // TODO
-    let assert Some(view) = model.camera.view
-
-    let mat =
-      world
-      |> m4.multiply(view)
-      |> m4.multiply(model.camera.projection)
-
-    let point = fn(face) {
-      // TODO
-      let assert Ok(v) = dict.get(object.mesh.vertices, face)
-      let clip = v3.to_h(v) |> v3.multiply_matrix4(mat)
-      let ndc = v3.from_h(clip)
-
-      #(
-        ndc,
-        V3(
-          { ndc.x +. 1.0 } /. 2.0 *. model.canvas_width,
-          { 1.0 -. ndc.y } /. 2.0 *. model.canvas_height,
-          negate(ndc.z),
-        ),
-      )
-    }
-
-    use scene, object.Face(f1, f2, f3) <- list.fold(object.mesh.faces, scene)
-    let #(n1, s1) = point(f1)
-    let #(n2, s2) = point(f2)
-    let #(n3, s3) = point(f3)
-
-    case clipped(n1) || clipped(n2) || clipped(n3) || culled(s1, s2, s3) {
-      True -> scene
-      False -> list.append(scene, [Entity(#(s1, n1), #(s2, n2), #(s3, n3))])
-    }
-  }
-
-  Model(..model, world:, scene:)
-}
-
-fn culled(v1: V3, v2: V3, v3: V3) -> Bool {
-  let normal = v3.cross(v3.subtract(v2, v1), v3.subtract(v3, v1))
-  normal.z >. 0.0
-}
-
-fn clipped(v: V3) -> Bool {
-  v.x <. -1.0
-  || v.x >. 1.0
-  || v.y <. -1.0
-  || v.y >. 1.0
-  || v.z <. -1.0
-  || v.z >. 1.0
-}
-
-pub fn mouse_moved(_x: Float, _y: Float, model: Model) -> Model {
+pub fn mouse_moved(
+  _x: Float,
+  _y: Float,
+  _dx: Float,
+  _dy: Float,
+  model: Model,
+) -> Model {
   model
 }
 
 pub fn key_pressed(key: String, _code: Int, model: Model) -> Model {
   Model(
     ..model,
-    move: case key {
-      "w" -> V3(..model.move, z: move_delta)
-      "a" -> V3(..model.move, x: negate(move_delta))
-      "s" -> V3(..model.move, z: negate(move_delta))
-      "d" -> V3(..model.move, x: move_delta)
-      _ -> model.move
+    movement: case key {
+      "ArrowUp" -> V3(..model.movement, y: move_delta)
+      "ArrowDown" -> V3(..model.movement, y: negate(move_delta))
+      "w" -> V3(..model.movement, z: move_delta)
+      "a" -> V3(..model.movement, x: negate(move_delta))
+      "s" -> V3(..model.movement, z: negate(move_delta))
+      "d" -> V3(..model.movement, x: move_delta)
+      _ -> model.movement
     },
   )
 }
@@ -240,12 +105,207 @@ pub fn key_pressed(key: String, _code: Int, model: Model) -> Model {
 pub fn key_released(key: String, _code: Int, model: Model) -> Model {
   Model(
     ..model,
-    move: case key {
-      "w" -> V3(..model.move, z: 0.0)
-      "a" -> V3(..model.move, x: 0.0)
-      "s" -> V3(..model.move, z: 0.0)
-      "d" -> V3(..model.move, x: 0.0)
-      _ -> model.move
+    movement: case key {
+      "ArrowUp" -> V3(..model.movement, y: 0.0)
+      "ArrowDown" -> V3(..model.movement, y: 0.0)
+      "w" -> V3(..model.movement, z: 0.0)
+      "a" -> V3(..model.movement, x: 0.0)
+      "s" -> V3(..model.movement, z: 0.0)
+      "d" -> V3(..model.movement, x: 0.0)
+      _ -> model.movement
     },
   )
+}
+
+pub fn init(p: P5) -> Model {
+  let width = 500.0
+  let height = 500.0
+  p5.create_canvas(p, width, height)
+  p5.set_frame_rate(p, fps)
+
+  let object = {
+    let assert Ok(mesh) = object.load(objects.torus)
+
+    let position = V3(0.0, 0.0, 0.0)
+    let scale = V3(1.6, 1.6, 1.6)
+    let orientation = V3(0.0, 0.0, 0.0)
+
+    let world =
+      transform.scale_v3(scale)
+      |> m4.multiply(transform.rotate_v3(orientation))
+      |> m4.multiply(transform.translate_v3(position))
+
+    Object(mesh:, position:, scale:, orientation:, world:)
+  }
+
+  let camera = {
+    let position = V3(0.0, 0.0, -5.0)
+    let target = V3(0.0, 0.0, 0.0)
+    let orientation = V3(0.0, 0.0, 0.0)
+
+    let world =
+      v3.to_h(position)
+      |> v3.multiply_matrix4(transform.rotate_v3(orientation))
+      |> v3.from_h
+      |> transform.look(target, up_vector)
+
+    let assert Ok(view) = m4.inv(world)
+    let projection = transform.perspective2(width /. height, 3.0, 1.0)
+    Camera(position:, target:, orientation:, projection:, world:, view:)
+  }
+
+  Model(
+    angle: 0.0,
+    movement: V3(0.0, 0.0, 0.0),
+    width:,
+    height:,
+    camera: camera,
+    objects: [object],
+    render: [],
+  )
+}
+
+pub fn update(model: Model) -> Model {
+  let camera = case model.movement {
+    V3(0.0, 0.0, 0.0) -> model.camera
+
+    direction -> {
+      let camera = model.camera
+      let position = v3.add(camera.position, direction)
+      let target = v3.add(camera.target, direction)
+
+      let world =
+        v3.to_h(position)
+        |> v3.multiply_matrix4(transform.rotate_v3(camera.orientation))
+        |> v3.from_h
+        |> transform.look(target, up_vector)
+
+      let assert Ok(view) = m4.inv(world)
+      Camera(..camera, position:, target:, world:, view:)
+    }
+  }
+
+  let angle = model.angle +. 0.01
+  let model = Model(..model, render: [], angle: angle, camera:)
+
+  let projection =
+    model.camera.view
+    |> m4.multiply(camera.projection)
+
+  use model, object <- list.fold(model.objects, model)
+  let orientation = V3(x: model.angle, y: model.angle, z: model.angle *. 1.5)
+  let world =
+    transform.scale_v3(object.scale)
+    |> m4.multiply(transform.rotate_v3(orientation))
+    |> m4.multiply(transform.translate_v3(object.position))
+  let object = Object(..object, world:)
+
+  let projection = m4.multiply(object.world, projection)
+  use model, object.Face(f1, f2, f3) <- list.fold(object.mesh.faces, model)
+
+  let assert Ok(v1) = dict.get(object.mesh.vertices, f1)
+  let #(c1, n1, s1) = project(v1, projection, model.width, model.height)
+  use <- bool.guard(clipped(c1), model)
+
+  let assert Ok(v2) = dict.get(object.mesh.vertices, f2)
+  let #(c2, n2, s2) = project(v2, projection, model.width, model.height)
+  use <- bool.guard(clipped(c2), model)
+
+  let assert Ok(v3) = dict.get(object.mesh.vertices, f3)
+  let #(c3, n3, s3) = project(v3, projection, model.width, model.height)
+  use <- bool.guard(clipped(c3), model)
+
+  use <- bool.guard(culled(s1, s2, s3), model)
+  let box = bounding_box(s1, s2, s3)
+
+  let triangle =
+    Triangle(
+      clip: #(c1, c2, c3),
+      ndc: #(n1, n2, n3),
+      screen: #(s1, s2, s3),
+      box:,
+    )
+
+  Model(..model, render: [triangle, ..model.render])
+}
+
+pub fn project(v: V3, matrix: M4, width: Float, height: Float) {
+  let clip = v3.to_h(v) |> v3.multiply_matrix4(matrix)
+  let ndc = v3.from_h(clip)
+
+  let screen =
+    V3(
+      { ndc.x +. 1.0 } /. 2.0 *. width,
+      { 1.0 -. ndc.y } /. 2.0 *. height,
+      negate(ndc.z),
+    )
+
+  #(clip, ndc, screen)
+}
+
+pub fn clipped(v: VH) -> Bool {
+  let x = v.x +. v.w <. 0.0 || negate(v.x) +. v.w <. 0.0
+  let y = v.y +. v.w <. 0.0 || negate(v.y) +. v.w <. 0.0
+  let z = v.z +. v.w <. 0.0 || negate(v.z) +. v.w <. 0.0
+  x || y || z
+}
+
+pub fn culled(v1: V3, v2: V3, v3: V3) -> Bool {
+  let normal = v3.cross(v3.subtract(v2, v1), v3.subtract(v3, v1))
+  normal.z >. 0.0
+}
+
+pub fn bounding_box(v1: V3, v2: V3, v3: V3) -> #(Float, Float, Float, Float) {
+  let min_x = float.min(float.min(v1.x, v2.x), v3.x)
+  let min_y = float.min(float.min(v1.y, v2.y), v3.y)
+  let max_x = float.max(float.max(v1.x, v2.x), v3.x)
+  let max_y = float.max(float.max(v1.y, v2.y), v3.y)
+  #(min_x, min_y, max_x, max_y)
+}
+
+pub fn points(buffer, box: #(Float, Float, Float, Float), p1, p2, p3) {
+  let area = edge(p1, p2, p3)
+  use x, y, buffer <- pixels(box.0, box.1, box.2, box.3, buffer)
+  let sample = V3(x +. 0.5, y +. 0.5, 0.0)
+
+  let w1 = edge(p1, p2, sample)
+  use <- bool.guard(w1 <. 0.0, buffer)
+  let w2 = edge(p2, p3, sample)
+  use <- bool.guard(w2 <. 0.0, buffer)
+  let w3 = edge(p3, p1, sample)
+  use <- bool.guard(w3 <. 0.0, buffer)
+
+  let ws = #(w1 /. area, w2 /. area, w3 /. area)
+  dict.insert(buffer, #(x, y), ws)
+}
+
+pub fn edge(a, b, p) {
+  let v1 = v3.subtract(p, a)
+  let v2 = v3.subtract(b, a)
+  // m2.det(m2.M2(m2.R2(v1.x, v1.y), m2.R2(v2.x, v2.y)))
+  // v3.mag(v3.cross(v1, v2))
+  v1.x *. v2.y -. v1.y *. v2.x
+}
+
+pub fn draw(p: P5, model: Model) {
+  p5.background(p, "black")
+  use triangle <- list.each(model.render)
+  draw_lines(p, triangle.screen.0, triangle.screen.1, triangle.screen.2)
+  // draw_bounding_box(p, triangle.box)
+}
+
+pub fn draw_lines(p, p1: V3, p2: V3, p3: V3) {
+  p5.stroke(p, "green")
+  p5.stroke_weight(p, 4)
+  p5.line(p, p1.x, p1.y, p2.x, p2.y)
+  p5.line(p, p2.x, p2.y, p3.x, p3.y)
+  p5.line(p, p3.x, p3.y, p1.x, p1.y)
+}
+
+pub fn draw_bounding_box(p, box) {
+  p5.stroke(p, "gray")
+  p5.stroke_weight(p, 1)
+  p5.no_fill(p)
+  let #(min_x, min_y, max_x, max_y) = box
+  p5.rect(p, min_x, min_y, max_x -. min_x, max_y -. min_y)
 }
