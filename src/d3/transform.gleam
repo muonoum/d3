@@ -105,3 +105,16 @@ pub fn perspective(
     R4(0.0, 0.0, m43, 0.0),
   )
 }
+
+pub fn perspective2(
+  aspect aspect: Float,
+  fov fov: Float,
+  near near: Float,
+) -> M4 {
+  M4(
+    R4(fov /. aspect, 0.0, 0.0, 0.0),
+    R4(0.0, fov, 0.0, 0.0),
+    R4(0.0, 0.0, 0.0, -1.0),
+    R4(0.0, 0.0, negate(near), 0.0),
+  )
+}
