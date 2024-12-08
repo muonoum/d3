@@ -1,0 +1,10 @@
+[package]
+name = "d3"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.94"
+matrix = { path = "../matrix" }
+pixels = "0.14.0"
+winit = { version = "0.30.5", features = ["rwh_05"], default-features = false }
