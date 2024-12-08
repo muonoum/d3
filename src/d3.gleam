@@ -3,6 +3,7 @@ import gleam/dict
 import gleam/float.{negate}
 import gleam/list
 import gleam/option.{Some}
+import gleam/result
 
 import d3/m4.{type M4}
 import d3/object.{type Mesh}
@@ -12,16 +13,6 @@ import objects
 import p5.{type P5}
 
 const up_vector = V3(0.0, 1.0, 0.0)
-
-@external(javascript, "./glue.mjs", "pixels")
-pub fn pixels(
-  x1: Float,
-  y1: Float,
-  x2: Float,
-  y2: Float,
-  a: a,
-  f: fn(Float, Float, a) -> a,
-) -> a
 
 const fps = 60
 
@@ -35,7 +26,7 @@ pub type Model {
     height: Float,
     camera: Camera,
     objects: List(Object),
-    render: List(Triangle),
+    render: List(#(V3, V3, V3)),
   )
 }
 
@@ -51,15 +42,6 @@ pub type Camera {
     world: M4,
     view: M4,
     projection: M4,
-  )
-}
-
-pub type Triangle {
-  Triangle(
-    clip: #(VH, VH, VH),
-    ndc: #(V3, V3, V3),
-    screen: #(V3, V3, V3),
-    box: #(Float, Float, Float, Float),
   )
 }
 
@@ -149,8 +131,8 @@ pub fn init(p: P5) -> Model {
       |> v3.from_h
       |> transform.look(target, up_vector)
 
-    let assert Ok(view) = m4.inv(world)
-    let projection = transform.perspective2(width /. height, 3.0, 1.0)
+    let assert Ok(view) = m4.inverse(world)
+    let projection = transform.perspective(width /. height, 3.0, 1.0)
     Camera(position:, target:, orientation:, projection:, world:, view:)
   }
 
@@ -180,7 +162,7 @@ pub fn update(model: Model) -> Model {
         |> v3.from_h
         |> transform.look(target, up_vector)
 
-      let assert Ok(view) = m4.inv(world)
+      let assert Ok(view) = m4.inverse(world)
       Camera(..camera, position:, target:, world:, view:)
     }
   }
@@ -192,55 +174,51 @@ pub fn update(model: Model) -> Model {
     model.camera.view
     |> m4.multiply(camera.projection)
 
-  use model, object <- list.fold(model.objects, model)
-  let orientation = V3(x: model.angle, y: model.angle, z: model.angle *. 1.5)
-  let world =
-    transform.scale_v3(object.scale)
-    |> m4.multiply(transform.rotate_v3(orientation))
-    |> m4.multiply(transform.translate_v3(object.position))
-  let object = Object(..object, world:)
+  let render = {
+    use object <- list.flat_map(model.objects)
+    let orientation = V3(x: model.angle, y: model.angle, z: model.angle *. 1.5)
 
-  let projection = m4.multiply(object.world, projection)
-  use model, object.Face(f1, f2, f3) <- list.fold(object.mesh.faces, model)
+    let world =
+      transform.scale_v3(object.scale)
+      |> m4.multiply(transform.rotate_v3(orientation))
+      |> m4.multiply(transform.translate_v3(object.position))
 
-  let assert Ok(v1) = dict.get(object.mesh.vertices, f1)
-  let #(c1, n1, s1) = project(v1, projection, model.width, model.height)
-  use <- bool.guard(clipped(c1), model)
+    let projection = m4.multiply(world, projection)
+    let project = project(_, projection, model.width, model.height)
+    let clip = fn(v1, v2, v3) {
+      use s1 <- result.try(project(v1))
+      use s2 <- result.try(project(v2))
+      use s3 <- result.try(project(v3))
+      Ok(#(s1, s2, s3))
+    }
 
-  let assert Ok(v2) = dict.get(object.mesh.vertices, f2)
-  let #(c2, n2, s2) = project(v2, projection, model.width, model.height)
-  use <- bool.guard(clipped(c2), model)
+    use face <- list.filter_map(object.mesh.faces)
 
-  let assert Ok(v3) = dict.get(object.mesh.vertices, f3)
-  let #(c3, n3, s3) = project(v3, projection, model.width, model.height)
-  use <- bool.guard(clipped(c3), model)
+    let object.Face(f1, f2, f3) = face
+    let assert Ok(v1) = dict.get(object.mesh.vertices, f1)
+    let assert Ok(v2) = dict.get(object.mesh.vertices, f2)
+    let assert Ok(v3) = dict.get(object.mesh.vertices, f3)
+    clip(v1, v2, v3) |> result.then(cull)
+  }
 
-  use <- bool.guard(culled(s1, s2, s3), model)
-  let box = bounding_box(s1, s2, s3)
-
-  let triangle =
-    Triangle(
-      clip: #(c1, c2, c3),
-      ndc: #(n1, n2, n3),
-      screen: #(s1, s2, s3),
-      box:,
-    )
-
-  Model(..model, render: [triangle, ..model.render])
+  Model(..model, render:)
 }
 
-pub fn project(v: V3, matrix: M4, width: Float, height: Float) {
+pub fn project(
+  v: V3,
+  matrix: M4,
+  width: Float,
+  height: Float,
+) -> Result(V3, Nil) {
   let clip = v3.to_h(v) |> v3.multiply_matrix4(matrix)
+  use <- bool.guard(clipped(clip), Error(Nil))
   let ndc = v3.from_h(clip)
 
-  let screen =
-    V3(
-      { ndc.x +. 1.0 } /. 2.0 *. width,
-      { 1.0 -. ndc.y } /. 2.0 *. height,
-      negate(ndc.z),
-    )
-
-  #(clip, ndc, screen)
+  Ok(V3(
+    { ndc.x +. 1.0 } /. 2.0 *. width,
+    { 1.0 -. ndc.y } /. 2.0 *. height,
+    negate(ndc.z),
+  ))
 }
 
 pub fn clipped(v: VH) -> Bool {
@@ -250,48 +228,17 @@ pub fn clipped(v: VH) -> Bool {
   x || y || z
 }
 
-pub fn culled(v1: V3, v2: V3, v3: V3) -> Bool {
+pub fn cull(vs: #(V3, V3, V3)) -> Result(#(V3, V3, V3), Nil) {
+  let #(v1, v2, v3) = vs
   let normal = v3.cross(v3.subtract(v2, v1), v3.subtract(v3, v1))
-  normal.z >. 0.0
-}
-
-pub fn bounding_box(v1: V3, v2: V3, v3: V3) -> #(Float, Float, Float, Float) {
-  let min_x = float.min(float.min(v1.x, v2.x), v3.x)
-  let min_y = float.min(float.min(v1.y, v2.y), v3.y)
-  let max_x = float.max(float.max(v1.x, v2.x), v3.x)
-  let max_y = float.max(float.max(v1.y, v2.y), v3.y)
-  #(min_x, min_y, max_x, max_y)
-}
-
-pub fn points(buffer, box: #(Float, Float, Float, Float), p1, p2, p3) {
-  let area = edge(p1, p2, p3)
-  use x, y, buffer <- pixels(box.0, box.1, box.2, box.3, buffer)
-  let sample = V3(x +. 0.5, y +. 0.5, 0.0)
-
-  let w1 = edge(p1, p2, sample)
-  use <- bool.guard(w1 <. 0.0, buffer)
-  let w2 = edge(p2, p3, sample)
-  use <- bool.guard(w2 <. 0.0, buffer)
-  let w3 = edge(p3, p1, sample)
-  use <- bool.guard(w3 <. 0.0, buffer)
-
-  let ws = #(w1 /. area, w2 /. area, w3 /. area)
-  dict.insert(buffer, #(x, y), ws)
-}
-
-pub fn edge(a, b, p) {
-  let v1 = v3.subtract(p, a)
-  let v2 = v3.subtract(b, a)
-  // m2.det(m2.M2(m2.R2(v1.x, v1.y), m2.R2(v2.x, v2.y)))
-  // v3.mag(v3.cross(v1, v2))
-  v1.x *. v2.y -. v1.y *. v2.x
+  use <- bool.guard(normal.z >. 0.0, Error(Nil))
+  Ok(vs)
 }
 
 pub fn draw(p: P5, model: Model) {
   p5.background(p, "black")
-  use triangle <- list.each(model.render)
-  draw_lines(p, triangle.screen.0, triangle.screen.1, triangle.screen.2)
-  // draw_bounding_box(p, triangle.box)
+  use #(p1, p2, p3) <- list.each(model.render)
+  draw_lines(p, p1, p2, p3)
 }
 
 pub fn draw_lines(p, p1: V3, p2: V3, p3: V3) {
@@ -300,12 +247,4 @@ pub fn draw_lines(p, p1: V3, p2: V3, p3: V3) {
   p5.line(p, p1.x, p1.y, p2.x, p2.y)
   p5.line(p, p2.x, p2.y, p3.x, p3.y)
   p5.line(p, p3.x, p3.y, p1.x, p1.y)
-}
-
-pub fn draw_bounding_box(p, box) {
-  p5.stroke(p, "gray")
-  p5.stroke_weight(p, 1)
-  p5.no_fill(p)
-  let #(min_x, min_y, max_x, max_y) = box
-  p5.rect(p, min_x, min_y, max_x -. min_x, max_y -. min_y)
 }

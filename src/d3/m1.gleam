@@ -6,7 +6,7 @@ pub type M1 {
   M1(R1)
 }
 
-pub fn det(m: M1) -> Float {
+pub fn determinant(m: M1) -> Float {
   let M1(R1(m11)) = m
   m11
 }

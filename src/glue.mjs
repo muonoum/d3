@@ -1,15 +1,5 @@
 import { is_some, unwrap } from "../gleam_stdlib/gleam/option.mjs";
 
-export function pixels(x1, y1, x2, y2, a, f) {
-  for (let y = y1; y <= y2; ++y) {
-    for (let x = x1; x <= x2; ++x) {
-      a = f(x, y, a);
-    }
-  }
-
-  return a;
-}
-
 export function start(config) {
   let model;
 
