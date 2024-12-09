@@ -82,7 +82,7 @@ impl ApplicationHandler for State {
 
             WindowEvent::RedrawRequested => {
                 let size = app.window.inner_size();
-                app.frame(size.width / BUFFER_SCALE, size.height / BUFFER_SCALE);
+                app.render(size.width / BUFFER_SCALE, size.height / BUFFER_SCALE);
                 app.window.request_redraw();
             }
 
