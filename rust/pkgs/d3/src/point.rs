@@ -6,8 +6,8 @@ pub struct Point {
     pub y: isize,
 }
 
-impl From<&Vector<3>> for Point {
-    fn from(v: &Vector<3>) -> Self {
+impl From<&Vector<f64, 3>> for Point {
+    fn from(v: &Vector<f64, 3>) -> Self {
         Point {
             x: v[0] as isize,
             y: v[1] as isize,
@@ -15,8 +15,8 @@ impl From<&Vector<3>> for Point {
     }
 }
 
-impl From<Vector<3>> for Point {
-    fn from(v: Vector<3>) -> Self {
+impl From<Vector<f64, 3>> for Point {
+    fn from(v: Vector<f64, 3>) -> Self {
         Point {
             x: v[0] as isize,
             y: v[1] as isize,

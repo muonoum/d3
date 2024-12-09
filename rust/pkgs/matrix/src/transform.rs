@@ -1,11 +1,11 @@
 use super::vector::Vector;
 use super::Matrix;
 
-pub fn scale_v3(v: Vector<3>) -> Matrix<4, 4> {
+pub fn scale_v3(v: Vector<f64, 3>) -> Matrix<f64, 4, 4> {
     scale(v[0], v[1], v[2])
 }
 
-pub fn scale(x: f64, y: f64, z: f64) -> Matrix<4, 4> {
+pub fn scale(x: f64, y: f64, z: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [x, 0.0, 0.0, 0.0],
         [0.0, y, 0.0, 0.0],
@@ -14,11 +14,11 @@ pub fn scale(x: f64, y: f64, z: f64) -> Matrix<4, 4> {
     ])
 }
 
-pub fn translate_v3(v: Vector<3>) -> Matrix<4, 4> {
+pub fn translate_v3(v: Vector<f64, 3>) -> Matrix<f64, 4, 4> {
     translate(v[0], v[1], v[2])
 }
 
-pub fn translate(x: f64, y: f64, z: f64) -> Matrix<4, 4> {
+pub fn translate(x: f64, y: f64, z: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [1.0, 0.0, 0.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -27,15 +27,15 @@ pub fn translate(x: f64, y: f64, z: f64) -> Matrix<4, 4> {
     ])
 }
 
-pub fn rotate(x: f64, y: f64, z: f64) -> Matrix<4, 4> {
+pub fn rotate(x: f64, y: f64, z: f64) -> Matrix<f64, 4, 4> {
     rotate_z(z) * rotate_y(y) * rotate_x(x)
 }
 
-pub fn rotate_v3(v: Vector<3>) -> Matrix<4, 4> {
+pub fn rotate_v3(v: Vector<f64, 3>) -> Matrix<f64, 4, 4> {
     rotate(v[0], v[1], v[2])
 }
 
-pub fn rotate_x(a: f64) -> Matrix<4, 4> {
+pub fn rotate_x(a: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [1.0, 0.0, 0.0, 0.0],
         [0.0, a.cos(), a.sin(), 0.0],
@@ -44,7 +44,7 @@ pub fn rotate_x(a: f64) -> Matrix<4, 4> {
     ])
 }
 
-pub fn rotate_y(a: f64) -> Matrix<4, 4> {
+pub fn rotate_y(a: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [a.cos(), 0.0, -a.sin(), 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -53,7 +53,7 @@ pub fn rotate_y(a: f64) -> Matrix<4, 4> {
     ])
 }
 
-pub fn rotate_z(a: f64) -> Matrix<4, 4> {
+pub fn rotate_z(a: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [a.cos(), 0.0, -a.sin(), 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -62,7 +62,7 @@ pub fn rotate_z(a: f64) -> Matrix<4, 4> {
     ])
 }
 
-pub fn look(from: Vector<3>, to: Vector<3>, up: Vector<3>) -> Matrix<4, 4> {
+pub fn look(from: Vector<f64, 3>, to: Vector<f64, 3>, up: Vector<f64, 3>) -> Matrix<f64, 4, 4> {
     let forward = (from - to).normalize();
     let right = up.cross_product(forward).normalize();
     let up = forward.cross_product(right);
@@ -75,7 +75,7 @@ pub fn look(from: Vector<3>, to: Vector<3>, up: Vector<3>) -> Matrix<4, 4> {
     ])
 }
 
-pub fn perspective(aspect: f64, fov: f64, near: f64) -> Matrix<4, 4> {
+pub fn perspective(aspect: f64, fov: f64, near: f64) -> Matrix<f64, 4, 4> {
     Matrix::new([
         [fov / aspect, 0.0, 0.0, 0.0],
         [0.0, fov, 0.0, 0.0],

@@ -4,17 +4,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
-pub struct Face<const N: usize> {
-    pub vertices: [Vertex<3>; N],
+pub struct Face {
+    pub vertices: [Vertex; 3],
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Vertex<const D: usize> {
-    pub position: Vector<D>,
-    pub normal: Option<Vector<D>>,
+pub struct Vertex {
+    pub position: Vector<f64, 3>,
+    pub normal: Option<Vector<f64, 3>>,
 }
 
-pub fn load(path: &str) -> anyhow::Result<Vec<Face<3>>> {
+pub fn load(path: &str) -> anyhow::Result<Vec<Face>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 

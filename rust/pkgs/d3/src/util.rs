@@ -21,14 +21,14 @@ pub fn color_slice(min: f64, max: f64, z: f64) -> [u8; 4] {
     ]
 }
 
-pub fn clipped(v: Vector<4>) -> bool {
+pub fn clipped(v: Vector<f64, 4>) -> bool {
     let x = v[0] + v[3] < 0.0 || -v[0] + v[3] < 0.0;
     let y = v[1] + v[3] < 0.0 || -v[1] + v[3] < 0.0;
     let z = v[2] + v[3] < 0.0 || -v[2] + v[3] < 0.0;
     x || y || z
 }
 
-pub fn culled(a: Vector<3>, b: Vector<3>, c: Vector<3>) -> bool {
+pub fn culled(a: Vector<f64, 3>, b: Vector<f64, 3>, c: Vector<f64, 3>) -> bool {
     let normal = Vector::cross_product(b - a, c - a);
     normal[2] > 0.0
 }
