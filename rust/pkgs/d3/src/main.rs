@@ -8,13 +8,11 @@ use winit::window::{Window, WindowId};
 
 mod app;
 mod obj;
-mod point;
-mod util;
 use app::App;
 
 const WINDOW_WIDTH: u32 = 500;
 const WINDOW_HEIGHT: u32 = 500;
-const BUFFER_SCALE: u32 = 3;
+const BUFFER_SCALE: u32 = 4;
 
 enum State {
     Starting,

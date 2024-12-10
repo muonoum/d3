@@ -1,6 +1,6 @@
 use super::{Cell, Matrix};
 
-pub type SquareMatrix<T: Cell, const D: usize> = Matrix<T, D, D>;
+pub type SquareMatrix<T, const D: usize> = Matrix<T, D, D>;
 
 impl<T: Cell, const D: usize> SquareMatrix<T, D> {
     pub fn identity() -> Self {
@@ -18,6 +18,22 @@ impl<T: Cell, const D: usize> SquareMatrix<T, D> {
     }
 }
 
+impl SquareMatrix<f64, 3> {
+    pub fn inverse(self) -> Result<Self, ()> {
+        let det = self.determinant()?;
+        let det = if det == 0.0 {
+            return Err(());
+        } else {
+            1.0 / det
+        };
+
+        let adj = self.adjugate()?;
+        let r1 = [det * adj[[0, 0]], det * adj[[0, 1]], det * adj[[0, 2]]];
+        let r2 = [det * adj[[1, 0]], det * adj[[1, 1]], det * adj[[1, 2]]];
+        let r3 = [det * adj[[2, 0]], det * adj[[2, 1]], det * adj[[2, 2]]];
+        Ok(Matrix::new([r1, r2, r3]))
+    }
+}
 impl SquareMatrix<f64, 4> {
     pub fn inverse(self) -> Result<Self, ()> {
         let det = self.determinant()?;
@@ -61,9 +77,22 @@ impl SquareMatrix<f64, 4> {
     }
 }
 
+impl SquareMatrix<f64, 3> {
+    pub fn adjugate(self) -> Result<Self, ()> {
+        Ok(self.cofactor_matrix()?.transpose())
+    }
+}
+
 impl SquareMatrix<f64, 4> {
     pub fn adjugate(self) -> Result<Self, ()> {
         Ok(self.cofactor_matrix()?.transpose())
+    }
+}
+
+impl SquareMatrix<f64, 3> {
+    pub fn cofactor(self, row: usize, col: usize) -> Result<f64, ()> {
+        let pow = f64::powf(-1.0, 1.0 + row as f64 + 1.0 + col as f64);
+        Ok(pow * self.minor(row, col)?)
     }
 }
 
@@ -71,6 +100,30 @@ impl SquareMatrix<f64, 4> {
     pub fn cofactor(self, row: usize, col: usize) -> Result<f64, ()> {
         let pow = f64::powf(-1.0, 1.0 + row as f64 + 1.0 + col as f64);
         Ok(pow * self.minor(row, col)?)
+    }
+}
+
+impl SquareMatrix<f64, 3> {
+    pub fn cofactor_matrix(self) -> Result<Self, ()> {
+        let r1 = [
+            self.cofactor(0, 0)?,
+            self.cofactor(0, 1)?,
+            self.cofactor(0, 2)?,
+        ];
+
+        let r2 = [
+            self.cofactor(1, 0)?,
+            self.cofactor(1, 1)?,
+            self.cofactor(1, 2)?,
+        ];
+
+        let r3 = [
+            self.cofactor(2, 0)?,
+            self.cofactor(2, 1)?,
+            self.cofactor(2, 2)?,
+        ];
+
+        Ok(Matrix::new([r1, r2, r3]))
     }
 }
 

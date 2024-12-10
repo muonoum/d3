@@ -1,6 +1,20 @@
 use super::{Cell, Matrix};
 
-pub type Vector<T: Cell, const D: usize> = Matrix<T, 1, D>;
+pub type Vector<T, const D: usize> = Matrix<T, 1, D>;
+
+impl<T: Cell, const D: usize> std::ops::Div<T> for Vector<T, D> {
+    type Output = Self;
+
+    fn div(self, other: T) -> Self {
+        let mut v = Vector::zero();
+
+        for n in 0..D {
+            v[n] = self[n] / other;
+        }
+
+        return v;
+    }
+}
 
 impl<T: Cell, const D: usize> std::ops::Add for Vector<T, D> {
     type Output = Self;

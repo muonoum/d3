@@ -223,6 +223,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
+name = "clipline"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "316ea53398c59342075dec5be39eb6e3bd04a9e0b8e9764d44d3e482e4accd4b"
+
+[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -314,6 +320,7 @@ name = "d3"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clipline",
  "matrix",
  "pixels",
  "winit",
