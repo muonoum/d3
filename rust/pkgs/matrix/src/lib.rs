@@ -30,17 +30,15 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn new(cells: [[T; C]; R]) -> Self {
         Matrix { cells }
     }
-}
 
-impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn zero() -> Self {
         let cells = [[0i8.into(); C]; R];
-        Matrix { cells }
+        Self { cells }
     }
 
     pub fn value(v: T) -> Self {
         let cells = [[v; C]; R];
-        Matrix { cells }
+        Self { cells }
     }
 }
 

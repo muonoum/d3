@@ -1,5 +1,11 @@
 use super::{Cell, Matrix};
 
+// pub struct Vector<T: Cell, const D: usize>(Matrix<T, 1, D>);
+// Vector::new([..])
+// impl Vector<T,2> -> x,y
+// impl Vector<T,3> -> x,y,z
+// impl Vector<T,4> -> x,y,z,w
+
 pub type Vector<T, const D: usize> = Matrix<T, 1, D>;
 
 impl<T: Cell, const D: usize> std::ops::Div<T> for Vector<T, D> {
