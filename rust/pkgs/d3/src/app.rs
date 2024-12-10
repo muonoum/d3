@@ -41,7 +41,7 @@ impl App {
             let size = window.inner_size();
             let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
 
-            let position = Vector::new([[0.0, 0.0, -8.0]]);
+            let position = Vector::new([[0.0, 0.0, -6.0]]);
             let target = Vector::new([[0.0, 0.0, 0.0]]);
 
             let world = transform::look(position, target, up_vector);
@@ -98,79 +98,71 @@ impl App {
                 * self.camera.view;
             let normal_camera_space = camera_space
                 .sub_matrix(3, 3)
-                .unwrap()
-                .inverse()
-                .unwrap()
-                .transpose();
+                .and_then(|m| m.inverse())
+                .map(|m| m.transpose())
+                .unwrap();
 
-            let transform = |v: &Vertex<3>| {
-                let norm = v.normal * normal_camera_space;
-                let cam = v.position.to_h() * camera_space;
-                let clip = cam * self.camera.projection;
-                let ndc = clip.to_v3();
+            let transform = |v: Vertex<3>| {
+                let normal = v.normal * normal_camera_space;
+                let camera = v.position.v4() * camera_space;
+                let clip = camera * self.camera.projection;
+                let ndc = clip.v3();
                 let screen = screen_space(ndc);
 
-                (norm.normalize(), cam.to_v3(), clip, ndc, screen)
+                (normal.normalize(), camera.v3(), clip, ndc, screen)
             };
 
-            for [v1, v2, v3] in object.mesh.iter() {
-                let (norm1, cam1, _clip1, _ndc1, screen1) = transform(v1);
-                let (norm2, cam2, _clip2, _ndc2, screen2) = transform(v2);
-                let (norm3, cam3, _clip3, _ndc3, screen3) = transform(v3);
+            for face in object.mesh.iter() {
+                let [v1, v2, v3] = face.vertices;
 
-                // face normal
+                let (normal1, cam1, _clip1, _ndc1, screen1) = transform(v1);
+                let (normal2, cam2, _clip2, _ndc2, screen2) = transform(v2);
+                let (normal3, cam3, _clip3, _ndc3, screen3) = transform(v3);
 
-                let (centroid, face_norm) = {
-                    let norm = {
-                        let a = v2.position - v1.position;
-                        let b = v3.position - v1.position;
-                        a.cross_product(b)
-                    };
+                let normal_scale = transform::scale_v3(Vector::new([[0.25, 0.25, 0.25]]));
 
-                    let centroid = {
-                        let centroid = (v1.position + v2.position + v3.position) / 3.0;
-                        (centroid.to_h() * camera_space).to_v3()
-                    };
-
-                    let norm = screen_space(Vector::to_v3({
-                        let norm = norm * normal_camera_space;
-                        let norm = centroid + norm;
-                        norm.to_h() * self.camera.projection
-                    }));
-
-                    let centroid = centroid.to_h() * self.camera.projection;
-                    let centroid = screen_space(centroid.to_v3());
-                    (centroid, norm)
+                let (centroid_camera, centroid_screen) = {
+                    let centroid = (v1.position + v2.position + v3.position) / 3.0;
+                    let camera = centroid.v4() * camera_space;
+                    let clip = camera * self.camera.projection;
+                    let screen = screen_space(clip.v3());
+                    (camera.v3(), screen)
                 };
 
-                line(centroid, face_norm, [0, 255, 255, 255]);
+                let face_normal = screen_space(Vector::v3({
+                    let normal = face.normal * normal_camera_space;
+                    let normal = normal.v4() * normal_scale;
+                    let normal = centroid_camera + normal.v3();
+                    normal.v4() * self.camera.projection
+                }));
 
-                // object
+                line(centroid_screen, face_normal, [0, 255, 255, 255]);
+
+                let screen_normal1 = screen_space(Vector::v3({
+                    let normal = normal1.v4() * normal_scale;
+                    let normal = cam1 + normal.v3();
+                    normal.v4() * self.camera.projection
+                }));
+
+                let screen_normal2 = screen_space(Vector::v3({
+                    let normal = normal2.v4() * normal_scale;
+                    let normal = cam2 + normal.v3();
+                    normal.v4() * self.camera.projection
+                }));
+
+                let screen_normal3 = screen_space(Vector::v3({
+                    let normal = normal3.v4() * normal_scale;
+                    let normal = cam3 + normal.v3();
+                    normal.v4() * self.camera.projection
+                }));
+
+                line(screen1, screen_normal1, [0, 255, 0, 255]);
+                line(screen2, screen_normal2, [0, 255, 0, 255]);
+                line(screen3, screen_normal3, [0, 255, 0, 255]);
 
                 line(screen1, screen2, [255, 0, 0, 255]);
                 line(screen2, screen3, [255, 0, 0, 255]);
                 line(screen3, screen1, [255, 0, 0, 255]);
-
-                // vertex normals
-
-                let screen_norm1 = screen_space(Vector::to_v3({
-                    let norm = cam1 + norm1;
-                    norm.to_h() * self.camera.projection
-                }));
-
-                let screen_norm2 = screen_space(Vector::to_v3({
-                    let norm = cam2 + norm2;
-                    norm.to_h() * self.camera.projection
-                }));
-
-                let screen_norm3 = screen_space(Vector::to_v3({
-                    let norm = cam3 + norm3;
-                    norm.to_h() * self.camera.projection
-                }));
-
-                line(screen1, screen_norm1, [0, 255, 0, 255]);
-                line(screen2, screen_norm2, [0, 255, 0, 255]);
-                line(screen3, screen_norm3, [0, 255, 0, 255]);
             }
         }
 

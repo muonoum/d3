@@ -4,7 +4,11 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 pub type Mesh<const D: usize> = Vec<Face<D>>;
-pub type Face<const D: usize> = [Vertex<D>; 3];
+
+pub struct Face<const D: usize> {
+    pub vertices: [Vertex<D>; 3],
+    pub normal: Vector<f64, 3>,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vertex<const D: usize> {
@@ -96,7 +100,16 @@ pub fn load(path: &str) -> anyhow::Result<Mesh<3>> {
             Vertex { position, normal }
         };
 
-        faces.push([v1, v2, v3]);
+        let normal = Vector::normalize({
+            let a = v2.position - v1.position;
+            let b = v3.position - v1.position;
+            a.cross_product(b)
+        });
+
+        faces.push(Face {
+            vertices: [v1, v2, v3],
+            normal,
+        });
     }
 
     Ok(faces)

@@ -12,7 +12,7 @@ use app::App;
 
 const WINDOW_WIDTH: u32 = 500;
 const WINDOW_HEIGHT: u32 = 500;
-const BUFFER_SCALE: u32 = 4;
+const BUFFER_SCALE: u32 = 3;
 
 enum State {
     Starting,

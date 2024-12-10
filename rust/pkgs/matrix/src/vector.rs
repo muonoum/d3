@@ -78,7 +78,7 @@ impl Vector<f64, 3> {
 }
 
 impl<T: Cell> Vector<T, 3> {
-    pub fn to_h(self) -> Vector<T, 4> {
+    pub fn v4(self) -> Vector<T, 4> {
         let mut v = Vector::zero();
 
         v[0] = self[0];
@@ -99,7 +99,7 @@ impl<T: Cell> Vector<T, 3> {
 }
 
 impl<T: Cell> Vector<T, 4> {
-    pub fn to_v3(self) -> Vector<T, 3> {
+    pub fn v3(self) -> Vector<T, 3> {
         let mut v = Vector::zero();
 
         v[0] = self[0] / self[3];
