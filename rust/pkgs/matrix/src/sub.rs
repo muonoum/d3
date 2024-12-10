@@ -1,7 +1,7 @@
-use super::Matrix;
+use super::{Cell, Matrix};
 
-impl Matrix<2, 2> {
-    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<1, 1>, ()> {
+impl<T: Cell> Matrix<T, 2, 2> {
+    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 1, 1>, ()> {
         match (row, col) {
             (0, 0) => Ok(Matrix::new([[self[[1, 1]]]])),
             (0, 1) => Ok(Matrix::new([[self[[1, 0]]]])),
@@ -12,8 +12,8 @@ impl Matrix<2, 2> {
     }
 }
 
-impl Matrix<3, 3> {
-    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<2, 2>, ()> {
+impl<T: Cell> Matrix<T, 3, 3> {
+    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 2, 2>, ()> {
         match (row, col) {
             (0, 0) => Ok(Matrix::new([
                 [self[[1, 1]], self[[1, 2]]],
@@ -65,8 +65,8 @@ impl Matrix<3, 3> {
     }
 }
 
-impl Matrix<4, 4> {
-    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<3, 3>, ()> {
+impl<T: Cell> Matrix<T, 4, 4> {
+    pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 3, 3>, ()> {
         match (row, col) {
             (0, 0) => Ok(Matrix::new([
                 [self[[1, 1]], self[[1, 2]], self[[1, 3]]],

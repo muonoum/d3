@@ -121,11 +121,11 @@ fn vector_index_test() {
 
 #[test]
 fn adjugate_test() -> Result<(), ()> {
-    let zero = Matrix::zero();
+    let zero: Matrix<f64, 4, 4> = Matrix::zero();
     let adj = zero.adjugate()?;
     assert_eq!(zero, adj);
 
-    let id = Matrix::identity();
+    let id: Matrix<f64, 4, 4> = Matrix::identity();
     let adj = id.adjugate()?;
     assert_eq!(id, adj);
 

@@ -8,8 +8,6 @@ use winit::window::{Window, WindowId};
 
 mod app;
 mod obj;
-mod point;
-mod util;
 use app::App;
 
 const WINDOW_WIDTH: u32 = 500;
@@ -82,7 +80,7 @@ impl ApplicationHandler for State {
 
             WindowEvent::RedrawRequested => {
                 let size = app.window.inner_size();
-                app.frame(size.width / BUFFER_SCALE, size.height / BUFFER_SCALE);
+                app.render(size.width / BUFFER_SCALE, size.height / BUFFER_SCALE);
                 app.window.request_redraw();
             }
 

@@ -1,5 +1,3 @@
-use std::ops::{Index, IndexMut, Mul};
-
 pub mod square;
 pub mod sub;
 pub mod transform;
@@ -8,59 +6,64 @@ pub mod vector;
 #[cfg(test)]
 mod tests;
 
-// trait AddCell: From<i8> + std::ops::Add<Output = Self> + std::ops::AddAssign {}
-// impl<T: From<i8> + std::ops::Add<Output = Self> + std::ops::AddAssign> AddCell for T {}
+pub trait AddCell: Sized + std::ops::Add<Output = Self> + std::ops::AddAssign {}
+impl<T: Sized + std::ops::Add<Output = Self> + std::ops::AddAssign> AddCell for T {}
 
-// trait SubCell: From<i8> + std::ops::Sub<Output = Self> + std::ops::SubAssign {}
-// impl<T: From<i8> + std::ops::Sub<Output = Self> + std::ops::SubAssign> SubCell for T {}
+pub trait SubCell: Sized + std::ops::Sub<Output = Self> + std::ops::SubAssign {}
+impl<T: Sized + std::ops::Sub<Output = Self> + std::ops::SubAssign> SubCell for T {}
 
-// trait MulCell: From<i8> + std::ops::Mul<Output = Self> + std::ops::MulAssign {}
-// impl<T: From<i8> + std::ops::Mul<Output = Self> + std::ops::MulAssign> MulCell for T {}
+pub trait MulCell: Sized + std::ops::Mul<Output = Self> + std::ops::MulAssign {}
+impl<T: Sized + std::ops::Mul<Output = Self> + std::ops::MulAssign> MulCell for T {}
 
-// trait Cell: From<i8> + Copy + Clone + AddCell + SubCell + MulCell {}
-// impl<T: From<i8> + Copy + Clone + AddCell + SubCell + MulCell> Cell for T {}
+pub trait DivCell: Sized + std::ops::Div<Output = Self> + std::ops::DivAssign {}
+impl<T: Sized + std::ops::Div<Output = Self> + std::ops::DivAssign> DivCell for T {}
+
+pub trait Cell: Copy + Clone + From<i8> + AddCell + SubCell + MulCell + DivCell {}
+impl<T: Copy + Clone + From<i8> + AddCell + SubCell + MulCell + DivCell> Cell for T {}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Matrix<const R: usize, const C: usize> {
-    pub cells: [[f64; C]; R],
+pub struct Matrix<T: Cell, const R: usize, const C: usize> {
+    pub cells: [[T; C]; R],
 }
 
-impl<const R: usize, const C: usize> Matrix<R, C> {
-    pub fn new(cells: [[f64; C]; R]) -> Self {
+impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
+    pub fn new(cells: [[T; C]; R]) -> Self {
         Matrix { cells }
     }
 }
 
-impl<const R: usize, const C: usize> Matrix<R, C> {
+impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
     pub fn zero() -> Self {
-        let cells = [[0.0; C]; R];
+        let cells = [[0i8.into(); C]; R];
         Matrix { cells }
     }
 
-    pub fn value(v: f64) -> Self {
+    pub fn value(v: T) -> Self {
         let cells = [[v; C]; R];
         Matrix { cells }
     }
 }
 
-impl<const R: usize, const C: usize> Index<[usize; 2]> for Matrix<R, C> {
-    type Output = f64;
+impl<T: Cell, const R: usize, const C: usize> std::ops::Index<[usize; 2]> for Matrix<T, R, C> {
+    type Output = T;
 
     fn index(&self, index: [usize; 2]) -> &Self::Output {
         &self.cells[index[0]][index[1]]
     }
 }
 
-impl<const R: usize, const C: usize> IndexMut<[usize; 2]> for Matrix<R, C> {
+impl<T: Cell, const R: usize, const C: usize> std::ops::IndexMut<[usize; 2]> for Matrix<T, R, C> {
     fn index_mut(&mut self, index: [usize; 2]) -> &mut Self::Output {
         &mut self.cells[index[0]][index[1]]
     }
 }
 
-impl<const R: usize, const C: usize, const K: usize> Mul<Matrix<C, K>> for Matrix<R, C> {
-    type Output = Matrix<R, K>;
+impl<T: Cell, const R: usize, const C: usize, const K: usize> std::ops::Mul<Matrix<T, C, K>>
+    for Matrix<T, R, C>
+{
+    type Output = Matrix<T, R, K>;
 
-    fn mul(self, other: Matrix<C, K>) -> Self::Output {
+    fn mul(self, other: Matrix<T, C, K>) -> Self::Output {
         let mut m = Matrix::zero();
 
         for r in 0..R {
@@ -75,8 +78,8 @@ impl<const R: usize, const C: usize, const K: usize> Mul<Matrix<C, K>> for Matri
     }
 }
 
-impl<const R: usize, const C: usize> Matrix<R, C> {
-    pub fn transpose(self) -> Matrix<C, R> {
+impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
+    pub fn transpose(self) -> Matrix<T, C, R> {
         let mut m = Matrix::zero();
 
         for r in 0..R {
