@@ -1,0 +1,178 @@
+use clap::Parser;
+use pixels::{Pixels, SurfaceTexture};
+use std::sync::Arc;
+use winit::application::ApplicationHandler;
+use winit::dpi::{LogicalPosition, LogicalSize};
+use winit::event::ElementState;
+use winit::event::MouseButton;
+use winit::event::WindowEvent;
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+use winit::window::{Window, WindowId};
+
+mod app;
+mod array;
+mod camera;
+mod cli;
+mod light;
+mod material;
+#[allow(dead_code)]
+mod matrix;
+mod mesh;
+#[allow(dead_code)]
+mod object;
+mod reflection;
+mod shading;
+#[allow(dead_code)]
+mod transform;
+
+use app::App;
+
+struct Running {
+	window: Arc<Window>,
+	buffer: Pixels,
+	app: App,
+	reflection: reflection::Model,
+	shading: shading::Model,
+}
+
+enum State {
+	Starting(cli::Args),
+	Running(Running),
+}
+
+fn main() -> anyhow::Result<()> {
+	let args = cli::Args::parse();
+
+	let mut state = State::Starting(args);
+	let event_loop = EventLoop::new()?;
+	event_loop.set_control_flow(ControlFlow::Poll);
+	event_loop.run_app(&mut state)?;
+	Ok(())
+}
+
+impl ApplicationHandler for State {
+	fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+		match self {
+			State::Running { .. } => panic!(),
+
+			State::Starting(args) => {
+				let window = Arc::new(
+					event_loop
+						.create_window(
+							Window::default_attributes()
+								.with_title("d3")
+								.with_inner_size(LogicalSize::new(args.width, args.height))
+								.with_position(LogicalPosition::new(0, 0))
+								.with_resizable(false),
+						)
+						.unwrap(),
+				);
+
+				let size = window.inner_size();
+				let height = size.height / args.scale;
+				let width = size.width / args.scale;
+
+				let app = App::new(&args.mesh, width, height, args.rotate).unwrap();
+
+				let buffer = {
+					let surface = SurfaceTexture::new(size.width, size.height, &window);
+					Pixels::new(width, height, surface).unwrap()
+				};
+
+				let reflection = match args.reflection.as_str() {
+					"phong1" => reflection::Model::Phong1,
+					"phong2" => reflection::Model::Phong2,
+					_else => panic!(),
+				};
+
+				let shading = match args.shading.as_str() {
+					"flat" => shading::Model::Flat,
+					"gourad" => shading::Model::Gourad,
+					"phong" => shading::Model::Phong,
+					_else => panic!(),
+				};
+
+				println!(
+					"window={}x{} buffer={}x{} reflection={:?} shading={:?}",
+					size.width, size.height, width, height, reflection, shading
+				);
+
+				*self = State::Running(Running {
+					window: window.clone(),
+					buffer,
+					app,
+					reflection,
+					shading,
+				});
+
+				window.request_redraw();
+			}
+		}
+	}
+
+	fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
+		let app_state = match self {
+			State::Starting { .. } => panic!(),
+			State::Running(app_state) => app_state,
+		};
+
+		match event {
+			WindowEvent::CloseRequested => event_loop.exit(),
+
+			WindowEvent::CursorMoved { .. } => {}
+
+			WindowEvent::MouseInput { state, button, .. } => {
+				match (state, button) {
+					(ElementState::Pressed, MouseButton::Left) => {
+						app_state.reflection = match app_state.reflection {
+							reflection::Model::Phong1 => reflection::Model::Phong2,
+							reflection::Model::Phong2 => reflection::Model::Phong1,
+						};
+
+						println!(
+							"reflection={:?} shading={:?}",
+							app_state.reflection, app_state.shading,
+						);
+					}
+
+					(ElementState::Pressed, MouseButton::Right) => {
+						app_state.shading = match app_state.shading {
+							shading::Model::Flat => shading::Model::Gourad,
+							shading::Model::Gourad => shading::Model::Phong,
+							shading::Model::Phong => shading::Model::Flat,
+						};
+
+						println!(
+							"reflection={:?} shading={:?}",
+							app_state.reflection, app_state.shading,
+						);
+					}
+
+					_else => (),
+				};
+			}
+
+			WindowEvent::RedrawRequested => {
+				// let buffer = pixels.frame_mut();
+				// let frame = app.render();
+				// buffer.copy_from_slice(&frame);
+
+				// window.pre_present_notify();
+				// pixels.render().unwrap();
+				// window.request_redraw();
+
+				let mut buffer = app_state.buffer.frame_mut();
+				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
+				app_state
+					.app
+					.render(&mut buffer, &app_state.reflection, &app_state.shading);
+
+				app_state.window.pre_present_notify();
+				app_state.buffer.render().unwrap();
+				app_state.window.request_redraw();
+			}
+
+			_event => {}
+		}
+	}
+}
