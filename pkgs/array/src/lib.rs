@@ -40,9 +40,9 @@ impl<T: Cell, const D: usize> Array<T, D> {
 	}
 }
 
-impl<T: Cell, const D: usize> Into<[T; D]> for Array<T, D> {
-	fn into(self) -> [T; D] {
-		self.0
+impl<T: Cell, const D: usize> From<Array<T, D>> for [T; D] {
+	fn from(cells: Array<T, D>) -> [T; D] {
+		cells.0
 	}
 }
 
@@ -89,7 +89,7 @@ impl<T: Cell, const D: usize> std::ops::Add<T> for Array<T, D> {
 }
 
 impl<T: Cell, const D: usize> std::ops::AddAssign<T> for Array<T, D> {
-	fn add_assign(&mut self, other: T) -> () {
+	fn add_assign(&mut self, other: T) {
 		for i in 0..D {
 			self[i] += other;
 		}
@@ -97,7 +97,7 @@ impl<T: Cell, const D: usize> std::ops::AddAssign<T> for Array<T, D> {
 }
 
 impl<T: Cell, const D: usize> std::ops::AddAssign for Array<T, D> {
-	fn add_assign(&mut self, other: Self) -> () {
+	fn add_assign(&mut self, other: Self) {
 		for i in 0..D {
 			self[i] += other[i];
 		}
@@ -107,21 +107,25 @@ impl<T: Cell, const D: usize> std::ops::AddAssign for Array<T, D> {
 impl<T: Cell, const D: usize> std::ops::Mul<T> for Array<T, D> {
 	type Output = Self;
 	fn mul(self, other: T) -> Self {
-		let mut a = Array::zero();
+		let mut array = Array::zero();
+
 		for i in 0..D {
-			a[i] = self[i] * other;
+			array[i] = self[i] * other;
 		}
-		return a;
+
+		array
 	}
 }
 
 impl<T: Cell, const D: usize> std::ops::Mul<T> for &Array<T, D> {
 	type Output = Array<T, D>;
 	fn mul(self, other: T) -> Array<T, D> {
-		let mut a = Array::zero();
+		let mut array = Array::zero();
+
 		for i in 0..D {
-			a[i] = self[i] * other;
+			array[i] = self[i] * other;
 		}
-		return a;
+
+		array
 	}
 }

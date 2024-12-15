@@ -20,80 +20,67 @@ impl<T: Cell, const D: usize> Vector<T, D> {
 	}
 
 	pub fn min(self, other: Self) -> Self {
-		let mut v = Vector::zero();
+		let mut vector = Vector::zero();
 
 		for i in 0..D {
-			v[i] = if self[i] < other[i] {
+			vector[i] = if self[i] < other[i] {
 				self[i]
 			} else {
 				other[i]
 			}
 		}
 
-		return v;
+		vector
 	}
 
 	pub fn max(self, other: Self) -> Self {
-		let mut v = Vector::zero();
+		let mut vector = Vector::zero();
 
 		for i in 0..D {
-			v[i] = if self[i] > other[i] {
+			vector[i] = if self[i] > other[i] {
 				self[i]
 			} else {
 				other[i]
 			}
 		}
 
-		return v;
+		vector
 	}
 
 	pub fn dot(self, other: Self) -> T {
-		let mut r = T::zero();
+		let mut product = T::zero();
 
 		for i in 0..D {
-			r += self[i] * other[i];
+			product += self[i] * other[i];
 		}
 
-		return r;
+		product
 	}
 }
 
-impl<T: Cell> Into<Vector<T, 2>> for Vector<T, 3> {
-	fn into(self) -> Vector<T, 2> {
-		vector![self[0], self[1]]
+impl<T: Cell> From<Vector<T, 3>> for Vector<T, 2> {
+	fn from(vector: Vector<T, 3>) -> Vector<T, 2> {
+		vector![vector[0], vector[1]]
 	}
 }
 
 impl<T: Cell> Vector<T, 3> {
 	pub fn v4(self) -> Vector<T, 4> {
-		let mut v = Vector::zero();
-
-		v[0] = self[0];
-		v[1] = self[1];
-		v[2] = self[2];
-		v[3] = T::one();
-
-		return v;
+		vector![self[0], self[1], self[2], T::one(),]
 	}
 
 	pub fn cross(self, other: Self) -> Self {
-		Self::new([[
+		vector![
 			self[1] * other[2] - self[2] * other[1],
 			self[2] * other[0] - self[0] * other[2],
 			self[0] * other[1] - self[1] * other[0],
-		]])
+		]
 	}
 }
 
 impl<T: Cell> Vector<T, 4> {
 	pub fn v3(self) -> Vector<T, 3> {
-		let mut v = Vector::zero();
-
-		v[0] = self[0] / self[3];
-		v[1] = self[1] / self[3];
-		v[2] = self[2] / self[3];
-
-		return v;
+		vector![self[0] / self[3], self[1] / self[3], self[2] / self[3],]
 	}
 }
 
@@ -139,7 +126,7 @@ impl<T: Cell, const D: usize> std::ops::Add<T> for Vector<T, D> {
 }
 
 impl<T: Cell, const D: usize> std::ops::AddAssign<T> for Vector<T, D> {
-	fn add_assign(&mut self, other: T) -> () {
+	fn add_assign(&mut self, other: T) {
 		for i in 0..D {
 			self[(0, i)] += other;
 		}
@@ -147,7 +134,7 @@ impl<T: Cell, const D: usize> std::ops::AddAssign<T> for Vector<T, D> {
 }
 
 impl<T: Cell, const D: usize> std::ops::AddAssign for Vector<T, D> {
-	fn add_assign(&mut self, other: Self) -> () {
+	fn add_assign(&mut self, other: Self) {
 		for i in 0..D {
 			self[(0, i)] += other[(0, i)];
 		}
@@ -166,13 +153,13 @@ impl<T: Cell, const D: usize> std::ops::Div<T> for Vector<T, D> {
 	type Output = Self;
 
 	fn div(self, other: T) -> Self {
-		let mut v = Vector::zero();
+		let mut vector = Vector::zero();
 
 		for n in 0..D {
-			v[n] = self[n] / other;
+			vector[n] = self[n] / other;
 		}
 
-		return v;
+		vector
 	}
 }
 
@@ -180,13 +167,13 @@ impl<T: Cell, const D: usize> std::ops::Mul<T> for Vector<T, D> {
 	type Output = Self;
 
 	fn mul(self, other: T) -> Self {
-		let mut v = Vector::zero();
+		let mut vector = Vector::zero();
 
 		for n in 0..D {
-			v[n] = self[n] * other;
+			vector[n] = self[n] * other;
 		}
 
-		return v;
+		vector
 	}
 }
 

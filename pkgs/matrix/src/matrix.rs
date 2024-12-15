@@ -26,15 +26,15 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 	}
 
 	pub fn transpose(&self) -> Matrix<T, C, R> {
-		let mut m = Matrix::zero();
+		let mut matrix = Matrix::zero();
 
 		for r in 0..R {
 			for c in 0..C {
-				m[(c, r)] = self[(r, c)];
+				matrix[(c, r)] = self[(r, c)];
 			}
 		}
 
-		return m;
+		matrix
 	}
 }
 
@@ -59,17 +59,17 @@ impl<T: Cell, const R: usize, const C: usize, const K: usize> Mul<Matrix<T, C, K
 	type Output = Matrix<T, R, K>;
 
 	fn mul(self, other: Matrix<T, C, K>) -> Self::Output {
-		let mut m = Matrix::zero();
+		let mut matrix = Matrix::zero();
 
 		for r in 0..R {
 			for c in 0..K {
 				for n in 0..C {
-					m[(r, c)] += self[(r, n)] * other[(n, c)];
+					matrix[(r, c)] += self[(r, n)] * other[(n, c)];
 				}
 			}
 		}
 
-		return m;
+		matrix
 	}
 }
 

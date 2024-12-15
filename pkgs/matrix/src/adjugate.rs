@@ -2,12 +2,14 @@ use crate::matrix::Cell;
 use crate::square::Square;
 
 impl<T: Cell> Square<T, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn adjugate(self) -> Result<Self, ()> {
 		Ok(self.cofactor_matrix()?.transpose())
 	}
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn adjugate(self) -> Result<Self, ()> {
 		Ok(self.cofactor_matrix()?.transpose())
 	}

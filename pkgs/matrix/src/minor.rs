@@ -2,24 +2,28 @@ use crate::matrix::Cell;
 use crate::square::Square;
 
 impl<T: Cell> Square<T, 2> {
+	#[allow(clippy::result_unit_err)]
 	pub fn minor(self, row: usize, col: usize) -> Result<T, ()> {
 		self.sub_matrix(row, col)?.determinant()
 	}
 }
 
 impl<T: Cell> Square<T, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn minor(self, row: usize, col: usize) -> Result<T, ()> {
 		self.sub_matrix(row, col)?.determinant()
 	}
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn minor(self, row: usize, col: usize) -> Result<T, ()> {
 		self.sub_matrix(row, col)?.determinant()
 	}
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn minor_matrix(self) -> Result<Self, ()> {
 		let r1 = [
 			self.minor(0, 0)?,

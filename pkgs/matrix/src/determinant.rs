@@ -2,12 +2,14 @@ use crate::matrix::Cell;
 use crate::square::Square;
 
 impl<T: Cell> Square<T, 1> {
+	#[allow(clippy::result_unit_err)]
 	pub fn determinant(self) -> Result<T, ()> {
 		Ok(self[(0, 0)])
 	}
 }
 
 impl<T: Cell> Square<T, 2> {
+	#[allow(clippy::result_unit_err)]
 	pub fn determinant(self) -> Result<T, ()> {
 		let a = self[(0, 0)] * self.minor(0, 0)?;
 		let b = self[(0, 1)] * self.minor(0, 1)?;
@@ -17,6 +19,7 @@ impl<T: Cell> Square<T, 2> {
 }
 
 impl<T: Cell> Square<T, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn determinant(self) -> Result<T, ()> {
 		let a = self[(0, 0)] * self.minor(0, 0)?;
 		let b = self[(0, 1)] * self.minor(0, 1)?;
@@ -27,6 +30,7 @@ impl<T: Cell> Square<T, 3> {
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn determinant(self) -> Result<T, ()> {
 		let a = self[(0, 0)] * self.minor(0, 0)?;
 		let b = self[(0, 1)] * self.minor(0, 1)?;

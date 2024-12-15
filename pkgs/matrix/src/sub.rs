@@ -30,6 +30,7 @@ use crate::matrix::Matrix;
 // }
 
 impl<T: Cell> Matrix<T, 2, 2> {
+	#[allow(clippy::result_unit_err)]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 1, 1>, ()> {
 		match (row, col) {
 			(0, 0) => Ok(Matrix::new([[self[(1, 1)]]])),
@@ -42,6 +43,7 @@ impl<T: Cell> Matrix<T, 2, 2> {
 }
 
 impl<T: Cell> Matrix<T, 3, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 2, 2>, ()> {
 		match (row, col) {
 			(0, 0) => Ok(Matrix::new([
@@ -95,6 +97,7 @@ impl<T: Cell> Matrix<T, 3, 3> {
 }
 
 impl<T: Cell> Matrix<T, 4, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 3, 3>, ()> {
 		match (row, col) {
 			(0, 0) => Ok(Matrix::new([

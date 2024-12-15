@@ -53,7 +53,7 @@ impl Renderer {
 		};
 
 		for object in self.scene.objects.iter_mut() {
-			object.orientation = object.orientation + object.update.orientation;
+			object.orientation += object.update.orientation;
 
 			let world_space = transform::rotate_v3(object.orientation);
 			let cam_space = world_space * self.scene.camera.view;

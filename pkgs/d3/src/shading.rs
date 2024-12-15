@@ -14,6 +14,7 @@ pub enum Model {
 }
 
 pub trait Shade<'a> {
+	#[allow(clippy::too_many_arguments)]
 	fn shade(
 		&'a self,
 		reflection: &'a reflection::Model,

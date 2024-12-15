@@ -2,6 +2,7 @@ use crate::matrix::Cell;
 use crate::square::Square;
 
 impl<T: Cell> Square<T, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn cofactor(self, row: usize, col: usize) -> Result<T, ()> {
 		let pow: isize = num::pow(-1, 1 + row + 1 + col);
 		Ok(T::from_isize(pow).ok_or(())? * self.minor(row, col)?)
@@ -9,6 +10,7 @@ impl<T: Cell> Square<T, 3> {
 }
 
 impl<T: Cell> Square<T, 3> {
+	#[allow(clippy::result_unit_err)]
 	pub fn cofactor_matrix(self) -> Result<Self, ()> {
 		let r1 = [
 			self.cofactor(0, 0)?,
@@ -33,6 +35,7 @@ impl<T: Cell> Square<T, 3> {
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn cofactor(self, row: usize, col: usize) -> Result<T, ()> {
 		let pow: isize = num::pow(-1, 1 + row + 1 + col);
 		Ok(T::from_isize(pow).ok_or(())? * self.minor(row, col)?)
@@ -40,6 +43,7 @@ impl<T: Cell> Square<T, 4> {
 }
 
 impl<T: Cell> Square<T, 4> {
+	#[allow(clippy::result_unit_err)]
 	pub fn cofactor_matrix(self) -> Result<Self, ()> {
 		let r1 = [
 			self.cofactor(0, 0)?,

@@ -156,12 +156,9 @@ impl ApplicationHandler for State {
 				// pixels.render().unwrap();
 				// window.request_redraw();
 
-				let mut buffer = app.buffer.frame_mut();
+				let buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
-
-				app.renderer
-					.render(&mut buffer, &app.reflection, &app.shading);
-
+				app.renderer.render(buffer, &app.reflection, &app.shading);
 				app.window.pre_present_notify();
 				app.buffer.render().unwrap();
 				app.window.request_redraw();
