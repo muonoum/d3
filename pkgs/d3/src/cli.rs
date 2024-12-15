@@ -14,9 +14,6 @@ pub struct Args {
 	#[arg(long, default_value = "objs/torus-smooth.obj")]
 	pub mesh: String,
 
-	#[arg(long, default_value_t = false)]
-	pub rotate: bool,
-
 	#[arg(long, default_value = "phong2")]
 	pub reflection: String,
 

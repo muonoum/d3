@@ -9,7 +9,6 @@ use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowId};
 
-mod app;
 mod array;
 mod camera;
 mod cli;
@@ -21,23 +20,25 @@ mod mesh;
 #[allow(dead_code)]
 mod object;
 mod reflection;
+mod renderer;
+mod scene;
 mod shading;
 #[allow(dead_code)]
 mod transform;
 
-use app::App;
+use renderer::Renderer;
 
-struct Running {
+struct App {
 	window: Arc<Window>,
 	buffer: Pixels,
-	app: App,
+	renderer: Renderer,
 	reflection: reflection::Model,
 	shading: shading::Model,
 }
 
 enum State {
 	Starting(cli::Args),
-	Running(Running),
+	Running(App),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -72,7 +73,7 @@ impl ApplicationHandler for State {
 				let height = size.height / args.scale;
 				let width = size.width / args.scale;
 
-				let app = App::new(&args.mesh, width, height, args.rotate).unwrap();
+				let renderer = Renderer::new(&args.mesh, width, height).unwrap();
 
 				let buffer = {
 					let surface = SurfaceTexture::new(size.width, size.height, &window);
@@ -97,10 +98,10 @@ impl ApplicationHandler for State {
 					size.width, size.height, width, height, reflection, shading
 				);
 
-				*self = State::Running(Running {
+				*self = State::Running(App {
 					window: window.clone(),
 					buffer,
-					app,
+					renderer,
 					reflection,
 					shading,
 				});
@@ -111,9 +112,9 @@ impl ApplicationHandler for State {
 	}
 
 	fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
-		let app_state = match self {
+		let app = match self {
 			State::Starting { .. } => panic!(),
-			State::Running(app_state) => app_state,
+			State::Running(app) => app,
 		};
 
 		match event {
@@ -124,28 +125,22 @@ impl ApplicationHandler for State {
 			WindowEvent::MouseInput { state, button, .. } => {
 				match (state, button) {
 					(ElementState::Pressed, MouseButton::Left) => {
-						app_state.reflection = match app_state.reflection {
+						app.reflection = match app.reflection {
 							reflection::Model::Phong1 => reflection::Model::Phong2,
 							reflection::Model::Phong2 => reflection::Model::Phong1,
 						};
 
-						println!(
-							"reflection={:?} shading={:?}",
-							app_state.reflection, app_state.shading,
-						);
+						println!("reflection={:?} shading={:?}", app.reflection, app.shading,);
 					}
 
 					(ElementState::Pressed, MouseButton::Right) => {
-						app_state.shading = match app_state.shading {
+						app.shading = match app.shading {
 							shading::Model::Flat => shading::Model::Gourad,
 							shading::Model::Gourad => shading::Model::Phong,
 							shading::Model::Phong => shading::Model::Flat,
 						};
 
-						println!(
-							"reflection={:?} shading={:?}",
-							app_state.reflection, app_state.shading,
-						);
+						println!("reflection={:?} shading={:?}", app.reflection, app.shading,);
 					}
 
 					_else => (),
@@ -161,15 +156,14 @@ impl ApplicationHandler for State {
 				// pixels.render().unwrap();
 				// window.request_redraw();
 
-				let mut buffer = app_state.buffer.frame_mut();
+				let mut buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
-				app_state
-					.app
-					.render(&mut buffer, &app_state.reflection, &app_state.shading);
+				app.renderer
+					.render(&mut buffer, &app.reflection, &app.shading);
 
-				app_state.window.pre_present_notify();
-				app_state.buffer.render().unwrap();
-				app_state.window.request_redraw();
+				app.window.pre_present_notify();
+				app.buffer.render().unwrap();
+				app.window.request_redraw();
 			}
 
 			_event => {}

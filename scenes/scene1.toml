@@ -1,0 +1,26 @@
+[[lights]]
+position = [0.0, 0.0, -5.0]
+diffuse = [0.7, 0.5, 0.2]
+specular = [0.0, 0.0, 0.0]
+
+[[lights]]
+position = [0.0, 0.0, -5.0]
+diffuse = [0.7, 0.7, 0.7]
+specular = [1.0, 1.0, 1.0]
+
+[[objects]]
+mesh = "objs/nefertiti.obj"
+scale = [1.0, 1.0, 1.0]
+orientation = [0.0, 0.0, 0.0]
+position = [0.0, 0.0, 0.0]
+
+  [objects.material]
+  ambient = 0.0
+  diffuse = 0.5
+  shininess = 50.0
+  specular = 0.3
+
+  [objects.update.orientation]
+  dx = 0.0
+  dy = 0.008
+  dz = 0.0

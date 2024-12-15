@@ -5,11 +5,16 @@ use crate::mesh::Mesh;
 use crate::vector;
 
 pub struct Object {
-	pub scale: Vector<f32, 3>,
-	pub orientation: Vector<f32, 3>,
-	pub position: Vector<f32, 3>,
 	pub material: Material,
 	pub mesh: Mesh,
+	pub orientation: Vector<f32, 3>,
+	pub position: Vector<f32, 3>,
+	pub scale: Vector<f32, 3>,
+	pub update: Update,
+}
+
+pub struct Update {
+	pub orientation: Vector<f32, 3>,
 }
 
 impl Object {
@@ -23,12 +28,17 @@ impl Object {
 			mesh.normals.len(),
 		);
 
+		let update = Update {
+			orientation: vector![0.0, 0.008, 0.0],
+		};
+
 		let object = Object {
+			material,
 			mesh: mesh::load(path)?,
-			scale: vector![1.0; 3],
 			orientation: vector![0.0; 3],
 			position: vector![0.0; 3],
-			material,
+			scale: vector![1.0; 3],
+			update,
 		};
 
 		Ok(object)

@@ -13,7 +13,7 @@ use crate::shading::Shade;
 use crate::transform;
 use crate::vector;
 
-pub struct App {
+pub struct Renderer {
 	width: u32,
 	height: u32,
 	camera: Camera,
@@ -21,22 +21,20 @@ pub struct App {
 	ambient_color: Array<f32, 3>,
 	objects: Vec<Object>,
 	viewport: Matrix<f32, 4, 4>,
-	angle: f32,
-	rotate: bool,
 }
 
 fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
 	(p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])
 }
 
-impl App {
-	pub fn new(mesh: &str, width: u32, height: u32, rotate: bool) -> Result<Self, anyhow::Error> {
+impl Renderer {
+	pub fn new(mesh: &str, width: u32, height: u32) -> Result<Self, anyhow::Error> {
 		let object = Object::new(
 			mesh,
 			Material {
 				ambient: 0.0,
 				diffuse: 0.5,
-				shininess: 8.0,
+				shininess: 50.0,
 				specular: 0.3,
 			},
 		)?;
@@ -60,16 +58,14 @@ impl App {
 		// let projection = transform::perspective3(width as f32 / height as f32, 1.0, 1.0, 100.0);
 		let viewport = camera.view * projection * transform::viewport(width as f32, height as f32);
 
-		Ok(App {
+		Ok(Renderer {
 			width,
 			height,
-			angle: 0.0,
 			objects: vec![object],
 			lights,
 			ambient_color: array![1.0, 1.0, 1.0],
 			camera,
 			viewport,
-			rotate,
 		})
 	}
 
@@ -84,22 +80,16 @@ impl App {
 		// let mut frame_buffer = vec![0; size * 4];
 		let mut z_buffer = vec![f32::NEG_INFINITY; size];
 
-		let orientation = if self.rotate {
-			self.angle += 0.005;
-			vector![self.angle, self.angle, self.angle * 1.5]
-		} else {
-			self.angle += 0.008;
-			vector![0.0, self.angle, 0.0]
-		};
-
 		let mut plot = |x, y, color: &[u8]| {
 			let i = (x * 4 + y * self.width * 4) as usize;
 			buffer[i..i + 4].copy_from_slice(color);
 			// frame_buffer[i..i + 4].copy_from_slice(color);
 		};
 
-		for object in self.objects.iter() {
-			let world_space = transform::rotate_v3(orientation);
+		for object in self.objects.iter_mut() {
+			object.orientation = object.orientation + object.update.orientation;
+
+			let world_space = transform::rotate_v3(object.orientation);
 			let cam_space = world_space * self.camera.view;
 			// let normal_cam_space = cam_space.sub_matrix(3, 3).unwrap();
 			let screen_space = world_space * self.viewport;
