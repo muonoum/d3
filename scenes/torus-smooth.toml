@@ -6,7 +6,7 @@ target = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, -5.0]
-diffuse = [0.7, 0.5, 0.2]
+diffuse = [0.2, 0.4, 0.7]
 specular = [0.0, 0.0, 0.0]
 
 [[lights]]
@@ -23,7 +23,7 @@ position = [0.0, 0.0, 0.0]
 [objects.material]
 ambient = 0.0
 diffuse = 0.5
-shininess = 50.0
+shininess = 10.0
 specular = 0.3
 
 [objects.update]
