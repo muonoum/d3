@@ -1,6 +1,7 @@
-use clap::Parser;
+use crate::reflection;
+use crate::shading;
 
-#[derive(Parser, Debug)]
+#[derive(clap::Parser, Debug)]
 pub struct Args {
 	#[arg(long, default_value_t = 500)]
 	pub width: u32,
@@ -15,8 +16,8 @@ pub struct Args {
 	pub scene: String,
 
 	#[arg(long, default_value = "phong2")]
-	pub reflection: String,
+	pub reflection: reflection::Model,
 
 	#[arg(long, default_value = "phong")]
-	pub shading: String,
+	pub shading: shading::Model,
 }

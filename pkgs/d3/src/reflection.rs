@@ -4,6 +4,12 @@ use crate::light::Light;
 use crate::material::Material;
 use crate::matrix::vector::Vector;
 
+#[derive(Copy, Clone, Debug, clap::ValueEnum)]
+pub enum Model {
+	Phong1,
+	Phong2,
+}
+
 pub trait Reflect {
 	fn reflect(
 		&self,
@@ -14,12 +20,6 @@ pub trait Reflect {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3>;
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Model {
-	Phong1,
-	Phong2,
 }
 
 impl Reflect for Model {

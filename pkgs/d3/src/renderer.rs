@@ -20,7 +20,7 @@ fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T
 }
 
 impl Renderer {
-	pub fn new(scene: Scene, width: u32, height: u32) -> Result<Self, anyhow::Error> {
+	pub fn new(scene: Scene, width: u32, height: u32) -> Self {
 		// let camera = Camera::new();
 		let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
 		// let projection = transform::perspective2(width as f32 / height as f32, 50.0, 1.0, 100.0);
@@ -28,12 +28,12 @@ impl Renderer {
 		let viewport =
 			scene.camera.view * projection * transform::viewport(width as f32, height as f32);
 
-		Ok(Renderer {
+		Renderer {
 			width,
 			height,
 			viewport,
 			scene,
-		})
+		}
 	}
 
 	// pub fn render(&mut self) -> Vec<u8> {

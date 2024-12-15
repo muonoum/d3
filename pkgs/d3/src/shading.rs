@@ -6,6 +6,13 @@ use crate::reflection;
 use crate::reflection::Reflect;
 use crate::vector;
 
+#[derive(Copy, Clone, Debug, clap::ValueEnum)]
+pub enum Model {
+	Flat,
+	Gourad,
+	Phong,
+}
+
 pub trait Shade<'a> {
 	fn shade(
 		&'a self,
@@ -17,13 +24,6 @@ pub trait Shade<'a> {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a>;
-}
-
-#[derive(Debug)]
-pub enum Model {
-	Flat,
-	Gourad,
-	Phong,
 }
 
 impl<'a> Shade<'a> for Model {

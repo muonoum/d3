@@ -29,11 +29,11 @@ mod transform;
 use renderer::Renderer;
 
 struct App {
-	window: Arc<Window>,
 	buffer: Pixels,
-	renderer: Renderer,
 	reflection: reflection::Model,
+	renderer: Renderer,
 	shading: shading::Model,
+	window: Arc<Window>,
 }
 
 enum State {
@@ -43,7 +43,6 @@ enum State {
 
 fn main() -> anyhow::Result<()> {
 	let args = cli::Args::parse();
-
 	let mut state = State::Starting(args);
 	let event_loop = EventLoop::new()?;
 	event_loop.set_control_flow(ControlFlow::Poll);
@@ -75,37 +74,24 @@ impl ApplicationHandler for State {
 				let height = size.height / args.scale;
 				let width = size.width / args.scale;
 
-				let renderer = Renderer::new(scene, width, height).unwrap();
+				let renderer = Renderer::new(scene, width, height);
 
 				let buffer = {
 					let surface = SurfaceTexture::new(size.width, size.height, &window);
 					Pixels::new(width, height, surface).unwrap()
 				};
 
-				let reflection = match args.reflection.as_str() {
-					"phong1" => reflection::Model::Phong1,
-					"phong2" => reflection::Model::Phong2,
-					_else => panic!(),
-				};
-
-				let shading = match args.shading.as_str() {
-					"flat" => shading::Model::Flat,
-					"gourad" => shading::Model::Gourad,
-					"phong" => shading::Model::Phong,
-					_else => panic!(),
-				};
-
 				println!(
 					"window={}x{} buffer={}x{} reflection={:?} shading={:?}",
-					size.width, size.height, width, height, reflection, shading
+					size.width, size.height, width, height, args.reflection, args.shading
 				);
 
 				*self = State::Running(App {
-					window: window.clone(),
 					buffer,
+					reflection: args.reflection,
 					renderer,
-					reflection,
-					shading,
+					shading: args.shading,
+					window: window.clone(),
 				});
 
 				window.request_redraw();
