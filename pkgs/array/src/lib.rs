@@ -104,6 +104,19 @@ impl<T: Cell, const D: usize> std::ops::AddAssign for Array<T, D> {
 	}
 }
 
+impl<T: Cell, const D: usize> std::ops::Mul<Array<T, D>> for Array<T, D> {
+	type Output = Self;
+	fn mul(self, other: Array<T, D>) -> Self {
+		let mut array = Array::zero();
+
+		for i in 0..D {
+			array[i] = self[i] * other[i];
+		}
+
+		array
+	}
+}
+
 impl<T: Cell, const D: usize> std::ops::Mul<T> for Array<T, D> {
 	type Output = Self;
 	fn mul(self, other: T) -> Self {

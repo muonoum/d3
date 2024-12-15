@@ -21,7 +21,7 @@ orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]
 
 [objects.material]
-ambient = 0.0
+ambient = [0.0, 0.0, 0.0]
 diffuse = 0.5
 shininess = 50.0
 specular = 0.3

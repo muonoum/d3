@@ -87,13 +87,18 @@ impl Scene {
 			let orientation = vector![ox, oy, oz];
 
 			let material = object["material"].as_table().unwrap();
-			let ambient = material["ambient"].as_float().unwrap() as f32;
+
+			let ambient = material["ambient"].as_array().unwrap();
+			let ar = ambient[0].as_float().unwrap() as f32;
+			let ag = ambient[1].as_float().unwrap() as f32;
+			let ab = ambient[2].as_float().unwrap() as f32;
+
 			let diffuse = material["diffuse"].as_float().unwrap() as f32;
 			let specular = material["specular"].as_float().unwrap() as f32;
 			let shininess = material["shininess"].as_float().unwrap() as f32;
 
 			let material = Material {
-				ambient,
+				ambient: array![ar, ag, ab],
 				diffuse,
 				specular,
 				shininess,
