@@ -1,4 +1,3 @@
-use crate::camera::Camera;
 use crate::matrix::matrix;
 use crate::matrix::matrix::Matrix;
 use crate::matrix::vector::Vector;
@@ -12,7 +11,6 @@ use crate::vector;
 pub struct Renderer {
 	width: u32,
 	height: u32,
-	camera: Camera,
 	viewport: Matrix<f32, 4, 4>,
 	scene: Scene,
 }
@@ -23,16 +21,16 @@ fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T
 
 impl Renderer {
 	pub fn new(scene: Scene, width: u32, height: u32) -> Result<Self, anyhow::Error> {
-		let camera = Camera::new();
+		// let camera = Camera::new();
 		let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
 		// let projection = transform::perspective2(width as f32 / height as f32, 50.0, 1.0, 100.0);
 		// let projection = transform::perspective3(width as f32 / height as f32, 1.0, 1.0, 100.0);
-		let viewport = camera.view * projection * transform::viewport(width as f32, height as f32);
+		let viewport =
+			scene.camera.view * projection * transform::viewport(width as f32, height as f32);
 
 		Ok(Renderer {
 			width,
 			height,
-			camera,
 			viewport,
 			scene,
 		})
@@ -59,7 +57,7 @@ impl Renderer {
 			object.orientation = object.orientation + object.update.orientation;
 
 			let world_space = transform::rotate_v3(object.orientation);
-			let cam_space = world_space * self.camera.view;
+			let cam_space = world_space * self.scene.camera.view;
 			// let normal_cam_space = cam_space.sub_matrix(3, 3).unwrap();
 			let screen_space = world_space * self.viewport;
 			let normal_world_space = world_space.sub_matrix(3, 3).unwrap();
@@ -116,7 +114,7 @@ impl Renderer {
 					let normal3 = world_normals[v3.normal];
 
 					// let camera = vector![0.0; 3];
-					let camera = self.camera.position;
+					let camera = self.scene.camera.position;
 
 					shading.shade(
 						reflection,

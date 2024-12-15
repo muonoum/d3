@@ -160,6 +160,7 @@ impl ApplicationHandler for State {
 
 				let mut buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
+
 				app.renderer
 					.render(&mut buffer, &app.reflection, &app.shading);
 
