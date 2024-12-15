@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Cell;
-use crate::matrix::square::Square;
+use crate::matrix::Cell;
+use crate::square::Square;
 
 impl<T: Cell> Square<T, 1> {
 	pub fn determinant(self) -> Result<T, ()> {
@@ -39,7 +39,7 @@ impl<T: Cell> Square<T, 4> {
 
 #[cfg(test)]
 mod tests {
-	use crate::matrix::matrix::Matrix;
+	use crate::matrix::Matrix;
 
 	#[test]
 	fn determinant_test() -> Result<(), ()> {

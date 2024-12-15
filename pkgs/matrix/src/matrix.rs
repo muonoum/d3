@@ -75,7 +75,7 @@ impl<T: Cell, const R: usize, const C: usize, const K: usize> Mul<Matrix<T, C, K
 
 #[cfg(test)]
 mod tests {
-	use crate::matrix::matrix::Matrix;
+	use crate::matrix::Matrix;
 
 	#[test]
 	fn zero_test() {

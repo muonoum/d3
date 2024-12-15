@@ -1,8 +1,8 @@
-use crate::array;
-use crate::array::Array;
 use crate::light::Light;
 use crate::material::Material;
-use crate::matrix::vector::Vector;
+use array::array;
+use array::Array;
+use matrix::vector::Vector;
 
 #[derive(Copy, Clone, Debug, clap::ValueEnum)]
 pub enum Model {

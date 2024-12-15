@@ -1,10 +1,10 @@
-use crate::array::Array;
 use crate::light::Light;
 use crate::material::Material;
-use crate::matrix::vector::Vector;
 use crate::reflection;
 use crate::reflection::Reflect;
-use crate::vector;
+use array::Array;
+use matrix::vector;
+use matrix::vector::Vector;
 
 #[derive(Copy, Clone, Debug, clap::ValueEnum)]
 pub enum Model {

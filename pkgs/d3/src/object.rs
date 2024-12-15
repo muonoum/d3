@@ -1,8 +1,8 @@
 use crate::material::Material;
-use crate::matrix::vector::Vector;
 use crate::mesh;
 use crate::mesh::Mesh;
-use crate::vector;
+use matrix::vector;
+use matrix::vector::Vector;
 
 #[derive(Debug)]
 pub struct Object {

@@ -1,5 +1,5 @@
-use crate::array::Array;
-use crate::matrix::vector::Vector;
+use array::Array;
+use matrix::vector::Vector;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Light {

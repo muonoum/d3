@@ -9,13 +9,10 @@ use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowId};
 
-mod array;
 mod camera;
 mod cli;
 mod light;
 mod material;
-#[allow(dead_code)]
-mod matrix;
 mod mesh;
 #[allow(dead_code)]
 mod object;

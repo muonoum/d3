@@ -127,6 +127,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1fd03a028ef38ba2276dce7e33fcd6369c158a1bca17946c4b1b701891c1ff7"
 
 [[package]]
+name = "array"
+version = "0.1.0"
+dependencies = [
+ "num",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -434,8 +441,10 @@ name = "d3"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "array",
  "clap",
  "clipline",
+ "matrix",
  "num",
  "pixels",
  "rayon",
@@ -794,6 +803,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "matrix"
+version = "0.1.0"
+dependencies = [
+ "num",
 ]
 
 [[package]]

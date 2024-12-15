@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Cell;
-use crate::matrix::square::Square;
+use crate::matrix::Cell;
+use crate::square::Square;
 
 impl<T: Cell> Square<T, 3> {
 	pub fn cofactor(self, row: usize, col: usize) -> Result<T, ()> {
@@ -75,7 +75,7 @@ impl<T: Cell> Square<T, 4> {
 
 #[cfg(test)]
 mod tests {
-	use crate::matrix::matrix::Matrix;
+	use crate::matrix::Matrix;
 
 	#[test]
 	fn cofactor_test() -> Result<(), ()> {

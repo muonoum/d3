@@ -1,12 +1,12 @@
-use crate::array;
-use crate::array::Array;
 use crate::camera::Camera;
 use crate::light::Light;
 use crate::material::Material;
 use crate::mesh;
 use crate::object;
 use crate::object::Object;
-use crate::vector;
+use array::array;
+use array::Array;
+use matrix::vector;
 
 #[derive(Debug)]
 pub struct Scene {

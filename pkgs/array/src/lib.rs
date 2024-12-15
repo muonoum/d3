@@ -11,10 +11,10 @@ pub struct Array<T: Cell, const D: usize>([T; D]);
 #[macro_export]
 macro_rules! array {
 	($repeat:expr; $n:expr) => {
-		$crate::array::Array::new([$repeat; $n])
+		$crate::Array::new([$repeat; $n])
 	};
 	($($value:expr),* $(,)?) => {
-    $crate::array::Array::new([$($value),*])
+    $crate::Array::new([$($value),*])
 	};
 }
 

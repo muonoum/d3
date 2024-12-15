@@ -1,12 +1,11 @@
-use crate::matrix::matrix;
-use crate::matrix::matrix::Matrix;
-use crate::matrix::vector::Vector;
 use crate::reflection;
 use crate::scene::Scene;
 use crate::shading;
 use crate::shading::Shade;
 use crate::transform;
-use crate::vector;
+use matrix::matrix::Matrix;
+use matrix::vector;
+use matrix::vector::Vector;
 
 pub struct Renderer {
 	width: u32,
@@ -15,7 +14,7 @@ pub struct Renderer {
 	scene: Scene,
 }
 
-fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
+fn edge<T: matrix::matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
 	(p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])
 }
 
@@ -113,7 +112,6 @@ impl Renderer {
 					let normal2 = world_normals[v2.normal];
 					let normal3 = world_normals[v3.normal];
 
-					// let camera = vector![0.0; 3];
 					let camera = self.scene.camera.position;
 
 					shading.shade(

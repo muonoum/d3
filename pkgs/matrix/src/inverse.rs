@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Cell;
-use crate::matrix::square::Square;
+use crate::matrix::Cell;
+use crate::square::Square;
 
 impl<T: Cell> Square<T, 3> {
 	pub fn inverse(self) -> Result<Self, ()> {
@@ -62,8 +62,8 @@ impl<T: Cell> Square<T, 4> {
 
 #[cfg(test)]
 mod tests {
-	use crate::matrix::matrix::Matrix;
-	use crate::matrix::vector::Vector;
+	use crate::matrix::Matrix;
+	use crate::vector::Vector;
 
 	#[test]
 	fn inverse_test() -> Result<(), ()> {

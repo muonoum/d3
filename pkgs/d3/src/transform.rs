@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Matrix;
-use crate::matrix::vector::Vector;
+use matrix::matrix::Matrix;
+use matrix::vector::Vector;
 
 pub fn scale_v3(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	scale(v[0], v[1], v[2])

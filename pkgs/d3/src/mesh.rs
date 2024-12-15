@@ -1,6 +1,6 @@
-use crate::matrix::vector::Vector;
 use anyhow::Context;
 use core::str::SplitAsciiWhitespace;
+use matrix::vector::Vector;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 

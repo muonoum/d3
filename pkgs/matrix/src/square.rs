@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Cell;
-use crate::matrix::matrix::Matrix;
+use crate::matrix::Cell;
+use crate::matrix::Matrix;
 
 pub type Square<T, const D: usize> = Matrix<T, D, D>;
 

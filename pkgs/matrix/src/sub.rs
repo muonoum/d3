@@ -1,5 +1,5 @@
-use crate::matrix::matrix::Cell;
-use crate::matrix::matrix::Matrix;
+use crate::matrix::Cell;
+use crate::matrix::Matrix;
 
 // impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 // 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, { R - 1 }, { C - 1 }>, ()> {
@@ -200,7 +200,7 @@ impl<T: Cell> Matrix<T, 4, 4> {
 
 #[cfg(test)]
 mod tests {
-	use crate::matrix::matrix::Matrix;
+	use crate::matrix::Matrix;
 
 	#[test]
 	fn sub2_test() {

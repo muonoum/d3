@@ -1,6 +1,6 @@
-use crate::matrix::matrix::Matrix;
-use crate::matrix::vector::Vector;
 use crate::transform;
+use matrix::matrix::Matrix;
+use matrix::vector::Vector;
 
 #[derive(Debug)]
 pub struct Camera {
