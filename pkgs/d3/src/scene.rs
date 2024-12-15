@@ -106,6 +106,7 @@ impl Scene {
 			let shininess = material["shininess"].as_float().unwrap() as f32;
 
 			let material = Material {
+				emissive: None, // TODO
 				ambient: array![ar, ag, ab],
 				diffuse: array![dr, dg, db],
 				specular: array![sr, sg, sb],

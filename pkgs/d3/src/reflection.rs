@@ -50,11 +50,11 @@ impl Phong1 {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3> {
-		lights
-			.iter()
-			.fold((ambient * material.ambient).clamp(0.0, 1.0), |sum, l| {
-				sum + Self::light(l, position, normal, material, camera)
-			}) * 255.0
+		let emissive = material.emissive.unwrap_or_else(|| array![0.0, 0.0, 0.0]);
+		let color = emissive + ambient * material.ambient;
+		lights.iter().fold(color.clamp(0.0, 1.0), |sum, l| {
+			sum + Self::light(l, position, normal, material, camera)
+		}) * 255.0
 	}
 
 	fn light(
