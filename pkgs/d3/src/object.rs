@@ -4,6 +4,7 @@ use crate::mesh;
 use crate::mesh::Mesh;
 use crate::vector;
 
+#[derive(Debug)]
 pub struct Object {
 	pub material: Material,
 	pub mesh: Mesh,
@@ -13,6 +14,7 @@ pub struct Object {
 	pub update: Update,
 }
 
+#[derive(Debug)]
 pub struct Update {
 	pub orientation: Vector<f32, 3>,
 }

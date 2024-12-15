@@ -57,6 +57,8 @@ impl ApplicationHandler for State {
 			State::Running { .. } => panic!(),
 
 			State::Starting(args) => {
+				let scene = scene::Scene::load(&args.scene);
+
 				let window = Arc::new(
 					event_loop
 						.create_window(
@@ -73,7 +75,7 @@ impl ApplicationHandler for State {
 				let height = size.height / args.scale;
 				let width = size.width / args.scale;
 
-				let renderer = Renderer::new(&args.mesh, width, height).unwrap();
+				let renderer = Renderer::new(scene, width, height).unwrap();
 
 				let buffer = {
 					let surface = SurfaceTexture::new(size.width, size.height, &window);

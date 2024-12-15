@@ -1,7 +1,7 @@
 use crate::array::Array;
 use crate::matrix::vector::Vector;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Light {
 	pub position: Vector<f32, 3>,
 	pub diffuse: Array<f32, 3>,

@@ -1,13 +1,9 @@
-use crate::array;
-use crate::array::Array;
 use crate::camera::Camera;
-use crate::light::Light;
-use crate::material::Material;
 use crate::matrix::matrix;
 use crate::matrix::matrix::Matrix;
 use crate::matrix::vector::Vector;
-use crate::object::Object;
 use crate::reflection;
+use crate::scene::Scene;
 use crate::shading;
 use crate::shading::Shade;
 use crate::transform;
@@ -17,10 +13,8 @@ pub struct Renderer {
 	width: u32,
 	height: u32,
 	camera: Camera,
-	lights: Vec<Light>,
-	ambient_color: Array<f32, 3>,
-	objects: Vec<Object>,
 	viewport: Matrix<f32, 4, 4>,
+	scene: Scene,
 }
 
 fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
@@ -28,30 +22,7 @@ fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T
 }
 
 impl Renderer {
-	pub fn new(mesh: &str, width: u32, height: u32) -> Result<Self, anyhow::Error> {
-		let object = Object::new(
-			mesh,
-			Material {
-				ambient: 0.0,
-				diffuse: 0.5,
-				shininess: 50.0,
-				specular: 0.3,
-			},
-		)?;
-
-		let lights = vec![
-			Light {
-				position: vector![0.0, 0.0, -5.0],
-				diffuse: array![0.7, 0.5, 0.2],
-				specular: array![0.0, 0.0, 0.0],
-			},
-			Light {
-				position: vector![0.0, 0.0, -5.0],
-				diffuse: array![0.7, 0.7, 0.7],
-				specular: array![1.0, 1.0, 1.0],
-			},
-		];
-
+	pub fn new(scene: Scene, width: u32, height: u32) -> Result<Self, anyhow::Error> {
 		let camera = Camera::new();
 		let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
 		// let projection = transform::perspective2(width as f32 / height as f32, 50.0, 1.0, 100.0);
@@ -61,11 +32,9 @@ impl Renderer {
 		Ok(Renderer {
 			width,
 			height,
-			objects: vec![object],
-			lights,
-			ambient_color: array![1.0, 1.0, 1.0],
 			camera,
 			viewport,
+			scene,
 		})
 	}
 
@@ -86,7 +55,7 @@ impl Renderer {
 			// frame_buffer[i..i + 4].copy_from_slice(color);
 		};
 
-		for object in self.objects.iter_mut() {
+		for object in self.scene.objects.iter_mut() {
 			object.orientation = object.orientation + object.update.orientation;
 
 			let world_space = transform::rotate_v3(object.orientation);
@@ -153,8 +122,8 @@ impl Renderer {
 						reflection,
 						(pos1, pos2, pos3),
 						(normal1, normal2, normal3),
-						&self.lights,
-						self.ambient_color,
+						&self.scene.lights,
+						self.scene.ambient_color,
 						object.material,
 						camera,
 					)

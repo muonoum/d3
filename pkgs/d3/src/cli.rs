@@ -11,8 +11,8 @@ pub struct Args {
 	#[arg(long, default_value_t = 2)]
 	pub scale: u32,
 
-	#[arg(long, default_value = "objs/torus-smooth.obj")]
-	pub mesh: String,
+	#[arg(long)]
+	pub scene: String,
 
 	#[arg(long, default_value = "phong2")]
 	pub reflection: String,

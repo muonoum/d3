@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Material {
 	pub diffuse: f32,
 	pub ambient: f32,
