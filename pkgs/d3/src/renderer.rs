@@ -55,7 +55,9 @@ impl Renderer {
 		for object in self.scene.objects.iter_mut() {
 			object.orientation += object.update.orientation;
 
-			let world_space = transform::rotate_v3(object.orientation);
+			let world_space = transform::scale_v3(object.scale)
+				* transform::rotate_v3(object.orientation)
+				* transform::translate_v3(object.position);
 			let cam_space = world_space * self.scene.camera.view;
 			// let normal_cam_space = cam_space.sub_matrix(3, 3).unwrap();
 			let screen_space = world_space * self.viewport;
