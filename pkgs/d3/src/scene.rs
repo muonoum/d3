@@ -88,28 +88,53 @@ impl Scene {
 
 			let material = object["material"].as_table().unwrap();
 
-			let ambient = material["ambient"].as_array().unwrap();
-			let ar = ambient[0].as_float().unwrap() as f32;
-			let ag = ambient[1].as_float().unwrap() as f32;
-			let ab = ambient[2].as_float().unwrap() as f32;
+			let emissive = material
+				.get("emissive")
+				.and_then(|v| v.as_array())
+				.map(|emissive| {
+					let r = emissive[0].as_float().unwrap() as f32;
+					let g = emissive[1].as_float().unwrap() as f32;
+					let b = emissive[2].as_float().unwrap() as f32;
+					array![r, g, b]
+				});
 
-			let diffuse = material["diffuse"].as_array().unwrap();
-			let dr = diffuse[0].as_float().unwrap() as f32;
-			let dg = diffuse[1].as_float().unwrap() as f32;
-			let db = diffuse[2].as_float().unwrap() as f32;
+			let ambient = material
+				.get("ambient")
+				.and_then(|v| v.as_array())
+				.map(|ambient| {
+					let r = ambient[0].as_float().unwrap() as f32;
+					let g = ambient[1].as_float().unwrap() as f32;
+					let b = ambient[2].as_float().unwrap() as f32;
+					array![r, g, b]
+				});
 
-			let specular = material["specular"].as_array().unwrap();
-			let sr = specular[0].as_float().unwrap() as f32;
-			let sg = specular[1].as_float().unwrap() as f32;
-			let sb = specular[2].as_float().unwrap() as f32;
+			let diffuse = material
+				.get("diffuse")
+				.and_then(|v| v.as_array())
+				.map(|diffuse| {
+					let r = diffuse[0].as_float().unwrap() as f32;
+					let g = diffuse[1].as_float().unwrap() as f32;
+					let b = diffuse[2].as_float().unwrap() as f32;
+					array![r, g, b]
+				});
+
+			let specular = material
+				.get("specular")
+				.and_then(|v| v.as_array())
+				.map(|specular| {
+					let r = specular[0].as_float().unwrap() as f32;
+					let g = specular[1].as_float().unwrap() as f32;
+					let b = specular[2].as_float().unwrap() as f32;
+					array![r, g, b]
+				});
 
 			let shininess = material["shininess"].as_float().unwrap() as f32;
 
 			let material = Material {
-				emissive: None, // TODO
-				ambient: array![ar, ag, ab],
-				diffuse: array![dr, dg, db],
-				specular: array![sr, sg, sb],
+				emissive: emissive.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
+				ambient: ambient.unwrap_or_else(|| array![0.1, 0.1, 0.1]),
+				diffuse: diffuse.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
+				specular: specular.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
 				shininess,
 			};
 
