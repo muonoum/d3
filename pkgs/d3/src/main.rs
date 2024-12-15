@@ -27,9 +27,9 @@ use renderer::Renderer;
 
 struct App {
 	buffer: Pixels,
-	reflection: reflection::Model,
 	renderer: Renderer,
 	shading: shading::Model,
+	reflection: reflection::Model,
 	window: Arc<Window>,
 }
 
@@ -71,6 +71,26 @@ impl ApplicationHandler for State {
 				let height = size.height / args.scale;
 				let width = size.width / args.scale;
 
+				println!(
+					"window={}x{} buffer={}x{}",
+					size.width, size.height, width, height,
+				);
+
+				println!(
+					"shading={:?} reflection={:?}",
+					args.shading, args.reflection
+				);
+
+				for (i, object) in scene.objects.iter().enumerate() {
+					println!(
+						"object={} faces={} positions={} normals={}",
+						i + 1,
+						object.mesh.faces.len(),
+						object.mesh.positions.len(),
+						object.mesh.normals.len()
+					);
+				}
+
 				let renderer = Renderer::new(scene, width, height);
 
 				let buffer = {
@@ -78,16 +98,11 @@ impl ApplicationHandler for State {
 					Pixels::new(width, height, surface).unwrap()
 				};
 
-				println!(
-					"window={}x{} buffer={}x{} reflection={:?} shading={:?}",
-					size.width, size.height, width, height, args.reflection, args.shading
-				);
-
 				*self = State::Running(App {
 					buffer,
-					reflection: args.reflection,
 					renderer,
 					shading: args.shading,
+					reflection: args.reflection,
 					window: window.clone(),
 				});
 

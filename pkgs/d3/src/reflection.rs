@@ -50,38 +50,6 @@ impl Phong1 {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3> {
-		let camera_dir = (camera - position).normalize();
-
-		let (diffuse, specular) = lights.iter().fold(
-			(array![0.0;3], array![0.0;3]),
-			|(diffuse, specular), light| {
-				let light_dir = (light.position - position).normalize();
-				let d = normal.dot(light_dir).clamp(0.0, 1.0);
-				let s = normal
-					.dot((camera_dir + light_dir).normalize())
-					.clamp(0.0, 1.0)
-					.powf(material.shininess);
-				(diffuse + light.diffuse * d, specular + light.specular * s)
-			},
-		);
-
-		let sum =
-			ambient * material.ambient + diffuse * material.diffuse + specular * material.specular;
-		sum.clamp(0.0, 1.0) * 255.0
-	}
-}
-
-pub struct Phong2 {}
-
-impl Phong2 {
-	fn reflect(
-		position: Vector<f32, 3>,
-		normal: Vector<f32, 3>,
-		lights: &[Light],
-		ambient: Array<f32, 3>,
-		material: Material,
-		camera: Vector<f32, 3>,
-	) -> Array<f32, 3> {
 		lights
 			.iter()
 			.fold((ambient * material.ambient).clamp(0.0, 1.0), |sum, l| {
@@ -113,5 +81,37 @@ impl Phong2 {
 		};
 
 		light.diffuse * material.diffuse * diffuse + light.specular * material.specular * specular
+	}
+}
+
+pub struct Phong2 {}
+
+impl Phong2 {
+	fn reflect(
+		position: Vector<f32, 3>,
+		normal: Vector<f32, 3>,
+		lights: &[Light],
+		ambient: Array<f32, 3>,
+		material: Material,
+		camera: Vector<f32, 3>,
+	) -> Array<f32, 3> {
+		let camera_dir = (camera - position).normalize();
+
+		let (diffuse, specular) = lights.iter().fold(
+			(array![0.0;3], array![0.0;3]),
+			|(diffuse, specular), light| {
+				let light_dir = (light.position - position).normalize();
+				let d = normal.dot(light_dir).clamp(0.0, 1.0);
+				let s = normal
+					.dot((camera_dir + light_dir).normalize())
+					.clamp(0.0, 1.0)
+					.powf(material.shininess);
+				(diffuse + light.diffuse * d, specular + light.specular * s)
+			},
+		);
+
+		let sum =
+			ambient * material.ambient + diffuse * material.diffuse + specular * material.specular;
+		sum.clamp(0.0, 1.0) * 255.0
 	}
 }
