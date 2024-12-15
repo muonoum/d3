@@ -8,13 +8,3 @@ mod sub;
 
 pub mod matrix;
 pub mod vector;
-
-#[macro_export]
-macro_rules! vector {
-	($repeat:expr; $n:expr) => {
-		$crate::matrix::vector::Vector::new([[$repeat; $n]])
-	};
-	($($value:expr),* $(,)?) => {
-    $crate::matrix::vector::Vector::new([[$($value),*]])
-	};
-}
