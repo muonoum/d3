@@ -121,7 +121,6 @@ impl Renderer {
 						(pos1, pos2, pos3),
 						(normal1, normal2, normal3),
 						&self.scene.lights,
-						self.scene.ambient_color,
 						object.material,
 						camera,
 					)

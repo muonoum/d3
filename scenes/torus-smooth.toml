@@ -1,16 +1,16 @@
-ambient_color = [1.0, 1.0, 1.0]
-
 [camera]
 position = [0.0, 0.0, -3.5]
 target = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, -5.0]
+ambient = [0.5, 0.5, 0.5]
 diffuse = [0.2, 0.4, 0.7]
 specular = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, -5.0]
+ambient = [0.5, 0.5, 0.5]
 diffuse = [0.7, 0.7, 0.7]
 specular = [1.0, 1.0, 1.0]
 

@@ -5,14 +5,12 @@ use crate::mesh;
 use crate::object;
 use crate::object::Object;
 use array::array;
-use array::Array;
 use matrix::vector;
 
 #[derive(Debug)]
 pub struct Scene {
 	pub objects: Vec<Object>,
 	pub lights: Vec<Light>,
-	pub ambient_color: Array<f32, 3>,
 	pub camera: Camera,
 }
 
@@ -20,9 +18,6 @@ impl Scene {
 	pub fn load(path: &str) -> Scene {
 		let scene_data = std::fs::read_to_string(path).unwrap();
 		let scene = scene_data.parse::<toml::Table>().unwrap();
-
-		let ambient_color =
-			get_triplet(&scene, "ambient_color", |r, g, b| array![r, g, b]).unwrap();
 
 		let camera = {
 			let camera = scene["camera"].as_table().unwrap();
@@ -39,10 +34,12 @@ impl Scene {
 				let table = light.as_table().unwrap();
 
 				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
+				let ambient = get_triplet(table, "ambient", |r, g, b| array![r, g, b]);
 				let diffuse = get_triplet(table, "diffuse", |r, g, b| array![r, g, b]).unwrap();
 				let specular = get_triplet(table, "specular", |r, g, b| array![r, g, b]).unwrap();
 
 				Light {
+					ambient: ambient.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
 					position,
 					diffuse,
 					specular,
@@ -84,7 +81,6 @@ impl Scene {
 			.collect();
 
 		Scene {
-			ambient_color,
 			camera,
 			lights,
 			objects,
