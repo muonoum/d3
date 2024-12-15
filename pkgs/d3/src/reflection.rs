@@ -46,8 +46,9 @@ impl Phong {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3> {
+		let camera_dir = (camera - position).normalize();
 		lights.iter().fold(material.emissive, |sum, light| {
-			sum + Self::light(light, position, normal, material, camera)
+			sum + Self::light(light, position, normal, material, camera_dir)
 		}) * 255.0
 	}
 
@@ -56,16 +57,14 @@ impl Phong {
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
 		material: Material,
-		camera: Vector<f32, 3>,
+		camera_dir: Vector<f32, 3>,
 	) -> Array<f32, 3> {
 		let light_dir = (light.position - position).normalize();
-		let camera_dir = (camera - position).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 
 		let specular = if diffuse == 0.0 {
 			0.0
 		} else {
-			// ((normal * light_dir.dot(normal) * 2.0) - light_dir)
 			light_dir
 				.reflect(normal)
 				.normalize()
@@ -90,8 +89,9 @@ impl BlinnPhong {
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3> {
+		let camera_dir = (camera - position).normalize();
 		lights.iter().fold(material.emissive, |sum, light| {
-			sum + Self::light(light, position, normal, material, camera)
+			sum + Self::light(light, position, normal, material, camera_dir)
 		}) * 255.0
 	}
 
@@ -100,10 +100,9 @@ impl BlinnPhong {
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
 		material: Material,
-		camera: Vector<f32, 3>,
+		camera_dir: Vector<f32, 3>,
 	) -> Array<f32, 3> {
 		let light_dir = (light.position - position).normalize();
-		let camera_dir = (camera - position).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 
 		let specular = if diffuse == 0.0 {

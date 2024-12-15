@@ -177,6 +177,20 @@ impl<T: Cell, const D: usize> std::ops::Mul<T> for Vector<T, D> {
 	}
 }
 
+impl<const D: usize> std::ops::Neg for Vector<f32, D> {
+	type Output = Self;
+
+	fn neg(self) -> Self::Output {
+		let mut vector = Vector::zero();
+
+		for n in 0..D {
+			vector[n] = -self[n];
+		}
+
+		vector
+	}
+}
+
 // impl<T: Cell, const D: usize> std::ops::Mul<Vector<T, D>> for T {
 // 	type Output = Vector<T, D>;
 
