@@ -93,14 +93,22 @@ impl Scene {
 			let ag = ambient[1].as_float().unwrap() as f32;
 			let ab = ambient[2].as_float().unwrap() as f32;
 
-			let diffuse = material["diffuse"].as_float().unwrap() as f32;
-			let specular = material["specular"].as_float().unwrap() as f32;
+			let diffuse = material["diffuse"].as_array().unwrap();
+			let dr = diffuse[0].as_float().unwrap() as f32;
+			let dg = diffuse[1].as_float().unwrap() as f32;
+			let db = diffuse[2].as_float().unwrap() as f32;
+
+			let specular = material["specular"].as_array().unwrap();
+			let sr = specular[0].as_float().unwrap() as f32;
+			let sg = specular[1].as_float().unwrap() as f32;
+			let sb = specular[2].as_float().unwrap() as f32;
+
 			let shininess = material["shininess"].as_float().unwrap() as f32;
 
 			let material = Material {
 				ambient: array![ar, ag, ab],
-				diffuse,
-				specular,
+				diffuse: array![dr, dg, db],
+				specular: array![sr, sg, sb],
 				shininess,
 			};
 
