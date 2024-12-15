@@ -117,8 +117,23 @@ impl<T: Cell, const D: usize> std::ops::Mul<Array<T, D>> for Array<T, D> {
 	}
 }
 
+impl<T: Cell, const D: usize> std::ops::Div<T> for Array<T, D> {
+	type Output = Self;
+
+	fn div(self, other: T) -> Self {
+		let mut array = Array::zero();
+
+		for i in 0..D {
+			array[i] = self[i] / other;
+		}
+
+		array
+	}
+}
+
 impl<T: Cell, const D: usize> std::ops::Mul<T> for Array<T, D> {
 	type Output = Self;
+
 	fn mul(self, other: T) -> Self {
 		let mut array = Array::zero();
 
@@ -132,6 +147,7 @@ impl<T: Cell, const D: usize> std::ops::Mul<T> for Array<T, D> {
 
 impl<T: Cell, const D: usize> std::ops::Mul<T> for &Array<T, D> {
 	type Output = Array<T, D>;
+
 	fn mul(self, other: T) -> Array<T, D> {
 		let mut array = Array::zero();
 

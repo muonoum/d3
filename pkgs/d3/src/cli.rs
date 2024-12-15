@@ -15,7 +15,7 @@ pub struct Args {
 	#[arg(long)]
 	pub scene: String,
 
-	#[arg(long, default_value = "phong1")]
+	#[arg(long, default_value = "phong")]
 	pub reflection: reflection::Model,
 
 	#[arg(long, default_value = "phong")]

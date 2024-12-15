@@ -126,8 +126,8 @@ impl ApplicationHandler for State {
 				match (state, button) {
 					(ElementState::Pressed, MouseButton::Left) => {
 						app.reflection = match app.reflection {
-							reflection::Model::Phong1 => reflection::Model::Phong2,
-							reflection::Model::Phong2 => reflection::Model::Phong1,
+							reflection::Model::Phong => reflection::Model::BlinnPhong,
+							reflection::Model::BlinnPhong => reflection::Model::Phong,
 						};
 
 						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
