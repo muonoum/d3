@@ -59,7 +59,6 @@ impl Renderer {
 				* transform::rotate_v3(object.orientation)
 				* transform::translate_v3(object.position);
 			let cam_space = world_space * self.scene.camera.view;
-			// let normal_cam_space = cam_space.sub_matrix(3, 3).unwrap();
 			let screen_space = world_space * self.viewport;
 			let normal_world_space = world_space.sub_matrix(3, 3).unwrap();
 
@@ -78,22 +77,10 @@ impl Renderer {
 				screen.push((v.v4() * screen_space).v3());
 			}
 
-			let mut world_normals: Vec<Vector<f32, 3>> = vec![];
+			let mut normals: Vec<Vector<f32, 3>> = vec![];
 			for v in object.mesh.normals.iter() {
-				world_normals.push(*v * normal_world_space);
+				normals.push(*v * normal_world_space);
 			}
-
-			// let mut cam_normals: Vec<Vector<f32, 3>> = vec![];
-			// for v in object.mesh.normals.iter() {
-			// 	cam_normals.push(*v * normal_cam_space);
-			// }
-
-			// let mut cam_lights: Vec<Light> = vec![];
-			// for l in self.lights.iter() {
-			// 	let mut light = l.clone();
-			// 	light.position = (l.position.v4() * cam_space).v3();
-			// 	cam_lights.push(light);
-			// }
 
 			for [v1, v2, v3] in object.mesh.faces.iter() {
 				let screen1 = screen[v1.position];
@@ -106,23 +93,13 @@ impl Renderer {
 				}
 
 				let pixel_color = {
-					let pos1 = world[v1.position];
-					let pos2 = world[v2.position];
-					let pos3 = world[v3.position];
-
-					let normal1 = world_normals[v1.normal];
-					let normal2 = world_normals[v2.normal];
-					let normal3 = world_normals[v3.normal];
-
-					let camera = self.scene.camera.position;
-
 					shading.shade(
 						reflection,
-						(pos1, pos2, pos3),
-						(normal1, normal2, normal3),
+						(world[v1.position], world[v2.position], world[v3.position]),
+						(normals[v1.normal], normals[v2.normal], normals[v3.normal]),
+						self.scene.camera.position,
 						&self.scene.lights,
 						object.material,
-						camera,
 					)
 				};
 

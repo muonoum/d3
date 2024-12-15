@@ -19,9 +19,9 @@ pub trait Shade<'a> {
 		reflection: &'a reflection::Model,
 		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		normals: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
+		camera: Vector<f32, 3>,
 		lights: &'a [Light],
 		material: Material,
-		camera: Vector<f32, 3>,
 	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a>;
 }
 
@@ -31,9 +31,9 @@ impl<'a> Shade<'a> for Model {
 		reflection: &'a reflection::Model,
 		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		normals: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
+		camera: Vector<f32, 3>,
 		lights: &'a [Light],
 		material: Material,
-		camera: Vector<f32, 3>,
 	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a> {
 		match self {
 			Model::Flat => {
