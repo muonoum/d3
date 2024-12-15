@@ -21,142 +21,67 @@ impl Scene {
 		let scene_data = std::fs::read_to_string(path).unwrap();
 		let scene = scene_data.parse::<toml::Table>().unwrap();
 
-		let ambient_color = scene["ambient_color"].as_array().unwrap();
-		let ar = ambient_color[0].as_float().unwrap() as f32;
-		let ag = ambient_color[1].as_float().unwrap() as f32;
-		let ab = ambient_color[2].as_float().unwrap() as f32;
-		let ambient_color = array![ar, ag, ab];
+		let ambient_color =
+			get_triplet(&scene, "ambient_color", |r, g, b| array![r, g, b]).unwrap();
 
-		let camera = scene["camera"].as_table().unwrap();
-		let camera_position = camera["position"].as_array().unwrap();
-		let px = camera_position[0].as_float().unwrap() as f32;
-		let py = camera_position[1].as_float().unwrap() as f32;
-		let pz = camera_position[2].as_float().unwrap() as f32;
-		let camera_target = camera["target"].as_array().unwrap();
-		let tx = camera_target[0].as_float().unwrap() as f32;
-		let ty = camera_target[1].as_float().unwrap() as f32;
-		let tz = camera_target[2].as_float().unwrap() as f32;
-		let camera = Camera::new(vector![px, py, pz], vector![tx, ty, tz]);
+		let camera = {
+			let camera = scene["camera"].as_table().unwrap();
+			let position = get_triplet(camera, "position", |x, y, z| vector![x, y, z]).unwrap();
+			let target = get_triplet(camera, "target", |x, y, z| vector![x, y, z]).unwrap();
+			Camera::new(position, target)
+		};
 
-		let mut lights = vec![];
+		let lights = scene["lights"]
+			.as_array()
+			.unwrap()
+			.iter()
+			.map(|light| {
+				let table = light.as_table().unwrap();
 
-		for light in scene["lights"].as_array().unwrap() {
-			let position = light["position"].as_array().unwrap();
-			let x = position[0].as_float().unwrap() as f32;
-			let y = position[1].as_float().unwrap() as f32;
-			let z = position[2].as_float().unwrap() as f32;
+				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
+				let diffuse = get_triplet(table, "diffuse", |r, g, b| array![r, g, b]).unwrap();
+				let specular = get_triplet(table, "specular", |r, g, b| array![r, g, b]).unwrap();
 
-			let diffuse = light["diffuse"].as_array().unwrap();
-			let dr = diffuse[0].as_float().unwrap() as f32;
-			let dg = diffuse[1].as_float().unwrap() as f32;
-			let db = diffuse[2].as_float().unwrap() as f32;
+				Light {
+					position,
+					diffuse,
+					specular,
+				}
+			})
+			.collect();
 
-			let specular = light["specular"].as_array().unwrap();
-			let sr = specular[0].as_float().unwrap() as f32;
-			let sg = specular[1].as_float().unwrap() as f32;
-			let sb = specular[1].as_float().unwrap() as f32;
+		let objects = scene["objects"]
+			.as_array()
+			.unwrap()
+			.iter()
+			.map(|object| {
+				let table = object.as_table().unwrap();
+				let mesh = mesh::load(table["mesh"].as_str().unwrap()).unwrap();
 
-			lights.push(Light {
-				position: vector![x, y, z],
-				diffuse: array![dr, dg, db],
-				specular: array![sr, sg, sb],
-			});
-		}
+				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
+				let scale = get_triplet(table, "scale", |x, y, z| vector![x, y, z]).unwrap();
+				let orientation =
+					get_triplet(table, "orientation", |x, y, z| vector![x, y, z]).unwrap();
 
-		let mut objects = vec![];
+				let material = object["material"].as_table().map(get_material).unwrap();
 
-		for object in scene["objects"].as_array().unwrap() {
-			let mesh = mesh::load(object["mesh"].as_str().unwrap()).unwrap();
+				let update = {
+					let table = object["update"].as_table().unwrap();
+					let orientation =
+						get_triplet(table, "orientation", |x, y, z| vector![x, y, z]).unwrap();
+					object::Update { orientation }
+				};
 
-			let position = object["position"].as_array().unwrap();
-			let px = position[0].as_float().unwrap() as f32;
-			let py = position[1].as_float().unwrap() as f32;
-			let pz = position[2].as_float().unwrap() as f32;
-			let position = vector![px, py, pz];
-
-			let scale = object["scale"].as_array().unwrap();
-			let sx = scale[0].as_float().unwrap() as f32;
-			let sy = scale[1].as_float().unwrap() as f32;
-			let sz = scale[2].as_float().unwrap() as f32;
-			let scale = vector![sx, sy, sz];
-
-			let orientation = object["orientation"].as_array().unwrap();
-			let ox = orientation[0].as_float().unwrap() as f32;
-			let oy = orientation[1].as_float().unwrap() as f32;
-			let oz = orientation[2].as_float().unwrap() as f32;
-			let orientation = vector![ox, oy, oz];
-
-			let material = object["material"].as_table().unwrap();
-
-			let emissive = material
-				.get("emissive")
-				.and_then(|v| v.as_array())
-				.map(|emissive| {
-					let r = emissive[0].as_float().unwrap() as f32;
-					let g = emissive[1].as_float().unwrap() as f32;
-					let b = emissive[2].as_float().unwrap() as f32;
-					array![r, g, b]
-				});
-
-			let ambient = material
-				.get("ambient")
-				.and_then(|v| v.as_array())
-				.map(|ambient| {
-					let r = ambient[0].as_float().unwrap() as f32;
-					let g = ambient[1].as_float().unwrap() as f32;
-					let b = ambient[2].as_float().unwrap() as f32;
-					array![r, g, b]
-				});
-
-			let diffuse = material
-				.get("diffuse")
-				.and_then(|v| v.as_array())
-				.map(|diffuse| {
-					let r = diffuse[0].as_float().unwrap() as f32;
-					let g = diffuse[1].as_float().unwrap() as f32;
-					let b = diffuse[2].as_float().unwrap() as f32;
-					array![r, g, b]
-				});
-
-			let specular = material
-				.get("specular")
-				.and_then(|v| v.as_array())
-				.map(|specular| {
-					let r = specular[0].as_float().unwrap() as f32;
-					let g = specular[1].as_float().unwrap() as f32;
-					let b = specular[2].as_float().unwrap() as f32;
-					array![r, g, b]
-				});
-
-			let shininess = material["shininess"].as_float().unwrap() as f32;
-
-			let material = Material {
-				emissive: emissive.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-				ambient: ambient.unwrap_or_else(|| array![0.1, 0.1, 0.1]),
-				diffuse: diffuse.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-				specular: specular.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-				shininess,
-			};
-
-			let update = object["update"].as_table().unwrap();
-			let update_orientation = update["orientation"].as_array().unwrap();
-			let uox = update_orientation[0].as_float().unwrap() as f32;
-			let uoy = update_orientation[1].as_float().unwrap() as f32;
-			let uoz = update_orientation[2].as_float().unwrap() as f32;
-
-			let update = object::Update {
-				orientation: vector![uox, uoy, uoz],
-			};
-
-			objects.push(Object {
-				material,
-				mesh,
-				orientation,
-				position,
-				scale,
-				update,
-			});
-		}
+				Object {
+					material,
+					mesh,
+					orientation,
+					position,
+					scale,
+					update,
+				}
+			})
+			.collect();
 
 		Scene {
 			ambient_color,
@@ -164,5 +89,31 @@ impl Scene {
 			lights,
 			objects,
 		}
+	}
+}
+
+fn get_triplet<T>(table: &toml::Table, key: &str, f: impl Fn(f32, f32, f32) -> T) -> Option<T> {
+	table.get(key).and_then(|v| v.as_array()).map(|vs| {
+		let a = vs[0].as_float().unwrap() as f32;
+		let b = vs[1].as_float().unwrap() as f32;
+		let c = vs[2].as_float().unwrap() as f32;
+		f(a, b, c)
+	})
+}
+
+fn get_material(table: &toml::Table) -> Material {
+	let emissive = get_triplet(table, "emissive", |r, g, b| array![r, g, b]);
+	let ambient = get_triplet(table, "ambient", |r, g, b| array![r, g, b]);
+	let diffuse = get_triplet(table, "diffuse", |r, g, b| array![r, g, b]);
+	let specular = get_triplet(table, "specular", |r, g, b| array![r, g, b]);
+
+	let shininess = table["shininess"].as_float().unwrap() as f32;
+
+	Material {
+		emissive: emissive.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
+		ambient: ambient.unwrap_or_else(|| array![0.1, 0.1, 0.1]),
+		diffuse: diffuse.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
+		specular: specular.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
+		shininess,
 	}
 }
