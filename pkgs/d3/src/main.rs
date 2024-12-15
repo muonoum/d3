@@ -130,7 +130,7 @@ impl ApplicationHandler for State {
 							reflection::Model::Phong2 => reflection::Model::Phong1,
 						};
 
-						println!("reflection={:?} shading={:?}", app.reflection, app.shading,);
+						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
 					}
 
 					(ElementState::Pressed, MouseButton::Right) => {
@@ -140,7 +140,7 @@ impl ApplicationHandler for State {
 							shading::Model::Phong => shading::Model::Flat,
 						};
 
-						println!("reflection={:?} shading={:?}", app.reflection, app.shading,);
+						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
 					}
 
 					_else => (),
