@@ -1,5 +1,7 @@
+use crate::camera::Camera;
+use crate::light::Light;
+use crate::object::Object;
 use crate::reflection;
-use crate::scene::Scene;
 use crate::shading;
 use crate::shading::Shade;
 use crate::transform;
@@ -12,7 +14,6 @@ pub struct Renderer {
 	height: u32,
 	projection: Matrix<f32, 4, 4>,
 	viewport: Matrix<f32, 4, 4>,
-	scene: Scene,
 }
 
 fn edge<T: matrix::matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
@@ -27,7 +28,7 @@ fn clipped(v: Vector<f32, 4>) -> bool {
 }
 
 impl Renderer {
-	pub fn new(scene: Scene, width: u32, height: u32) -> Self {
+	pub fn new(width: u32, height: u32) -> Self {
 		// let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
 		// let projection = transform::perspective3(width as f32 / height as f32, 1.0, 1.0, 100.0);
 		let projection = transform::perspective2(width as f32 / height as f32, 55.0, 1.0, 5.0);
@@ -38,7 +39,6 @@ impl Renderer {
 			height,
 			projection,
 			viewport,
-			scene,
 		}
 	}
 
@@ -48,7 +48,9 @@ impl Renderer {
 		buffer: &mut [u8],
 		reflection: &reflection::Model,
 		shading: &shading::Model,
-		movement: Vector<f32, 3>,
+		lights: &[Light],
+		camera: &Camera,
+		objects: &[Object],
 	) {
 		let size = (self.width * self.height) as usize;
 		// let mut frame_buffer = vec![0; size * 4];
@@ -60,17 +62,11 @@ impl Renderer {
 			// frame_buffer[i..i + 4].copy_from_slice(color);
 		};
 
-		if movement != vector![0.0; 3] {
-			self.scene.camera.move_camera(movement);
-		}
-
-		for object in self.scene.objects.iter_mut() {
-			object.orientation += object.update.orientation;
-
+		for object in objects.iter() {
 			let world_space = transform::scale_v3(object.scale)
 				* transform::rotate_v3(object.orientation)
 				* transform::translate_v3(object.position);
-			let camera_space = world_space * self.scene.camera.view;
+			let camera_space = world_space * camera.view;
 			let clip_space = camera_space * self.projection;
 			let screen_space = clip_space * self.viewport;
 			let normal_world_space = world_space.sub_matrix(3, 3).unwrap();
@@ -119,8 +115,8 @@ impl Renderer {
 						reflection,
 						(world[v1.position], world[v2.position], world[v3.position]),
 						(normals[v1.normal], normals[v2.normal], normals[v3.normal]),
-						self.scene.camera.position,
-						&self.scene.lights,
+						camera.position,
+						lights,
 						object.material,
 					)
 				};

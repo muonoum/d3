@@ -27,6 +27,7 @@ mod transform;
 use matrix::vector;
 use matrix::vector::Vector;
 use renderer::Renderer;
+use scene::Scene;
 
 struct App {
 	buffer: Pixels,
@@ -35,6 +36,7 @@ struct App {
 	reflection: reflection::Model,
 	window: Arc<Window>,
 	movement: Vector<f32, 3>,
+	scene: Scene,
 }
 
 enum State {
@@ -95,7 +97,7 @@ impl ApplicationHandler for State {
 					);
 				}
 
-				let renderer = Renderer::new(scene, width, height);
+				let renderer = Renderer::new(width, height);
 
 				let buffer = {
 					let surface = SurfaceTexture::new(size.width, size.height, &window);
@@ -109,6 +111,7 @@ impl ApplicationHandler for State {
 					reflection: args.reflection,
 					window: window.clone(),
 					movement: vector![0.0; 3],
+					scene,
 				});
 
 				window.request_redraw();
@@ -214,10 +217,24 @@ impl ApplicationHandler for State {
 				// pixels.render().unwrap();
 				// window.request_redraw();
 
+				for object in app.scene.objects.iter_mut() {
+					object.orientation += object.update.orientation;
+				}
+
+				if app.movement != vector![0.0; 3] {
+					app.scene.camera.move_camera(app.movement);
+				}
+
 				let buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
-				app.renderer
-					.render(buffer, &app.reflection, &app.shading, app.movement);
+				app.renderer.render(
+					buffer,
+					&app.reflection,
+					&app.shading,
+					&app.scene.lights,
+					&app.scene.camera,
+					&app.scene.objects,
+				);
 				app.window.pre_present_notify();
 				app.buffer.render().unwrap();
 				app.window.request_redraw();
