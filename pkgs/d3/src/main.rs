@@ -7,6 +7,7 @@ use winit::event::ElementState;
 use winit::event::MouseButton;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
 mod camera;
@@ -23,6 +24,8 @@ mod shading;
 #[allow(dead_code)]
 mod transform;
 
+use matrix::vector;
+use matrix::vector::Vector;
 use renderer::Renderer;
 
 struct App {
@@ -31,6 +34,7 @@ struct App {
 	shading: shading::Model,
 	reflection: reflection::Model,
 	window: Arc<Window>,
+	movement: Vector<f32, 3>,
 }
 
 enum State {
@@ -104,6 +108,7 @@ impl ApplicationHandler for State {
 					shading: args.shading,
 					reflection: args.reflection,
 					window: window.clone(),
+					movement: vector![0.0; 3],
 				});
 
 				window.request_redraw();
@@ -119,6 +124,58 @@ impl ApplicationHandler for State {
 
 		match event {
 			WindowEvent::CloseRequested => event_loop.exit(),
+
+			WindowEvent::KeyboardInput { event, .. } => match (event.state, event.physical_key) {
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyW)) => {
+					app.movement[2] = 0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyW)) => {
+					app.movement[2] = 0.0;
+				}
+
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyA)) => {
+					app.movement[0] = 0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyA)) => {
+					app.movement[0] = 0.0;
+				}
+
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyS)) => {
+					app.movement[2] = -0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyS)) => {
+					app.movement[2] = -0.0;
+				}
+
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyD)) => {
+					app.movement[0] = -0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyD)) => {
+					app.movement[0] = 0.0;
+				}
+
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::ArrowUp)) => {
+					app.movement[1] = 0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::ArrowUp)) => {
+					app.movement[1] = 0.0;
+				}
+
+				(ElementState::Pressed, PhysicalKey::Code(KeyCode::ArrowDown)) => {
+					app.movement[1] = -0.05;
+				}
+
+				(ElementState::Released, PhysicalKey::Code(KeyCode::ArrowDown)) => {
+					app.movement[1] = 0.0;
+				}
+
+				_else => {}
+			},
 
 			WindowEvent::CursorMoved { .. } => {}
 
@@ -159,7 +216,8 @@ impl ApplicationHandler for State {
 
 				let buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
-				app.renderer.render(buffer, &app.reflection, &app.shading);
+				app.renderer
+					.render(buffer, &app.reflection, &app.shading, app.movement);
 				app.window.pre_present_notify();
 				app.buffer.render().unwrap();
 				app.window.request_redraw();

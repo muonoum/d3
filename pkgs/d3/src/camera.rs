@@ -6,6 +6,7 @@ use matrix::vector::Vector;
 pub struct Camera {
 	pub view: Matrix<f32, 4, 4>,
 	pub position: Vector<f32, 3>,
+	pub target: Vector<f32, 3>,
 }
 
 impl Camera {
@@ -13,6 +14,19 @@ impl Camera {
 		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
 		let world = transform::look(position, target, up_vector);
 		let view = world.inverse().unwrap();
-		Camera { view, position }
+
+		Camera {
+			view,
+			position,
+			target,
+		}
+	}
+
+	pub fn move_camera(&mut self, direction: Vector<f32, 3>) {
+		self.position += direction;
+		self.target += direction;
+		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
+		let world = transform::look(self.position, self.target, up_vector);
+		self.view = world.inverse().unwrap();
 	}
 }
