@@ -56,7 +56,7 @@ fn phong_specular(
 }
 
 #[allow(dead_code)]
-fn blinn_phong_specular(
+fn blinn_specular(
 	light_dir: Vector<f32, 3>,
 	camera_dir: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
@@ -200,7 +200,7 @@ impl BlinnPhong {
 		let light_dir = (light.position - position).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 		let specular = if diffuse > 0.0 {
-			blinn_phong_specular(light_dir, camera_dir, normal)
+			blinn_specular(light_dir, camera_dir, normal)
 				// TODO
 				.powf(material.specular_exponent * 4.0)
 		} else {
