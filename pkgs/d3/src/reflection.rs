@@ -67,9 +67,9 @@ fn blinn_specular(
 
 #[allow(dead_code)]
 fn schlick_approximation(
-	material_specular: Array<f32, 3>,
 	light_dir: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
+	material_specular: Array<f32, 3>,
 ) -> Array<f32, 3> {
 	material_specular
 		+ (array![1.0; 3] - material_specular) * (1.0 - light_dir.dot(normal).powf(5.0))
@@ -85,50 +85,6 @@ fn attenuation(
 ) -> Array<f32, 3> {
 	let dist = (light_position - position).magnitude();
 	array![1.0 / (c + l * dist + q * dist * dist); 3]
-}
-
-pub struct Test {}
-
-impl Test {
-	fn reflect(
-		position: Vector<f32, 3>,
-		normal: Vector<f32, 3>,
-		ambience: Array<f32, 3>,
-		lights: &[Light],
-		material: Material,
-		camera: Vector<f32, 3>,
-	) -> Array<f32, 3> {
-		let camera_dir = (camera - position).normalize();
-
-		lights.iter().fold(
-			material.ambient_reflection * ambience + material.emissive_color,
-			|sum, light| sum + Self::light(light, position, normal, material, camera_dir),
-		) * 255.0
-	}
-
-	fn light(
-		light: &Light,
-		position: Vector<f32, 3>,
-		normal: Vector<f32, 3>,
-		material: Material,
-		camera_dir: Vector<f32, 3>,
-	) -> Array<f32, 3> {
-		let light_dir = (light.position - position).normalize();
-		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-		let specular = if diffuse >= 0.0 {
-			phong_specular(light_dir, camera_dir, normal).powf(material.specular_exponent)
-		} else {
-			0.0
-		};
-
-		// TODO: Kikk på attenuation
-		attenuation(light.position, position, 1.0, 0.0, 0.0)
-			* (material.ambient_reflection * light.ambient_color
-				+ material.diffuse_reflection * diffuse * light.diffuse_color
-				// TODO: Dette gjør at vi får specular selv om den skal være null
-				+ schlick_approximation(material.specular_reflection, light_dir, normal)
-					* specular * light.specular_color)
-	}
 }
 
 pub struct Phong {}
@@ -210,5 +166,49 @@ impl BlinnPhong {
 		material.ambient_reflection * light.ambient_color
 			+ material.diffuse_reflection * diffuse * light.diffuse_color
 			+ material.specular_reflection * specular * light.specular_color
+	}
+}
+
+pub struct Test {}
+
+impl Test {
+	fn reflect(
+		position: Vector<f32, 3>,
+		normal: Vector<f32, 3>,
+		ambience: Array<f32, 3>,
+		lights: &[Light],
+		material: Material,
+		camera: Vector<f32, 3>,
+	) -> Array<f32, 3> {
+		let camera_dir = (camera - position).normalize();
+
+		lights.iter().fold(
+			material.ambient_reflection * ambience + material.emissive_color,
+			|sum, light| sum + Self::light(light, position, normal, material, camera_dir),
+		) * 255.0
+	}
+
+	fn light(
+		light: &Light,
+		position: Vector<f32, 3>,
+		normal: Vector<f32, 3>,
+		material: Material,
+		camera_dir: Vector<f32, 3>,
+	) -> Array<f32, 3> {
+		let light_dir = (light.position - position).normalize();
+		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
+		let specular = if diffuse >= 0.0 {
+			phong_specular(light_dir, camera_dir, normal).powf(material.specular_exponent)
+		} else {
+			0.0
+		};
+
+		// TODO: Kikk på attenuation
+		attenuation(light.position, position, 1.0, 0.0, 0.0)
+			* (material.ambient_reflection * light.ambient_color
+				+ material.diffuse_reflection * diffuse * light.diffuse_color
+				// TODO: Dette gjør at vi får specular selv om den skal være null
+				+ schlick_approximation(light_dir, normal, material.specular_reflection)
+					* specular * light.specular_color)
 	}
 }

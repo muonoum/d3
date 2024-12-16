@@ -16,8 +16,10 @@ mod light;
 mod material;
 mod mesh;
 #[allow(dead_code)]
+mod normal_renderer;
 mod object;
 mod reflection;
+#[allow(dead_code)]
 mod renderer;
 mod scene;
 mod shading;
@@ -31,7 +33,10 @@ use scene::Scene;
 
 struct App {
 	buffer: Pixels,
+	#[allow(dead_code)]
 	renderer: Renderer,
+	#[allow(dead_code)]
+	normal_renderer: normal_renderer::Renderer,
 	shading: shading::Model,
 	reflection: reflection::Model,
 	window: Arc<Window>,
@@ -117,6 +122,7 @@ impl ApplicationHandler for State {
 				}
 
 				let renderer = Renderer::new(width, height);
+				let normal_renderer = normal_renderer::Renderer::new(width, height);
 
 				let buffer = {
 					let surface = SurfaceTexture::new(size.width, size.height, &window);
@@ -126,6 +132,7 @@ impl ApplicationHandler for State {
 				*self = State::Running(App {
 					buffer,
 					renderer,
+					normal_renderer,
 					shading: args.shading,
 					reflection: args.reflection,
 					window: window.clone(),
