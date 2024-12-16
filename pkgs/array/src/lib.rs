@@ -19,6 +19,10 @@ macro_rules! array {
 }
 
 impl<T: Cell, const D: usize> Array<T, D> {
+	pub fn from_fn(f: impl Fn(usize) -> T) -> Self {
+		Self(std::array::from_fn(f))
+	}
+
 	pub fn new(cells: [T; D]) -> Self {
 		Self(cells)
 	}
@@ -30,13 +34,7 @@ impl<T: Cell, const D: usize> Array<T, D> {
 
 impl<T: Cell, const D: usize> Array<T, D> {
 	pub fn clamp(self, min: T, max: T) -> Self {
-		let mut a = [T::zero(); D];
-
-		for i in 0..D {
-			a[i] = num::clamp(self[i], min, max);
-		}
-
-		Self(a)
+		Self::from_fn(|i| num::clamp(self[i], min, max))
 	}
 }
 
@@ -64,13 +62,15 @@ impl<T: Cell, const D: usize> std::ops::Add for Array<T, D> {
 	type Output = Self;
 
 	fn add(self, other: Self) -> Self {
-		let mut a = [T::zero(); D];
+		Self::from_fn(|i| self[i] + other[i])
+	}
+}
 
-		for i in 0..D {
-			a[i] = self[i] + other[i];
-		}
+impl<T: Cell, const D: usize> std::ops::Sub for Array<T, D> {
+	type Output = Self;
 
-		Self(a)
+	fn sub(self, other: Self) -> Self {
+		Self::from_fn(|i| self[i] - other[i])
 	}
 }
 
@@ -78,13 +78,7 @@ impl<T: Cell, const D: usize> std::ops::Add<T> for Array<T, D> {
 	type Output = Self;
 
 	fn add(self, other: T) -> Self {
-		let mut a = [T::zero(); D];
-
-		for i in 0..D {
-			a[i] = self[i] + other;
-		}
-
-		Self(a)
+		Self::from_fn(|i| self[i] + other)
 	}
 }
 
@@ -107,13 +101,7 @@ impl<T: Cell, const D: usize> std::ops::AddAssign for Array<T, D> {
 impl<T: Cell, const D: usize> std::ops::Mul<Array<T, D>> for Array<T, D> {
 	type Output = Self;
 	fn mul(self, other: Array<T, D>) -> Self {
-		let mut array = Array::zero();
-
-		for i in 0..D {
-			array[i] = self[i] * other[i];
-		}
-
-		array
+		Self::from_fn(|i| self[i] * other[i])
 	}
 }
 
@@ -121,13 +109,7 @@ impl<T: Cell, const D: usize> std::ops::Div<T> for Array<T, D> {
 	type Output = Self;
 
 	fn div(self, other: T) -> Self {
-		let mut array = Array::zero();
-
-		for i in 0..D {
-			array[i] = self[i] / other;
-		}
-
-		array
+		Self::from_fn(|i| self[i] / other)
 	}
 }
 
@@ -135,26 +117,6 @@ impl<T: Cell, const D: usize> std::ops::Mul<T> for Array<T, D> {
 	type Output = Self;
 
 	fn mul(self, other: T) -> Self {
-		let mut array = Array::zero();
-
-		for i in 0..D {
-			array[i] = self[i] * other;
-		}
-
-		array
-	}
-}
-
-impl<T: Cell, const D: usize> std::ops::Mul<T> for &Array<T, D> {
-	type Output = Array<T, D>;
-
-	fn mul(self, other: T) -> Array<T, D> {
-		let mut array = Array::zero();
-
-		for i in 0..D {
-			array[i] = self[i] * other;
-		}
-
-		array
+		Self::from_fn(|i| self[i] * other)
 	}
 }
