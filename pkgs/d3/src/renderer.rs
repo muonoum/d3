@@ -5,6 +5,7 @@ use crate::reflection;
 use crate::shading;
 use crate::shading::Shade;
 use crate::transform;
+use array::Array;
 use matrix::matrix::Matrix;
 use matrix::vector;
 use matrix::vector::Vector;
@@ -31,7 +32,7 @@ impl Renderer {
 	pub fn new(width: u32, height: u32) -> Self {
 		// let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
 		// let projection = transform::perspective3(width as f32 / height as f32, 1.0, 1.0, 100.0);
-		let projection = transform::perspective2(width as f32 / height as f32, 55.0, 1.0, 5.0);
+		let projection = transform::perspective2(width as f32 / height as f32, 55.0, 0.1, 5.0);
 		let viewport = transform::viewport(width as f32, height as f32);
 
 		Renderer {
@@ -43,11 +44,13 @@ impl Renderer {
 	}
 
 	// pub fn render(&mut self) -> Vec<u8> {
+	#[allow(clippy::too_many_arguments)]
 	pub fn render(
 		&mut self,
 		buffer: &mut [u8],
 		reflection: &reflection::Model,
 		shading: &shading::Model,
+		ambience: Array<f32, 3>,
 		lights: &[Light],
 		camera: &Camera,
 		objects: &[Object],
@@ -116,6 +119,7 @@ impl Renderer {
 						(world[v1.position], world[v2.position], world[v3.position]),
 						(normals[v1.normal], normals[v2.normal], normals[v3.normal]),
 						camera.position,
+						ambience,
 						lights,
 						object.material,
 					)

@@ -22,9 +22,10 @@ impl Camera {
 		}
 	}
 
-	pub fn move_camera(&mut self, direction: Vector<f32, 3>) {
-		self.position += direction;
-		self.target += direction;
+	pub fn update_camera(&mut self, movement: Vector<f32, 3>, target: Vector<f32, 3>) {
+		self.position += movement;
+		// TODO: Virker ikke
+		self.target += target;
 		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
 		let world = transform::look(self.position, self.target, up_vector);
 		self.view = world.inverse().unwrap();

@@ -2,6 +2,7 @@ use crate::light::Light;
 use crate::material::Material;
 use crate::reflection;
 use crate::reflection::Reflect;
+use array::Array;
 use matrix::vector;
 use matrix::vector::Vector;
 
@@ -20,6 +21,7 @@ pub trait Shade<'a> {
 		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		normals: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		camera: Vector<f32, 3>,
+		ambience: Array<f32, 3>,
 		lights: &'a [Light],
 		material: Material,
 	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a>;
@@ -32,6 +34,7 @@ impl<'a> Shade<'a> for Model {
 		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		normals: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
 		camera: Vector<f32, 3>,
+		ambience: Array<f32, 3>,
 		lights: &'a [Light],
 		material: Material,
 	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a> {
@@ -43,7 +46,8 @@ impl<'a> Shade<'a> for Model {
 				let position = (position1 + position2 + position3) / 3.0;
 				let normal = (normal1 + normal2 + normal3) / 3.0;
 
-				let color = reflection.reflect(position, normal, lights, material, camera);
+				let color =
+					reflection.reflect(position, normal, ambience, lights, material, camera);
 
 				Box::new(move |_: f32, _: f32, _: f32| {
 					[color[0] as u8, color[1] as u8, color[2] as u8, 255]
@@ -51,7 +55,7 @@ impl<'a> Shade<'a> for Model {
 			}
 
 			Model::Gourad => {
-				let get_color = |p, n| reflection.reflect(p, n, lights, material, camera);
+				let get_color = |p, n| reflection.reflect(p, n, ambience, lights, material, camera);
 
 				let (position1, position2, position3) = positions;
 				let (normal1, normal2, normal3) = normals;
@@ -74,7 +78,8 @@ impl<'a> Shade<'a> for Model {
 				let (position1, position2, position3) = positions;
 				let (normal1, normal2, normal3) = normals;
 
-				let get_color = move |p, n| reflection.reflect(p, n, lights, material, camera);
+				let get_color =
+					move |p, n| reflection.reflect(p, n, ambience, lights, material, camera);
 
 				Box::new(move |u: f32, v: f32, w: f32| {
 					let position = vector![

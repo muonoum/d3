@@ -1,18 +1,20 @@
+ambience = [0.0, 0.0, 0.0]
+
 [camera]
 position = [0.0, 0.0, -3.5]
 target = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, -5.0]
-ambient = [0.5, 0.5, 0.5]
-diffuse = [0.2, 0.4, 0.7]
-specular = [0.0, 0.0, 0.0]
+ambient_color = [0.0, 0.0, 0.0]
+diffuse_color = [0.2, 0.4, 0.7]
+specular_color = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, -5.0]
-ambient = [0.5, 0.5, 0.5]
-diffuse = [0.7, 0.7, 0.7]
-specular = [1.0, 1.0, 1.0]
+ambient_color = [0.0, 0.0, 0.0]
+diffuse_color = [0.7, 0.7, 0.7]
+specular_color = [1.0, 1.0, 1.0]
 
 [[objects]]
 mesh = "objs/torus-smooth.obj"
@@ -21,10 +23,10 @@ orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]
 
 [objects.material]
-ambient = [0.0, 0.05, 0.15]
-diffuse = [0.4, 0.4, 0.4]
-specular = [0.3, 0.3, 0.3]
-shininess = 10.0
+ambient_reflection = [0.0, 0.0, 0.0]
+diffuse_reflection = [0.5, 0.5, 0.5]
+specular_reflection = [0.3, 0.3, 0.3]
+specular_exponent = 10.0
 
 [objects.update]
 orientation = [0.005, 0.005, 0.0075]
