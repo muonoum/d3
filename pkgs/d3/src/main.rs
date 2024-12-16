@@ -128,56 +128,25 @@ impl ApplicationHandler for State {
 		match event {
 			WindowEvent::CloseRequested => event_loop.exit(),
 
-			WindowEvent::KeyboardInput { event, .. } => match (event.state, event.physical_key) {
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyW)) => {
-					app.movement[2] = 0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyW)) => {
-					app.movement[2] = 0.0;
-				}
-
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyA)) => {
-					app.movement[0] = 0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyA)) => {
-					app.movement[0] = 0.0;
-				}
-
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyS)) => {
-					app.movement[2] = -0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyS)) => {
-					app.movement[2] = -0.0;
-				}
-
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::KeyD)) => {
-					app.movement[0] = -0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::KeyD)) => {
-					app.movement[0] = 0.0;
-				}
-
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::ArrowUp)) => {
-					app.movement[1] = 0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::ArrowUp)) => {
-					app.movement[1] = 0.0;
-				}
-
-				(ElementState::Pressed, PhysicalKey::Code(KeyCode::ArrowDown)) => {
-					app.movement[1] = -0.05;
-				}
-
-				(ElementState::Released, PhysicalKey::Code(KeyCode::ArrowDown)) => {
-					app.movement[1] = 0.0;
-				}
-
-				_else => {}
+			WindowEvent::KeyboardInput { event, .. } => match event.state {
+				ElementState::Pressed => match event.physical_key {
+					PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = 0.05,
+					PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = 0.05,
+					PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = -0.05,
+					PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = -0.05,
+					PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.05,
+					PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = -0.05,
+					_else => (),
+				},
+				ElementState::Released => match event.physical_key {
+					PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = 0.0,
+					PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = 0.0,
+					PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = 0.0,
+					PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = 0.0,
+					PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.0,
+					PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = 0.0,
+					_else => (),
+				},
 			},
 
 			WindowEvent::CursorMoved { .. } => {}
@@ -227,6 +196,7 @@ impl ApplicationHandler for State {
 
 				let buffer = app.buffer.frame_mut();
 				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
+
 				app.renderer.render(
 					buffer,
 					&app.reflection,
@@ -235,6 +205,7 @@ impl ApplicationHandler for State {
 					&app.scene.camera,
 					&app.scene.objects,
 				);
+
 				app.window.pre_present_notify();
 				app.buffer.render().unwrap();
 				app.window.request_redraw();
