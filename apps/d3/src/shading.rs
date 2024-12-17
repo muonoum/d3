@@ -1,7 +1,6 @@
 use crate::light::Light;
 use crate::material::Material;
 use crate::reflection;
-use crate::reflection::Reflect;
 use array::Array;
 use matrix::vector::Vector;
 
@@ -12,22 +11,9 @@ pub enum Model {
 	Phong,
 }
 
-pub trait Shade<'a> {
+impl<'a> Model {
 	#[allow(clippy::too_many_arguments)]
-	fn shade(
-		&'a self,
-		reflection: &'a reflection::Model,
-		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
-		normals: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
-		camera: Vector<f32, 3>,
-		ambient_color: Array<f32, 3>,
-		lights: &'a [Light],
-		material: Material,
-	) -> Box<dyn Fn(f32, f32, f32) -> [u8; 4] + 'a>;
-}
-
-impl<'a> Shade<'a> for Model {
-	fn shade(
+	pub fn shade(
 		&'a self,
 		reflection: &'a reflection::Model,
 		positions: (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),

@@ -9,20 +9,8 @@ pub enum Model {
 	BlinnPhong,
 }
 
-pub trait Reflect {
-	fn reflect(
-		&self,
-		position: Vector<f32, 3>,
-		normal: Vector<f32, 3>,
-		ambient_color: Array<f32, 3>,
-		lights: &[Light],
-		material: Material,
-		camera: Vector<f32, 3>,
-	) -> Array<f32, 3>;
-}
-
-impl Reflect for Model {
-	fn reflect(
+impl Model {
+	pub fn reflect(
 		&self,
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,

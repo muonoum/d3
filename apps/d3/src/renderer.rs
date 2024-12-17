@@ -3,7 +3,6 @@ use crate::light::Light;
 use crate::object::Object;
 use crate::reflection;
 use crate::shading;
-use crate::shading::Shade;
 use array::Array;
 use matrix::matrix::Matrix;
 use matrix::vector;
