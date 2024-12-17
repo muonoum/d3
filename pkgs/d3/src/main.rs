@@ -205,23 +205,13 @@ impl ApplicationHandler for State {
 			}
 
 			WindowEvent::RedrawRequested => {
-				// let buffer = pixels.frame_mut();
-				// let frame = app.render();
-				// buffer.copy_from_slice(&frame);
-
-				// window.pre_present_notify();
-				// pixels.render().unwrap();
-				// window.request_redraw();
-
 				for object in app.scene.objects.iter_mut() {
 					if let Some(update) = &object.update {
-						// TODO: Update model matrix
 						object.orientation += update.orientation;
 					}
 				}
 
 				if app.movement != vector![0.0; 3] || app.look != vector![0.0; 3] {
-					// TODO: Update projection and viewport matrix
 					app.scene.camera.update_camera(app.movement, app.look);
 				}
 
@@ -232,7 +222,7 @@ impl ApplicationHandler for State {
 					buffer,
 					&app.reflection,
 					&app.shading,
-					app.scene.ambience,
+					app.scene.ambient_color,
 					&app.scene.lights,
 					&app.scene.camera,
 					&app.scene.objects,

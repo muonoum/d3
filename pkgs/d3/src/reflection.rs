@@ -14,7 +14,7 @@ pub trait Reflect {
 		&self,
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
-		ambience: Array<f32, 3>,
+		ambient_color: Array<f32, 3>,
 		lights: &[Light],
 		material: Material,
 		camera: Vector<f32, 3>,
@@ -26,15 +26,18 @@ impl Reflect for Model {
 		&self,
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
-		ambience: Array<f32, 3>,
+		ambient_color: Array<f32, 3>,
 		lights: &[Light],
 		material: Material,
 		camera: Vector<f32, 3>,
 	) -> Array<f32, 3> {
 		match self {
-			Model::Phong => Phong::reflect(position, normal, ambience, lights, material, camera),
+			Model::Phong => {
+				Phong::reflect(position, normal, ambient_color, lights, material, camera)
+			}
+
 			Model::BlinnPhong => {
-				BlinnPhong::reflect(position, normal, ambience, lights, material, camera)
+				BlinnPhong::reflect(position, normal, ambient_color, lights, material, camera)
 			}
 		}
 	}
@@ -67,7 +70,7 @@ impl Phong {
 	fn reflect(
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
-		ambience: Array<f32, 3>,
+		ambient_color: Array<f32, 3>,
 		lights: &[Light],
 		material: Material,
 		camera: Vector<f32, 3>,
@@ -75,7 +78,7 @@ impl Phong {
 		let camera_dir = (camera - position).normalize();
 
 		lights.iter().fold(
-			material.ambient_reflection * ambience + material.emissive_color,
+			material.ambient_reflection * ambient_color + material.emissive_color,
 			|sum, light| sum + Self::light(light, position, normal, material, camera_dir),
 		) * 255.0
 	}
@@ -107,7 +110,7 @@ impl BlinnPhong {
 	fn reflect(
 		position: Vector<f32, 3>,
 		normal: Vector<f32, 3>,
-		ambience: Array<f32, 3>,
+		ambient_color: Array<f32, 3>,
 		lights: &[Light],
 		material: Material,
 		camera: Vector<f32, 3>,
@@ -115,7 +118,7 @@ impl BlinnPhong {
 		let camera_dir = (camera - position).normalize();
 
 		lights.iter().fold(
-			material.ambient_reflection * ambience + material.emissive_color,
+			material.ambient_reflection * ambient_color + material.emissive_color,
 			|sum, light| sum + Self::light(light, position, normal, material, camera_dir),
 		) * 255.0
 	}

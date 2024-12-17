@@ -42,26 +42,23 @@ impl Renderer {
 		}
 	}
 
-	// pub fn render(&mut self) -> Vec<u8> {
 	#[allow(clippy::too_many_arguments)]
 	pub fn render(
 		&mut self,
 		buffer: &mut [u8],
 		reflection: &reflection::Model,
 		shading: &shading::Model,
-		ambience: Array<f32, 3>,
+		ambient_color: Array<f32, 3>,
 		lights: &[Light],
 		camera: &Camera,
 		objects: &[Object],
 	) {
 		let size = (self.width * self.height) as usize;
-		// let mut frame_buffer = vec![0; size * 4];
 		let mut z_buffer = vec![f32::NEG_INFINITY; size];
 
 		let mut plot = |x, y, color: &[u8]| {
 			let i = (x * 4 + y * self.width * 4) as usize;
 			buffer[i..i + 4].copy_from_slice(color);
-			// frame_buffer[i..i + 4].copy_from_slice(color);
 		};
 
 		for object in objects.iter() {
@@ -118,7 +115,7 @@ impl Renderer {
 						(world[v1.position], world[v2.position], world[v3.position]),
 						(normals[v1.normal], normals[v2.normal], normals[v3.normal]),
 						camera.position,
-						ambience,
+						ambient_color,
 						lights,
 						object.material,
 					)
@@ -173,7 +170,5 @@ impl Renderer {
 				}
 			}
 		}
-
-		// return frame_buffer;
 	}
 }

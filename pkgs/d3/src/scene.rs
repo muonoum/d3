@@ -10,7 +10,7 @@ use matrix::vector::Vector;
 
 #[derive(Debug)]
 pub struct Scene {
-	pub ambience: Array<f32, 3>,
+	pub ambient_color: Array<f32, 3>,
 	pub lights: Vec<Light>,
 	pub camera: Camera,
 	pub objects: Vec<Object>,
@@ -21,9 +21,9 @@ impl Scene {
 		let scene_data = std::fs::read_to_string(path).unwrap();
 		let scene = scene_data.parse::<toml::Table>().unwrap();
 
-		let ambience = {
+		let ambient_color = {
 			scene
-				.get("ambience")
+				.get("ambient_color")
 				.and_then(|v| get_triplet2(v, |r, g, b| array![r, g, b]))
 				.unwrap_or_else(|| array![1.0; 3])
 		};
@@ -108,7 +108,7 @@ impl Scene {
 			.collect();
 
 		Scene {
-			ambience,
+			ambient_color,
 			camera,
 			lights: lights.unwrap_or_else(Vec::new),
 			objects,

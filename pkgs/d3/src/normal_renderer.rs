@@ -47,7 +47,7 @@ impl Renderer {
 		buffer: &mut [u8],
 		_reflection: &reflection::Model,
 		_shading: &shading::Model,
-		_ambience: Array<f32, 3>,
+		_ambient_color: Array<f32, 3>,
 		_lights: &[Light],
 		camera: &Camera,
 		objects: &[Object],
