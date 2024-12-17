@@ -25,7 +25,7 @@ impl Scene {
 			scene
 				.get("ambient_color")
 				.and_then(|v| get_triplet2(v, |r, g, b| array![r, g, b]))
-				.unwrap_or_else(|| array![1.0; 3])
+				.unwrap_or_else(|| array![0.0; 3])
 		};
 
 		let camera = {
@@ -54,18 +54,19 @@ impl Scene {
 
 					let position =
 						get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
+
 					let ambient_color =
 						get_triplet(table, "ambient_color", |r, g, b| array![r, g, b]);
 					let diffuse_color =
-						get_triplet(table, "diffuse_color", |r, g, b| array![r, g, b]).unwrap();
+						get_triplet(table, "diffuse_color", |r, g, b| array![r, g, b]);
 					let specular_color =
-						get_triplet(table, "specular_color", |r, g, b| array![r, g, b]).unwrap();
+						get_triplet(table, "specular_color", |r, g, b| array![r, g, b]);
 
 					Light {
 						ambient_color: ambient_color.unwrap_or_else(|| array![0.0; 3]),
 						position,
-						diffuse_color,
-						specular_color,
+						diffuse_color: diffuse_color.unwrap_or_else(|| array![0.0; 3]),
+						specular_color: specular_color.unwrap_or_else(|| array![0.0; 3]),
 					}
 				})
 				.collect()
