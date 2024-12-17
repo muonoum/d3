@@ -4,7 +4,6 @@ use crate::object::Object;
 use crate::reflection;
 use crate::shading;
 use crate::shading::Shade;
-use crate::transform;
 use array::Array;
 use matrix::matrix::Matrix;
 use matrix::vector;
@@ -66,9 +65,9 @@ impl Renderer {
 		};
 
 		for object in objects.iter() {
-			let world_space = transform::scale_v3(object.scale)
-				* transform::rotate_v3(object.orientation)
-				* transform::translate_v3(object.position);
+			let world_space = transform::scale_vector(object.scale)
+				* transform::rotate_vector(object.orientation)
+				* transform::translate_vector(object.position);
 			let camera_space = world_space * camera.view;
 			let clip_space = camera_space * self.projection;
 			let screen_space = clip_space * self.viewport;

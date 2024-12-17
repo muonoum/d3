@@ -446,10 +446,12 @@ dependencies = [
  "clipline",
  "matrix",
  "num",
+ "obj",
  "pixels",
  "rayon",
  "serde",
  "toml",
+ "transform",
  "winit",
 ]
 
@@ -985,6 +987,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "obj"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "matrix",
 ]
 
 [[package]]
@@ -1652,6 +1662,13 @@ name = "tracing-core"
 version = "0.1.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e672c95779cf947c5311f83787af4fa8fffd12fb27e4993211a84bdfd9610f9c"
+
+[[package]]
+name = "transform"
+version = "0.1.0"
+dependencies = [
+ "matrix",
+]
 
 [[package]]
 name = "ultraviolet"

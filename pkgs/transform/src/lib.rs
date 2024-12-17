@@ -1,7 +1,7 @@
 use matrix::matrix::Matrix;
 use matrix::vector::Vector;
 
-pub fn scale_v3(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
+pub fn scale_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	scale(v[0], v[1], v[2])
 }
 
@@ -14,7 +14,7 @@ pub fn scale(x: f32, y: f32, z: f32) -> Matrix<f32, 4, 4> {
 	])
 }
 
-pub fn translate_v3(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
+pub fn translate_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	translate(v[0], v[1], v[2])
 }
 
@@ -31,7 +31,7 @@ pub fn rotate(x: f32, y: f32, z: f32) -> Matrix<f32, 4, 4> {
 	rotate_z(z) * rotate_y(y) * rotate_x(x)
 }
 
-pub fn rotate_v3(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
+pub fn rotate_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	rotate(v[0], v[1], v[2])
 }
 
@@ -62,7 +62,11 @@ pub fn rotate_z(a: f32) -> Matrix<f32, 4, 4> {
 	])
 }
 
-pub fn look(from: Vector<f32, 3>, to: Vector<f32, 3>, up: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
+pub fn look_at(
+	from: Vector<f32, 3>,
+	to: Vector<f32, 3>,
+	up: Vector<f32, 3>,
+) -> Matrix<f32, 4, 4> {
 	let forward = (from - to).normalize();
 	let right = up.cross(forward).normalize();
 	let up = forward.cross(right);

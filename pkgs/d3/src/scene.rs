@@ -1,12 +1,12 @@
 use crate::camera::Camera;
 use crate::light::Light;
 use crate::material::Material;
-use crate::mesh;
 use crate::object;
 use crate::object::Object;
 use array::array;
 use array::Array;
 use matrix::vector;
+use matrix::vector::Vector;
 
 #[derive(Debug)]
 pub struct Scene {
@@ -24,45 +24,52 @@ impl Scene {
 		let ambience = {
 			scene
 				.get("ambience")
-				.and_then(|v| v.as_array())
-				.map(|vs| {
-					let a = vs[0].as_float().unwrap() as f32;
-					let b = vs[1].as_float().unwrap() as f32;
-					let c = vs[2].as_float().unwrap() as f32;
-					array![a, b, c]
-				})
-				.unwrap()
+				.and_then(|v| get_triplet2(v, |r, g, b| array![r, g, b]))
+				.unwrap_or_else(|| array![1.0; 3])
 		};
 
 		let camera = {
-			let camera = scene["camera"].as_table().unwrap();
-			let position = get_triplet(camera, "position", |x, y, z| vector![x, y, z]).unwrap();
-			let target = get_triplet(camera, "target", |x, y, z| vector![x, y, z]).unwrap();
+			let table = scene.get("camera").and_then(|v| v.as_table()).unwrap();
+
+			let position = table
+				.get("position")
+				.and_then(|v| get_triplet2(v, |x, y, z| vector![x, y, z]))
+				.unwrap();
+
+			let target = table
+				.get("target")
+				.and_then(|v| get_triplet2(v, |x, y, z| vector![x, y, z]))
+				.unwrap();
+
 			Camera::new(position, target)
 		};
 
-		let lights = scene["lights"]
-			.as_array()
-			.unwrap()
-			.iter()
-			.map(|light| {
-				let table = light.as_table().unwrap();
+		let lights = scene.get("lights").map(|lights| {
+			lights
+				.as_array()
+				.unwrap()
+				.iter()
+				.map(|light| {
+					let table = light.as_table().unwrap();
 
-				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
-				let ambient_color = get_triplet(table, "ambient_color", |r, g, b| array![r, g, b]);
-				let diffuse_color =
-					get_triplet(table, "diffuse_color", |r, g, b| array![r, g, b]).unwrap();
-				let specular_color =
-					get_triplet(table, "specular_color", |r, g, b| array![r, g, b]).unwrap();
+					let position =
+						get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
+					let ambient_color =
+						get_triplet(table, "ambient_color", |r, g, b| array![r, g, b]);
+					let diffuse_color =
+						get_triplet(table, "diffuse_color", |r, g, b| array![r, g, b]).unwrap();
+					let specular_color =
+						get_triplet(table, "specular_color", |r, g, b| array![r, g, b]).unwrap();
 
-				Light {
-					ambient_color: ambient_color.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-					position,
-					diffuse_color,
-					specular_color,
-				}
-			})
-			.collect();
+					Light {
+						ambient_color: ambient_color.unwrap_or_else(|| array![0.0; 3]),
+						position,
+						diffuse_color,
+						specular_color,
+					}
+				})
+				.collect()
+		});
 
 		let objects = scene["objects"]
 			.as_array()
@@ -70,28 +77,31 @@ impl Scene {
 			.iter()
 			.map(|object| {
 				let table = object.as_table().unwrap();
-				let mesh = mesh::load(table["mesh"].as_str().unwrap()).unwrap();
+				let mesh = obj::Mesh::new(table["mesh"].as_str().unwrap()).unwrap();
 
-				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]).unwrap();
-				let scale = get_triplet(table, "scale", |x, y, z| vector![x, y, z]).unwrap();
-				let orientation =
-					get_triplet(table, "orientation", |x, y, z| vector![x, y, z]).unwrap();
+				let position = get_triplet(table, "position", |x, y, z| vector![x, y, z]);
+				let scale = get_triplet(table, "scale", |x, y, z| vector![x, y, z]);
+				let orientation = get_triplet(table, "orientation", |x, y, z| vector![x, y, z]);
 
-				let material = object["material"].as_table().map(get_material).unwrap();
+				let material = object
+					.get("material")
+					.and_then(|value| value.as_table().map(get_material));
 
-				let update = {
-					let table = object["update"].as_table().unwrap();
-					let orientation =
-						get_triplet(table, "orientation", |x, y, z| vector![x, y, z]).unwrap();
-					object::Update { orientation }
-				};
+				let update = object.get("update").and_then(|value| {
+					value.as_table().map(|table| {
+						let orientation =
+							get_triplet(table, "orientation", |x, y, z| vector![x, y, z])
+								.unwrap();
+						object::Update { orientation }
+					})
+				});
 
 				Object {
-					material,
+					material: material.unwrap_or_default(),
 					mesh,
-					orientation,
-					position,
-					scale,
+					orientation: orientation.unwrap_or_else(Vector::zero),
+					position: position.unwrap_or_else(Vector::zero),
+					scale: scale.unwrap_or_else(|| vector![1.0; 3]),
 					update,
 				}
 			})
@@ -100,10 +110,19 @@ impl Scene {
 		Scene {
 			ambience,
 			camera,
-			lights,
+			lights: lights.unwrap_or_else(Vec::new),
 			objects,
 		}
 	}
+}
+
+fn get_triplet2<T>(value: &toml::Value, f: impl Fn(f32, f32, f32) -> T) -> Option<T> {
+	value.as_array().map(|vs| {
+		let a = vs[0].as_float().unwrap() as f32;
+		let b = vs[1].as_float().unwrap() as f32;
+		let c = vs[2].as_float().unwrap() as f32;
+		f(a, b, c)
+	})
 }
 
 fn get_triplet<T>(table: &toml::Table, key: &str, f: impl Fn(f32, f32, f32) -> T) -> Option<T> {
@@ -120,13 +139,15 @@ fn get_material(table: &toml::Table) -> Material {
 	let ambient = get_triplet(table, "ambient_reflection", |r, g, b| array![r, g, b]);
 	let diffuse = get_triplet(table, "diffuse_reflection", |r, g, b| array![r, g, b]);
 	let specular = get_triplet(table, "specular_reflection", |r, g, b| array![r, g, b]);
-	let exponent = table["specular_exponent"].as_float().unwrap() as f32;
+	let exponent = table
+		.get("specular_exponent")
+		.and_then(|value| value.as_integer().map(|n| n as i32));
 
 	Material {
-		emissive_color: emissive.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-		ambient_reflection: ambient.unwrap_or_else(|| array![0.1, 0.1, 0.1]),
-		diffuse_reflection: diffuse.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-		specular_reflection: specular.unwrap_or_else(|| array![0.0, 0.0, 0.0]),
-		specular_exponent: exponent,
+		emissive_color: emissive.unwrap_or_else(|| array![0.0; 3]),
+		ambient_reflection: ambient.unwrap_or_else(|| array![0.0; 3]),
+		diffuse_reflection: diffuse.unwrap_or_else(|| array![0.0; 3]),
+		specular_reflection: specular.unwrap_or_else(|| array![0.0; 3]),
+		specular_exponent: exponent.unwrap_or(1),
 	}
 }

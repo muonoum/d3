@@ -14,7 +14,6 @@ mod camera;
 mod cli;
 mod light;
 mod material;
-mod mesh;
 #[allow(dead_code)]
 mod normal_renderer;
 mod object;
@@ -23,8 +22,6 @@ mod reflection;
 mod renderer;
 mod scene;
 mod shading;
-#[allow(dead_code)]
-mod transform;
 
 use matrix::vector;
 use matrix::vector::Vector;
@@ -187,8 +184,7 @@ impl ApplicationHandler for State {
 					(ElementState::Pressed, MouseButton::Left) => {
 						app.reflection = match app.reflection {
 							reflection::Model::Phong => reflection::Model::BlinnPhong,
-							reflection::Model::BlinnPhong => reflection::Model::Test,
-							reflection::Model::Test => reflection::Model::Phong,
+							reflection::Model::BlinnPhong => reflection::Model::Phong,
 						};
 
 						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
@@ -218,8 +214,10 @@ impl ApplicationHandler for State {
 				// window.request_redraw();
 
 				for object in app.scene.objects.iter_mut() {
-					// TODO: Update model matrix
-					object.orientation += object.update.orientation;
+					if let Some(update) = &object.update {
+						// TODO: Update model matrix
+						object.orientation += update.orientation;
+					}
 				}
 
 				if app.movement != vector![0.0; 3] || app.look != vector![0.0; 3] {

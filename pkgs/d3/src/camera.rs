@@ -1,4 +1,3 @@
-use crate::transform;
 use matrix::matrix::Matrix;
 use matrix::vector::Vector;
 
@@ -12,7 +11,7 @@ pub struct Camera {
 impl Camera {
 	pub fn new(position: Vector<f32, 3>, target: Vector<f32, 3>) -> Self {
 		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
-		let world = transform::look(position, target, up_vector);
+		let world = transform::look_at(position, target, up_vector);
 		let view = world.inverse().unwrap();
 
 		Camera {
@@ -27,7 +26,7 @@ impl Camera {
 		// TODO: Virker ikke
 		self.target += target;
 		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
-		let world = transform::look(self.position, self.target, up_vector);
+		let world = transform::look_at(self.position, self.target, up_vector);
 		self.view = world.inverse().unwrap();
 	}
 }

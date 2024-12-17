@@ -3,6 +3,6 @@ resolver = "2"
 members = [
   "pkgs/array",
   "pkgs/d3",
-  "pkgs/matrix"
+  "pkgs/matrix",
+  "pkgs/obj",
 ]
-  

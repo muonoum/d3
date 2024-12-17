@@ -44,7 +44,7 @@ impl<'a> Shade<'a> for Model {
 				let (normal1, normal2, normal3) = normals;
 
 				let position = (position1 + position2 + position3) / 3.0;
-				let normal = (normal1 + normal2 + normal3) / 3.0;
+				let normal = ((normal1 + normal2 + normal3) / 3.0).normalize();
 
 				let color =
 					reflection.reflect(position, normal, ambience, lights, material, camera);
@@ -55,14 +55,15 @@ impl<'a> Shade<'a> for Model {
 			}
 
 			Model::Gourad => {
-				let get_color = |p, n| reflection.reflect(p, n, ambience, lights, material, camera);
+				let get_color =
+					|p, n| reflection.reflect(p, n, ambience, lights, material, camera);
 
 				let (position1, position2, position3) = positions;
 				let (normal1, normal2, normal3) = normals;
 
-				let color1 = get_color(position1, normal1);
-				let color2 = get_color(position2, normal2);
-				let color3 = get_color(position3, normal3);
+				let color1 = get_color(position1, normal1.normalize());
+				let color2 = get_color(position2, normal2.normalize());
+				let color3 = get_color(position3, normal3.normalize());
 
 				Box::new(move |u: f32, v: f32, w: f32| {
 					[
@@ -94,7 +95,7 @@ impl<'a> Shade<'a> for Model {
 						normal1[2] * u + normal2[2] * v + normal3[2] * w,
 					];
 
-					let color = get_color(position, normal);
+					let color = get_color(position, normal.normalize());
 					[color[0] as u8, color[1] as u8, color[2] as u8, 255]
 				})
 			}

@@ -7,11 +7,13 @@ edition = "2021"
 anyhow = "1.0.94"
 pixels = "0.14.0"
 winit = { version = "0.30.5", default-features = false, features = ["rwh_05", "rwh_06"] }
-matrix = { path = "../matrix" }
-array = { path = "../array" }
 rayon = "1.10.0"
 clipline = "0.3.0"
 num = "0.4.3"
 clap = { version = "4.5.23", features = ["derive"] }
 toml = "0.8.19"
 serde = { version = "1.0.216", features = ["derive"] }
+matrix = { version = "0.1.0", path = "../matrix" }
+array = { version = "0.1.0", path = "../array" }
+obj = { version = "0.1.0", path = "../obj" }
+transform = { version = "0.1.0", path = "../transform" }
