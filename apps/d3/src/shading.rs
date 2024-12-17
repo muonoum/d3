@@ -41,9 +41,8 @@ impl<'a> Shade<'a> for Model {
 		match self {
 			Model::Flat => {
 				let (position1, position2, position3) = positions;
-				let (normal1, normal2, normal3) = normals;
-
 				let position = (position1 + position2 + position3) / 3.0;
+				let (normal1, normal2, normal3) = normals;
 				let normal = ((normal1 + normal2 + normal3) / 3.0).normalize();
 
 				let color =
@@ -66,12 +65,8 @@ impl<'a> Shade<'a> for Model {
 				let color3 = get_color(position3, normal3.normalize());
 
 				Box::new(move |u: f32, v: f32, w: f32| {
-					[
-						(color1[0] * u + color2[0] * v + color3[0] * w) as u8,
-						(color1[1] * u + color2[1] * v + color3[1] * w) as u8,
-						(color1[2] * u + color2[2] * v + color3[2] * w) as u8,
-						255,
-					]
+					let color = color1 * u + color2 * v + color3 * w;
+					[color[0] as u8, color[1] as u8, color[2] as u8, 255]
 				})
 			}
 
@@ -83,18 +78,8 @@ impl<'a> Shade<'a> for Model {
 					move |p, n| reflection.reflect(p, n, ambient_color, lights, material, camera);
 
 				Box::new(move |u: f32, v: f32, w: f32| {
-					let position = vector![
-						position1[0] * u + position2[0] * v + position3[0] * w,
-						position1[1] * u + position2[1] * v + position3[1] * w,
-						position1[2] * u + position2[2] * v + position3[2] * w,
-					];
-
-					let normal = vector![
-						normal1[0] * u + normal2[0] * v + normal3[0] * w,
-						normal1[1] * u + normal2[1] * v + normal3[1] * w,
-						normal1[2] * u + normal2[2] * v + normal3[2] * w,
-					];
-
+					let position = position1 * u + position2 * v + position3 * w;
+					let normal = normal1 * u + normal2 * v + normal3 * w;
 					let color = get_color(position, normal.normalize());
 					[color[0] as u8, color[1] as u8, color[2] as u8, 255]
 				})
