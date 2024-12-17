@@ -70,33 +70,19 @@ impl Renderer {
 			let screen_space = clip_space * self.viewport;
 			let normal_world_space = world_space.sub_matrix(3, 3).unwrap();
 
-			let world: Vec<Vector<f32, 3>> = object
-				.mesh
-				.positions
-				.iter()
-				.map(|v| (v.v4() * world_space).v3())
-				.collect();
+			let mut world: Vec<Vector<f32, 3>> = vec![];
+			let mut clip: Vec<Vector<f32, 4>> = vec![];
+			let mut screen: Vec<Vector<f32, 3>> = vec![];
+			for v in object.mesh.positions.iter() {
+				world.push((v.v4() * world_space).v3());
+				clip.push(v.v4() * clip_space);
+				screen.push((v.v4() * screen_space).v3());
+			}
 
-			let clip: Vec<Vector<f32, 4>> = object
-				.mesh
-				.positions
-				.iter()
-				.map(|v| v.v4() * clip_space)
-				.collect();
-
-			let screen: Vec<Vector<f32, 3>> = object
-				.mesh
-				.positions
-				.iter()
-				.map(|v| (v.v4() * screen_space).v3())
-				.collect();
-
-			let normals: Vec<Vector<f32, 3>> = object
-				.mesh
-				.normals
-				.iter()
-				.map(|v| *v * normal_world_space)
-				.collect();
+			let mut normals: Vec<Vector<f32, 3>> = vec![];
+			for v in object.mesh.normals.iter() {
+				normals.push(*v * normal_world_space);
+			}
 
 			for [v1, v2, v3] in object.mesh.faces.iter() {
 				let screen1 = screen[v1.position];
@@ -129,20 +115,24 @@ impl Renderer {
 					)
 				};
 
-				let min = screen1.min(screen2.min(screen3));
-				let min_x = usize::max(0, min[0] as usize);
-				let min_y = usize::max(0, min[1] as usize);
+				let min_x = screen1[0].min(screen2[0].min(screen3[0]));
+				let min_y = screen1[1].min(screen2[1].min(screen3[1]));
+				let min_x = usize::max(0, min_x as usize);
+				let min_y = usize::max(0, min_y as usize);
 
-				let max = screen1.max(screen2.max(screen3));
-				let max_x = usize::min(max[0] as usize, self.width as usize - 1);
-				let max_y = usize::min(max[1] as usize, self.height as usize - 1);
+				let max_x = screen1[0].max(screen2[0].max(screen3[0]));
+				let max_y = screen1[1].max(screen2[1].max(screen3[1]));
+				let max_x = usize::min(max_x as usize, self.width as usize - 1);
+				let max_y = usize::min(max_y as usize, self.height as usize - 1);
 
 				let area = edge(screen1.into(), screen2.into(), screen3.into());
+
 				let rz1 = 1.0 / screen1[2];
 				let rz2 = 1.0 / screen2[2];
 				let rz3 = 1.0 / screen3[2];
 
 				let point = vector![min_x as f32, min_y as f32];
+
 				let mut r1 = edge(screen2.into(), screen3.into(), point);
 				let mut r2 = edge(screen3.into(), screen1.into(), point);
 				let mut r3 = edge(screen1.into(), screen2.into(), point);
