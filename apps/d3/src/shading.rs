@@ -3,7 +3,6 @@ use crate::material::Material;
 use crate::reflection;
 use crate::reflection::Reflect;
 use array::Array;
-use matrix::vector;
 use matrix::vector::Vector;
 
 #[derive(Copy, Clone, Debug, clap::ValueEnum)]
