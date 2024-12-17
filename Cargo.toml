@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-  "pkgs/array",
-  "pkgs/d3",
-  "pkgs/matrix",
-  "pkgs/obj",
+  "libs/array",
+  "libs/matrix",
+  "libs/obj",
+  "apps/d3",
 ]
