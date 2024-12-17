@@ -80,7 +80,7 @@ fn test_coords() {
 
 	let scene = scene::Scene::load("../../scenes/cube.toml");
 	let positions = &scene.objects[0].mesh.positions;
-	let projection = transform::perspective2(width / height, 55.0, 1.0, 5.0);
+	let projection = transform::perspective_near_far(width / height, 55.0, 1.0, 5.0);
 	let viewport = transform::viewport(width, height);
 
 	#[allow(unused_variables)]

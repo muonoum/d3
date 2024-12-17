@@ -28,9 +28,8 @@ fn clipped(v: Vector<f32, 4>) -> bool {
 
 impl Renderer {
 	pub fn new(width: u32, height: u32) -> Self {
-		// let projection = transform::perspective(width as f32 / height as f32, 2.0, 1.0);
-		// let projection = transform::perspective3(width as f32 / height as f32, 1.0, 1.0, 100.0);
-		let projection = transform::perspective2(width as f32 / height as f32, 55.0, 0.1, 5.0);
+		let projection =
+			transform::perspective_near_far(width as f32 / height as f32, 55.0, 0.1, 5.0);
 		let viewport = transform::viewport(width as f32, height as f32);
 
 		Renderer {
