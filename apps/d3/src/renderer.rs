@@ -70,25 +70,33 @@ impl Renderer {
 			let screen_space = clip_space * self.viewport;
 			let normal_world_space = world_space.sub_matrix(3, 3).unwrap();
 
-			let mut world: Vec<Vector<f32, 3>> = vec![];
-			for v in object.mesh.positions.iter() {
-				world.push((v.v4() * world_space).v3());
-			}
+			let world: Vec<Vector<f32, 3>> = object
+				.mesh
+				.positions
+				.iter()
+				.map(|v| (v.v4() * world_space).v3())
+				.collect();
 
-			let mut clip: Vec<Vector<f32, 4>> = vec![];
-			for v in object.mesh.positions.iter() {
-				clip.push(v.v4() * clip_space);
-			}
+			let clip: Vec<Vector<f32, 4>> = object
+				.mesh
+				.positions
+				.iter()
+				.map(|v| v.v4() * clip_space)
+				.collect();
 
-			let mut screen: Vec<Vector<f32, 3>> = vec![];
-			for v in object.mesh.positions.iter() {
-				screen.push((v.v4() * screen_space).v3());
-			}
+			let screen: Vec<Vector<f32, 3>> = object
+				.mesh
+				.positions
+				.iter()
+				.map(|v| (v.v4() * screen_space).v3())
+				.collect();
 
-			let mut normals: Vec<Vector<f32, 3>> = vec![];
-			for v in object.mesh.normals.iter() {
-				normals.push(*v * normal_world_space);
-			}
+			let normals: Vec<Vector<f32, 3>> = object
+				.mesh
+				.normals
+				.iter()
+				.map(|v| *v * normal_world_space)
+				.collect();
 
 			for [v1, v2, v3] in object.mesh.faces.iter() {
 				let screen1 = screen[v1.position];
