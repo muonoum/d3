@@ -1,6 +1,6 @@
-use crate::matrix::Cell;
-use crate::matrix::Matrix;
+use crate::matrix::{Cell, Matrix};
 use crate::vector;
+use num::traits::Float;
 
 #[macro_export]
 macro_rules! vector {
@@ -14,39 +14,17 @@ macro_rules! vector {
 
 pub type Vector<T, const D: usize> = Matrix<T, 1, D>;
 
+impl<T: Cell + Float, const D: usize> Vector<T, D> {
+	pub fn magnitude(self) -> T {
+		self.dot(self).sqrt()
+	}
+
+	pub fn normalize(self) -> Self {
+		self / self.magnitude()
+	}
+}
+
 impl<T: Cell, const D: usize> Vector<T, D> {
-	pub fn reflect(self, normal: Self) -> Self {
-		(normal * self.dot(normal) * (T::one() + T::one())) - self
-	}
-
-	pub fn min(self, other: Self) -> Self {
-		let mut vector = Vector::zero();
-
-		for i in 0..D {
-			vector[i] = if self[i] < other[i] {
-				self[i]
-			} else {
-				other[i]
-			}
-		}
-
-		vector
-	}
-
-	pub fn max(self, other: Self) -> Self {
-		let mut vector = Vector::zero();
-
-		for i in 0..D {
-			vector[i] = if self[i] > other[i] {
-				self[i]
-			} else {
-				other[i]
-			}
-		}
-
-		vector
-	}
-
 	pub fn dot(self, other: Self) -> T {
 		let mut product = T::zero();
 
@@ -81,17 +59,6 @@ impl<T: Cell> Vector<T, 3> {
 impl<T: Cell> Vector<T, 4> {
 	pub fn v3(self) -> Vector<T, 3> {
 		vector![self[0] / self[3], self[1] / self[3], self[2] / self[3],]
-	}
-}
-
-impl Vector<f32, 3> {
-	pub fn magnitude(self) -> f32 {
-		f32::sqrt(self[0] * self[0] + self[1] * self[1] + self[2] * self[2])
-	}
-
-	pub fn normalize(self) -> Self {
-		let mag = self.magnitude();
-		Self::new([[self[0] / mag, self[1] / mag, self[2] / mag]])
 	}
 }
 
@@ -146,22 +113,6 @@ impl<T: Cell, const D: usize> std::ops::Sub for Vector<T, D> {
 
 	fn sub(self, other: Self) -> Self {
 		Self::from_fn(|row, col| self[(row, col)] - other[(row, col)])
-	}
-}
-
-impl<T: Cell, const D: usize> std::ops::Div<T> for Vector<T, D> {
-	type Output = Self;
-
-	fn div(self, other: T) -> Self {
-		Self::from_fn(|row, col| self[(row, col)] / other)
-	}
-}
-
-impl<T: Cell, const D: usize> std::ops::Mul<T> for Vector<T, D> {
-	type Output = Self;
-
-	fn mul(self, other: T) -> Self {
-		Self::from_fn(|row, col| self[(row, col)] * other)
 	}
 }
 

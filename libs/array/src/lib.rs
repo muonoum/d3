@@ -32,15 +32,15 @@ impl<T: Cell, const D: usize> Array<T, D> {
 	}
 }
 
-impl<T: Cell, const D: usize> Array<T, D> {
-	pub fn clamp(self, min: T, max: T) -> Self {
-		Self::from_fn(|i| num::clamp(self[i], min, max))
-	}
-}
-
 impl<T: Cell, const D: usize> From<Array<T, D>> for [T; D] {
 	fn from(cells: Array<T, D>) -> [T; D] {
 		cells.0
+	}
+}
+
+impl<T: Cell, const D: usize> Array<T, D> {
+	pub fn clamp(self, min: T, max: T) -> Self {
+		Self::from_fn(|i| num::clamp(self[i], min, max))
 	}
 }
 

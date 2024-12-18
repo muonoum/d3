@@ -1,11 +1,7 @@
 use num::traits::{FromPrimitive, Num, NumAssignOps};
-use std::ops::Index;
-use std::ops::Mul;
+use std::ops::{Div, Index, IndexMut, Mul};
 
-pub trait Cell: Copy + Num + PartialOrd + FromPrimitive + NumAssignOps {}
-
-impl Cell for f32 {}
-impl Cell for i32 {}
+pub trait Cell = Copy + Num + PartialOrd + FromPrimitive + NumAssignOps;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Matrix<T: Cell, const R: usize, const C: usize>([[T; C]; R]);
@@ -22,7 +18,7 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 	}
 
 	pub fn zero() -> Self {
-		Matrix::new([[T::zero(); C]; R])
+		Self([[T::zero(); C]; R])
 	}
 
 	pub fn transpose(&self) -> Matrix<T, C, R> {
@@ -46,13 +42,12 @@ impl<T: Cell, const R: usize, const C: usize> Index<(usize, usize)> for Matrix<T
 	}
 }
 
-impl<T: Cell, const R: usize, const C: usize> std::ops::IndexMut<(usize, usize)>
-	for Matrix<T, R, C>
-{
+impl<T: Cell, const R: usize, const C: usize> IndexMut<(usize, usize)> for Matrix<T, R, C> {
 	fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
 		&mut self.0[index.0][index.1]
 	}
 }
+
 impl<T: Cell, const R: usize, const C: usize, const K: usize> Mul<Matrix<T, C, K>>
 	for Matrix<T, R, C>
 {
@@ -70,6 +65,22 @@ impl<T: Cell, const R: usize, const C: usize, const K: usize> Mul<Matrix<T, C, K
 		}
 
 		matrix
+	}
+}
+
+impl<T: Cell, const R: usize, const C: usize> Mul<T> for Matrix<T, R, C> {
+	type Output = Self;
+
+	fn mul(self, other: T) -> Self {
+		Self::from_fn(|row, column| self[(row, column)] * other)
+	}
+}
+
+impl<T: Cell, const R: usize, const C: usize> Div<T> for Matrix<T, R, C> {
+	type Output = Self;
+
+	fn div(self, other: T) -> Self {
+		Self::from_fn(|row, column| self[(row, column)] / other)
 	}
 }
 

@@ -74,35 +74,6 @@ fn stop_look(app: &mut App, i: usize) {
 	app.look[i] = 0.0;
 }
 
-#[test]
-fn test_coords() {
-	let (width, height) = (100.0, 100.0);
-
-	let scene = scene::Scene::load("../../scenes/cube.toml");
-	let positions = &scene.objects[0].mesh.positions;
-	let projection = transform::perspective_near_far(width / height, 55.0, 1.0, 5.0);
-	let viewport = transform::viewport(width, height);
-
-	#[allow(unused_variables)]
-	let screen_space = |ndc: Vector<f32, 3>| {
-		Vector::new([[
-			(ndc[0] + 1.0) / 2.0 * width,
-			(1.0 - ndc[1]) / 2.0 * height,
-			-ndc[2],
-		]])
-	};
-
-	for pos in positions.iter() {
-		let pos = pos.v4();
-		let pos = pos * scene.camera.view;
-		let pos = pos * projection;
-		let project_divide_screen = screen_space(pos.v3());
-		let project_divide_viewport = (pos.v3().v4() * viewport).v3();
-		assert_eq!(project_divide_screen, project_divide_viewport);
-		// println!("{},{},{}", pos[0], pos[1], pos[2]);
-	}
-}
-
 impl ApplicationHandler for State {
 	fn resumed(&mut self, event_loop: &ActiveEventLoop) {
 		match self {
@@ -184,12 +155,12 @@ impl ApplicationHandler for State {
 			WindowEvent::KeyboardInput { event, .. } => match event.state {
 				ElementState::Pressed => match event.physical_key {
 					PhysicalKey::Code(KeyCode::ArrowLeft) => set_look(app, 0, 0.05),
-					PhysicalKey::Code(KeyCode::ArrowUp) => set_movement(app, 1, -0.05),
-					PhysicalKey::Code(KeyCode::KeyW) => set_movement(app, 2, 0.05),
-					PhysicalKey::Code(KeyCode::KeyA) => set_movement(app, 0, 0.05),
-					PhysicalKey::Code(KeyCode::KeyS) => set_movement(app, 2, -0.05),
-					PhysicalKey::Code(KeyCode::KeyD) => set_movement(app, 0, -0.05),
-					PhysicalKey::Code(KeyCode::ArrowDown) => set_movement(app, 1, 0.05),
+					PhysicalKey::Code(KeyCode::ArrowUp) => set_movement(app, 1, 0.05),
+					PhysicalKey::Code(KeyCode::KeyW) => set_movement(app, 2, -0.05),
+					PhysicalKey::Code(KeyCode::KeyA) => set_movement(app, 0, -0.05),
+					PhysicalKey::Code(KeyCode::KeyS) => set_movement(app, 2, 0.05),
+					PhysicalKey::Code(KeyCode::KeyD) => set_movement(app, 0, 0.05),
+					PhysicalKey::Code(KeyCode::ArrowDown) => set_movement(app, 1, -0.05),
 					PhysicalKey::Code(KeyCode::ArrowRight) => set_look(app, 0, -0.05),
 					_else => (),
 				},

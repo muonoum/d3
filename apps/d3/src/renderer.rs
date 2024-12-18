@@ -15,6 +15,25 @@ pub struct Renderer {
 	viewport: Matrix<f32, 4, 4>,
 }
 
+fn bounding_box(
+	(p1, p2, p3): (Vector<f32, 3>, Vector<f32, 3>, Vector<f32, 3>),
+	(width, height): (usize, usize),
+) -> (usize, usize, usize, usize) {
+	let x1 = p1[0] as usize;
+	let y1 = p1[1] as usize;
+	let x2 = p2[0] as usize;
+	let y2 = p2[1] as usize;
+	let x3 = p3[0] as usize;
+	let y3 = p3[1] as usize;
+
+	let min_x = x1.min(x2.min(x3)).max(0);
+	let min_y = y1.min(y2.min(y3)).max(0);
+	let max_x = x1.max(x2.max(x3)).min(width);
+	let max_y = y1.max(y2.max(y3)).min(height);
+
+	(min_x, min_y, max_x, max_y)
+}
+
 fn edge<T: matrix::matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
 	(p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])
 }
@@ -105,6 +124,7 @@ impl Renderer {
 				let pixel_color = {
 					shading.shade(
 						reflection,
+						(screen1, screen2, screen3),
 						(world[v1.position], world[v2.position], world[v3.position]),
 						(normals[v1.normal], normals[v2.normal], normals[v3.normal]),
 						camera.position,
@@ -114,15 +134,10 @@ impl Renderer {
 					)
 				};
 
-				let min_x = screen1[0].min(screen2[0].min(screen3[0]));
-				let min_y = screen1[1].min(screen2[1].min(screen3[1]));
-				let min_x = usize::max(0, min_x as usize);
-				let min_y = usize::max(0, min_y as usize);
-
-				let max_x = screen1[0].max(screen2[0].max(screen3[0]));
-				let max_y = screen1[1].max(screen2[1].max(screen3[1]));
-				let max_x = usize::min(max_x as usize, self.width as usize - 1);
-				let max_y = usize::min(max_y as usize, self.height as usize - 1);
+				let (min_x, min_y, max_x, max_y) = bounding_box(
+					(screen1, screen2, screen3),
+					(self.width as usize - 1, self.height as usize - 1),
+				);
 
 				let area = edge(screen1.into(), screen2.into(), screen3.into());
 
@@ -150,7 +165,7 @@ impl Renderer {
 							let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
 							let z_index = y * self.width as usize + x;
 							if z_buffer[z_index] < z {
-								let color = pixel_color(u, v, w);
+								let color = pixel_color(u, v, w, z);
 								plot(x as u32, y as u32, &color);
 								z_buffer[z_index] = z;
 							}
