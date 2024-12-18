@@ -38,7 +38,6 @@ struct App {
 	reflection: reflection::Model,
 	window: Arc<Window>,
 	movement: Vector<f32, 3>,
-	look: Vector<f32, 3>,
 	scene: Scene,
 }
 
@@ -58,20 +57,10 @@ fn main() -> anyhow::Result<()> {
 
 fn set_movement(app: &mut App, i: usize, d: f32) {
 	app.movement[i] = d;
-	app.look[i] = d;
-}
-
-fn set_look(app: &mut App, i: usize, d: f32) {
-	app.look[i] = d;
 }
 
 fn stop_movement(app: &mut App, i: usize) {
 	app.movement[i] = 0.0;
-	app.look[i] = 0.0;
-}
-
-fn stop_look(app: &mut App, i: usize) {
-	app.look[i] = 0.0;
 }
 
 impl ApplicationHandler for State {
@@ -134,7 +123,6 @@ impl ApplicationHandler for State {
 					reflection: args.reflection,
 					window: window.clone(),
 					movement: vector![0.0; 3],
-					look: vector![0.0; 3],
 					scene,
 				});
 
@@ -154,25 +142,25 @@ impl ApplicationHandler for State {
 
 			WindowEvent::KeyboardInput { event, .. } => match event.state {
 				ElementState::Pressed => match event.physical_key {
-					PhysicalKey::Code(KeyCode::ArrowLeft) => set_look(app, 0, 0.05),
+					PhysicalKey::Code(KeyCode::ArrowLeft) => (),
 					PhysicalKey::Code(KeyCode::ArrowUp) => set_movement(app, 1, 0.05),
 					PhysicalKey::Code(KeyCode::KeyW) => set_movement(app, 2, -0.05),
 					PhysicalKey::Code(KeyCode::KeyA) => set_movement(app, 0, -0.05),
 					PhysicalKey::Code(KeyCode::KeyS) => set_movement(app, 2, 0.05),
 					PhysicalKey::Code(KeyCode::KeyD) => set_movement(app, 0, 0.05),
 					PhysicalKey::Code(KeyCode::ArrowDown) => set_movement(app, 1, -0.05),
-					PhysicalKey::Code(KeyCode::ArrowRight) => set_look(app, 0, -0.05),
+					PhysicalKey::Code(KeyCode::ArrowRight) => (),
 					_else => (),
 				},
 				ElementState::Released => match event.physical_key {
-					PhysicalKey::Code(KeyCode::ArrowLeft) => stop_look(app, 0),
+					PhysicalKey::Code(KeyCode::ArrowLeft) => (),
 					PhysicalKey::Code(KeyCode::ArrowUp) => stop_movement(app, 1),
 					PhysicalKey::Code(KeyCode::KeyW) => stop_movement(app, 2),
 					PhysicalKey::Code(KeyCode::KeyA) => stop_movement(app, 0),
 					PhysicalKey::Code(KeyCode::KeyS) => stop_movement(app, 2),
 					PhysicalKey::Code(KeyCode::KeyD) => stop_movement(app, 0),
 					PhysicalKey::Code(KeyCode::ArrowDown) => stop_movement(app, 1),
-					PhysicalKey::Code(KeyCode::ArrowRight) => stop_look(app, 0),
+					PhysicalKey::Code(KeyCode::ArrowRight) => (),
 					_else => (),
 				},
 			},
@@ -211,8 +199,8 @@ impl ApplicationHandler for State {
 					}
 				}
 
-				if app.movement != vector![0.0; 3] || app.look != vector![0.0; 3] {
-					app.scene.camera.update_camera(app.movement, app.look);
+				if app.movement != vector![0.0; 3] {
+					app.scene.camera.update_camera(app.movement);
 				}
 
 				let buffer = app.buffer.frame_mut();
