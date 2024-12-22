@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
+  "apps/d3",
   "libs/array",
   "libs/matrix",
   "libs/obj",
-  "apps/d3",
+  "libs/render",
 ]

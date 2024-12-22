@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.94"
+array = { version = "0.1.0", path = "../array" }
 matrix = { version = "0.1.0", path = "../../libs/matrix" }

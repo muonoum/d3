@@ -1,0 +1,9 @@
+[package]
+name = "render"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+array = { version = "0.1.0", path = "../array" }
+matrix = { version = "0.1.0", path = "../matrix" }
+transform = { version = "0.1.0", path = "../transform" }

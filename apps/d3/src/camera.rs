@@ -1,27 +1,30 @@
-use matrix::matrix::Matrix;
-use matrix::vector::Vector;
+use matrix::{vector, Matrix, Vector};
 
-#[derive(Debug)]
 pub struct Camera {
-	pub view: Matrix<f32, 4, 4>,
 	pub position: Vector<f32, 3>,
 	pub target: Vector<f32, 3>,
+	pub view: Matrix<f32, 4, 4>,
+	pub projection: Matrix<f32, 4, 4>,
 }
 
 impl Camera {
-	pub fn new(position: Vector<f32, 3>, target: Vector<f32, 3>) -> Self {
-		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
-		let world = transform::look_at(position, target, up_vector);
+	pub fn new(
+		position: Vector<f32, 3>,
+		target: Vector<f32, 3>,
+		projection: Matrix<f32, 4, 4>,
+	) -> Self {
+		let world = transform::look_at(position, target, vector![0.0, 1.0, 0.0]);
 		let view = world.inverse().unwrap();
 
 		Camera {
-			view,
 			position,
 			target,
+			view,
+			projection,
 		}
 	}
 
-	pub fn update_camera(&mut self, movement: Vector<f32, 3>) {
+	pub fn update(&mut self, movement: Vector<f32, 3>) {
 		self.position += movement;
 		self.target += movement;
 		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);

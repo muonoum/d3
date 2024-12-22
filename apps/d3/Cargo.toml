@@ -7,11 +7,11 @@ edition = "2021"
 anyhow = "1.0.94"
 array = { version = "0.1.0", path = "../../libs/array" }
 clap = { version = "4.5.23", features = ["derive"] }
-clipline = "0.3.0"
 matrix = { version = "0.1.0", path = "../../libs/matrix" }
+num = "0.4.3"
 obj = { version = "0.1.0", path = "../../libs/obj" }
 pixels = "0.14.0"
-rayon = "1.10.0"
+render = { version = "0.1.0", path = "../../libs/render" }
 toml = "0.8.19"
 transform = { version = "0.1.0", path = "../../libs/transform" }
 winit = { version = "0.30.5", default-features = false, features = ["rwh_05", "rwh_06"] }

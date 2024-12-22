@@ -1,53 +1,49 @@
-use clap::Parser;
-use pixels::{Pixels, SurfaceTexture};
-use std::sync::Arc;
-use winit::application::ApplicationHandler;
-use winit::dpi::{LogicalPosition, LogicalSize};
-use winit::event::ElementState;
-use winit::event::MouseButton;
-use winit::event::WindowEvent;
-use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
-use winit::keyboard::{KeyCode, PhysicalKey};
-use winit::window::{Window, WindowId};
+#![feature(trait_alias)]
 
+use clap::Parser;
+use pixels::Pixels;
+use pixels::SurfaceTexture;
+use winit::application::ApplicationHandler;
+use winit::dpi::LogicalPosition;
+use winit::dpi::LogicalSize;
+use winit::event::ElementState;
+use winit::event::WindowEvent;
+use winit::event_loop::ActiveEventLoop;
+use winit::event_loop::ControlFlow;
+use winit::event_loop::EventLoop;
+use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::window::Window;
+use winit::window::WindowId;
+
+mod args;
+mod buffer;
 mod camera;
-mod cli;
 mod light;
 mod material;
-#[allow(dead_code)]
-mod normal_renderer;
 mod object;
-mod reflection;
-#[allow(dead_code)]
-mod renderer;
 mod scene;
-mod shading;
 
-use matrix::vector;
-use matrix::vector::Vector;
-use renderer::Renderer;
+use args::Args;
+use buffer::PixelsBuffer;
+use matrix::{vector, Vector};
+use render::buffer::Buffer;
+use render::pipeline;
 use scene::Scene;
 
-struct App {
-	buffer: Pixels,
-	#[allow(dead_code)]
-	renderer: Renderer,
-	#[allow(dead_code)]
-	normal_renderer: normal_renderer::Renderer,
-	shading: shading::Model,
-	reflection: reflection::Model,
-	window: Arc<Window>,
+enum State {
+	Starting(Args),
+	Running(App),
+}
+
+pub struct App {
+	window: Window,
+	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
 	scene: Scene,
 }
 
-enum State {
-	Starting(cli::Args),
-	Running(App),
-}
-
 fn main() -> anyhow::Result<()> {
-	let args = cli::Args::parse();
+	let args = Args::parse();
 	let mut state = State::Starting(args);
 	let event_loop = EventLoop::new()?;
 	event_loop.set_control_flow(ControlFlow::Poll);
@@ -55,173 +51,103 @@ fn main() -> anyhow::Result<()> {
 	Ok(())
 }
 
-fn set_movement(app: &mut App, i: usize, d: f32) {
-	app.movement[i] = d;
-}
-
-fn stop_movement(app: &mut App, i: usize) {
-	app.movement[i] = 0.0;
-}
-
 impl ApplicationHandler for State {
 	fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-		match self {
-			State::Running { .. } => panic!(),
+		if let State::Starting(args) = self {
+			let window = event_loop
+				.create_window(
+					Window::default_attributes()
+						.with_title("d3")
+						.with_inner_size(LogicalSize::new(args.width, args.height))
+						.with_position(LogicalPosition::new(0, 0))
+						.with_resizable(false),
+				)
+				.unwrap();
 
-			State::Starting(args) => {
-				let scene = scene::Scene::load(&args.scene);
+			let size = window.inner_size();
+			let buffer_height = (size.height / args.scale) as usize;
+			let buffer_width = (size.width / args.scale) as usize;
 
-				let window = Arc::new(
-					event_loop
-						.create_window(
-							Window::default_attributes()
-								.with_title("d3")
-								.with_inner_size(LogicalSize::new(args.width, args.height))
-								.with_position(LogicalPosition::new(0, 0))
-								.with_resizable(false),
-						)
-						.unwrap(),
-				);
+			println!(
+				"window={}x{} buffer={}x{}",
+				size.width, size.height, buffer_width, buffer_height,
+			);
 
-				let size = window.inner_size();
-				let height = size.height / args.scale;
-				let width = size.width / args.scale;
+			let frame = {
+				let surface = SurfaceTexture::new(size.width, size.height, &window);
+				let buffer =
+					Pixels::new(buffer_width as u32, buffer_height as u32, surface).unwrap();
+				PixelsBuffer::new(buffer, buffer_width, buffer_height)
+			};
 
-				println!(
-					"window={}x{} buffer={}x{}",
-					size.width, size.height, width, height,
-				);
+			let scene = Scene::new(&args.scene, buffer_width, buffer_height);
+			window.request_redraw();
 
-				println!(
-					"shading={:?} reflection={:?}",
-					args.shading, args.reflection
-				);
-
-				for (i, object) in scene.objects.iter().enumerate() {
-					println!(
-						"object={} faces={} positions={} normals={}",
-						i + 1,
-						object.mesh.faces.len(),
-						object.mesh.positions.len(),
-						object.mesh.normals.len()
-					);
-				}
-
-				let renderer = Renderer::new(width, height);
-				let normal_renderer = normal_renderer::Renderer::new(width, height);
-
-				let buffer = {
-					let surface = SurfaceTexture::new(size.width, size.height, &window);
-					Pixels::new(width, height, surface).unwrap()
-				};
-
-				*self = State::Running(App {
-					buffer,
-					renderer,
-					normal_renderer,
-					shading: args.shading,
-					reflection: args.reflection,
-					window: window.clone(),
-					movement: vector![0.0; 3],
-					scene,
-				});
-
-				window.request_redraw();
-			}
+			*self = State::Running(App {
+				window,
+				frame,
+				movement: vector![0.0; 3],
+				scene,
+			});
 		}
 	}
 
 	fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
-		let app = match self {
-			State::Starting { .. } => panic!(),
-			State::Running(app) => app,
-		};
+		if let State::Running(app) = self {
+			match event {
+				WindowEvent::CloseRequested => event_loop.exit(),
 
-		match event {
-			WindowEvent::CloseRequested => event_loop.exit(),
-
-			WindowEvent::KeyboardInput { event, .. } => match event.state {
-				ElementState::Pressed => match event.physical_key {
-					PhysicalKey::Code(KeyCode::ArrowLeft) => (),
-					PhysicalKey::Code(KeyCode::ArrowUp) => set_movement(app, 1, 0.05),
-					PhysicalKey::Code(KeyCode::KeyW) => set_movement(app, 2, -0.05),
-					PhysicalKey::Code(KeyCode::KeyA) => set_movement(app, 0, -0.05),
-					PhysicalKey::Code(KeyCode::KeyS) => set_movement(app, 2, 0.05),
-					PhysicalKey::Code(KeyCode::KeyD) => set_movement(app, 0, 0.05),
-					PhysicalKey::Code(KeyCode::ArrowDown) => set_movement(app, 1, -0.05),
-					PhysicalKey::Code(KeyCode::ArrowRight) => (),
-					_else => (),
+				WindowEvent::KeyboardInput { event, .. } => match event.state {
+					ElementState::Pressed => match event.physical_key {
+						PhysicalKey::Code(KeyCode::ArrowLeft) => (),
+						PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.05,
+						PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = -0.05,
+						PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = -0.05,
+						PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = 0.05,
+						PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = 0.05,
+						PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = -0.05,
+						PhysicalKey::Code(KeyCode::ArrowRight) => (),
+						_else => (),
+					},
+					ElementState::Released => match event.physical_key {
+						PhysicalKey::Code(KeyCode::ArrowLeft) => (),
+						PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.0,
+						PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = 0.0,
+						PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = 0.0,
+						PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = 0.0,
+						PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = 0.0,
+						PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = 0.0,
+						PhysicalKey::Code(KeyCode::ArrowRight) => (),
+						_else => (),
+					},
 				},
-				ElementState::Released => match event.physical_key {
-					PhysicalKey::Code(KeyCode::ArrowLeft) => (),
-					PhysicalKey::Code(KeyCode::ArrowUp) => stop_movement(app, 1),
-					PhysicalKey::Code(KeyCode::KeyW) => stop_movement(app, 2),
-					PhysicalKey::Code(KeyCode::KeyA) => stop_movement(app, 0),
-					PhysicalKey::Code(KeyCode::KeyS) => stop_movement(app, 2),
-					PhysicalKey::Code(KeyCode::KeyD) => stop_movement(app, 0),
-					PhysicalKey::Code(KeyCode::ArrowDown) => stop_movement(app, 1),
-					PhysicalKey::Code(KeyCode::ArrowRight) => (),
-					_else => (),
-				},
-			},
 
-			WindowEvent::CursorMoved { .. } => {}
+				WindowEvent::RedrawRequested => {
+					let mut depth =
+						vec![f32::NEG_INFINITY; app.frame.width() * app.frame.height()];
+					app.frame.clear([0, 0, 0, 255]);
+					app.scene.update(app.movement);
 
-			WindowEvent::MouseInput { state, button, .. } => {
-				match (state, button) {
-					(ElementState::Pressed, MouseButton::Left) => {
-						app.reflection = match app.reflection {
-							reflection::Model::Phong => reflection::Model::BlinnPhong,
-							reflection::Model::BlinnPhong => reflection::Model::Phong,
-						};
-
-						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
+					for object in app.scene.objects.iter() {
+						pipeline::render(
+							object::Render {
+								camera: &app.scene.camera,
+								lights: &app.scene.lights,
+								object,
+							},
+							&object.mesh.faces,
+							&mut app.frame,
+							&mut depth,
+						);
 					}
 
-					(ElementState::Pressed, MouseButton::Right) => {
-						app.shading = match app.shading {
-							shading::Model::Flat => shading::Model::Gourad,
-							shading::Model::Gourad => shading::Model::Phong,
-							shading::Model::Phong => shading::Model::Flat,
-						};
-
-						println!("shading={:?} reflection={:?}", app.shading, app.reflection);
-					}
-
-					_else => (),
-				};
-			}
-
-			WindowEvent::RedrawRequested => {
-				for object in app.scene.objects.iter_mut() {
-					if let Some(update) = &object.update {
-						object.orientation += update.orientation;
-					}
+					app.window.pre_present_notify();
+					app.frame.render();
+					app.window.request_redraw();
 				}
 
-				if app.movement != vector![0.0; 3] {
-					app.scene.camera.update_camera(app.movement);
-				}
-
-				let buffer = app.buffer.frame_mut();
-				buffer.copy_from_slice(&[0, 0, 0, 255].repeat(buffer.len() / 4));
-
-				app.renderer.render(
-					buffer,
-					&app.reflection,
-					&app.shading,
-					app.scene.ambient_color,
-					&app.scene.lights,
-					&app.scene.camera,
-					&app.scene.objects,
-				);
-
-				app.window.pre_present_notify();
-				app.buffer.render().unwrap();
-				app.window.request_redraw();
+				_event => {}
 			}
-
-			_event => {}
 		}
 	}
 }
