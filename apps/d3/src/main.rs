@@ -20,6 +20,7 @@ mod light;
 mod material;
 mod object;
 mod scene;
+// mod test_triangle;
 
 use args::Args;
 use buffer::PixelsBuffer;
@@ -37,6 +38,7 @@ pub struct App {
 	window: Window,
 	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
+	// scene: test_triangle::Scene,
 	scene: Scene,
 }
 
@@ -83,6 +85,7 @@ impl ApplicationHandler for State {
 			};
 
 			let scene = Scene::new(&args.scene, buffer_width, buffer_height);
+			// let scene = test_triangle::Scene::new(buffer_width, buffer_height);
 			window.request_redraw();
 
 			*self = State::Running(App {
@@ -130,6 +133,7 @@ impl ApplicationHandler for State {
 					app.frame.clear([0, 0, 0, 255]);
 					app.scene.update(app.movement);
 
+					// pipeline::render(&app.scene, &app.scene.object, &mut app.frame, &mut depth);
 					for object in app.scene.objects.iter() {
 						pipeline::render(
 							object::Render {
