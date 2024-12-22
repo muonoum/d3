@@ -1,5 +1,3 @@
-#![feature(trait_alias)]
-
 use clap::Parser;
 use pixels::Pixels;
 use pixels::SurfaceTexture;
