@@ -40,7 +40,7 @@ pub struct Face {
 	pub material: Option<Material>,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone)]
 pub struct Vertex {
 	pub position: usize,
 	pub normal: usize,

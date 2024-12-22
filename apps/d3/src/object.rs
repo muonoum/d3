@@ -69,6 +69,7 @@ pub struct Render<'a> {
 	pub object: &'a Object,
 	pub camera: &'a Camera,
 	pub lights: &'a Vec<Light>,
+	pub projection: Matrix<f32, 4, 4>,
 }
 
 impl render::Pipeline for Render<'_> {
@@ -91,7 +92,7 @@ impl render::Pipeline for Render<'_> {
 		let world = position.v4() * self.object.world_space;
 
 		(
-			world * self.camera.view * self.camera.projection,
+			world * self.camera.view * self.projection,
 			(world.v3(), normal),
 		)
 	}

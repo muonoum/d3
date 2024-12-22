@@ -4,15 +4,10 @@ pub struct Camera {
 	pub position: Vector<f32, 3>,
 	pub target: Vector<f32, 3>,
 	pub view: Matrix<f32, 4, 4>,
-	pub projection: Matrix<f32, 4, 4>,
 }
 
 impl Camera {
-	pub fn new(
-		position: Vector<f32, 3>,
-		target: Vector<f32, 3>,
-		projection: Matrix<f32, 4, 4>,
-	) -> Self {
+	pub fn new(position: Vector<f32, 3>, target: Vector<f32, 3>) -> Self {
 		let world = transform::look_at(position, target, vector![0.0, 1.0, 0.0]);
 		let view = world.inverse().unwrap();
 
@@ -20,7 +15,6 @@ impl Camera {
 			position,
 			target,
 			view,
-			projection,
 		}
 	}
 

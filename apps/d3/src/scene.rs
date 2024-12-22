@@ -13,7 +13,7 @@ pub struct Scene {
 }
 
 impl Scene {
-	pub fn new(path: &str, width: usize, height: usize) -> Self {
+	pub fn new(path: &str) -> Self {
 		let scene_data = std::fs::read_to_string(path).unwrap();
 		let table = scene_data.parse::<toml::Table>().unwrap();
 
@@ -21,8 +21,7 @@ impl Scene {
 			let table = table.get("camera").unwrap();
 			let position = table.get("position").and_then(read_vector).unwrap();
 			let target = table.get("target").and_then(read_vector).unwrap();
-			let projection = transform::perspective_near(width as f32 / height as f32, 2.0, 0.1);
-			Camera::new(position, target, projection)
+			Camera::new(position, target)
 		};
 
 		let objects = table

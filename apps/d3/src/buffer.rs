@@ -4,7 +4,6 @@ use render::buffer::Buffer;
 pub struct PixelsBuffer {
 	buffer: Pixels,
 	pub width: usize,
-	#[allow(dead_code)]
 	pub height: usize,
 }
 
