@@ -4,14 +4,22 @@ use matrix::Vector;
 use matrix::vector;
 
 pub trait Pipeline {
+	type Setup;
 	type Face;
 	type Vertex;
 	type Varying;
 	type Fragment;
 
+	fn setup(&self) -> Self::Setup;
+
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3];
-	fn vertex(&self, face: &Self::Face, vertex: &Self::Vertex)
-	-> (Vector<f32, 4>, Self::Varying);
+
+	fn vertex(
+		&self,
+		vertex: &Self::Vertex,
+		setup: &Self::Setup,
+	) -> (Vector<f32, 4>, Self::Varying);
+
 	fn fragment(&self, face: &Self::Face, data: &Self::Varying) -> Self::Fragment;
 }
 
@@ -64,18 +72,20 @@ pub fn render<V, F, P, D>(
 		]])
 	};
 
+	let setup = pipeline.setup();
+
 	for face in mesh.iter() {
 		let [v1, v2, v3] = pipeline.face(face);
 
-		let (clip1, data1) = pipeline.vertex(face, &v1);
+		let (clip1, data1) = pipeline.vertex(&v1, &setup);
 		let ndc1 = clip1.v3();
 		let screen1 = screen_space(ndc1);
 
-		let (clip2, data2) = pipeline.vertex(face, &v2);
+		let (clip2, data2) = pipeline.vertex(&v2, &setup);
 		let ndc2 = clip2.v3();
 		let screen2 = screen_space(ndc2);
 
-		let (clip3, data3) = pipeline.vertex(face, &v3);
+		let (clip3, data3) = pipeline.vertex(&v3, &setup);
 		let ndc3 = clip3.v3();
 		let screen3 = screen_space(ndc3);
 

@@ -45,7 +45,9 @@ pub struct App {
 }
 
 fn main() -> anyhow::Result<()> {
-	env_logger::init();
+	env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("d3"))
+		.format_timestamp(None)
+		.init();
 	let args = Args::parse();
 	let mut state = State::Starting(args);
 	let event_loop = EventLoop::new()?;

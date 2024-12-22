@@ -73,10 +73,36 @@ pub struct Render<'a> {
 }
 
 impl render::Pipeline for Render<'_> {
+	type Setup = (
+		Vec<Vector<f32, 3>>,
+		Vec<Vector<f32, 4>>,
+		Vec<Vector<f32, 3>>,
+	);
+
 	type Face = obj::Face;
 	type Fragment = [u8; 4];
 	type Vertex = obj::Vertex;
 	type Varying = (Vector<f32, 3>, Vector<f32, 3>);
+
+	fn setup(&self) -> Self::Setup {
+		let clip_space = self.camera.view * self.projection;
+
+		let mut world_positions = vec![];
+		let mut clip_positions = vec![];
+		let mut normals = vec![];
+
+		for v in self.object.mesh.positions.iter() {
+			let world = v.v4() * self.object.world_space;
+			world_positions.push(world.v3());
+			clip_positions.push(world * clip_space);
+		}
+
+		for v in self.object.mesh.normals.iter() {
+			normals.push(*v * self.object.normal_space);
+		}
+
+		(world_positions, clip_positions, normals)
+	}
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3] {
 		face.vertices
@@ -84,16 +110,14 @@ impl render::Pipeline for Render<'_> {
 
 	fn vertex(
 		&self,
-		_face: &Self::Face,
 		vertex: &Self::Vertex,
+		setup: &Self::Setup,
 	) -> (Vector<f32, 4>, Self::Varying) {
-		let position = self.object.mesh.positions[vertex.position];
-		let normal = self.object.mesh.normals[vertex.normal] * self.object.normal_space;
-		let world = position.v4() * self.object.world_space;
+		let (world, clip, normals) = setup;
 
 		(
-			world * self.camera.view * self.projection,
-			(world.v3(), normal),
+			clip[vertex.position],
+			(world[vertex.position], normals[vertex.normal]),
 		)
 	}
 
