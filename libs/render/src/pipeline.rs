@@ -10,7 +10,7 @@ pub trait Pipeline {
 	type Varying;
 	type Fragment;
 
-	fn setup(&self) -> Self::Setup;
+	fn prepare(&self) -> Self::Setup;
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3];
 
@@ -72,7 +72,7 @@ pub fn render<V, F, P, D>(
 		]])
 	};
 
-	let setup = pipeline.setup();
+	let setup = pipeline.prepare();
 
 	for face in mesh.iter() {
 		let [v1, v2, v3] = pipeline.face(face);

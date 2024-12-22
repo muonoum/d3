@@ -84,7 +84,7 @@ impl render::Pipeline for Render<'_> {
 	type Vertex = obj::Vertex;
 	type Varying = (Vector<f32, 3>, Vector<f32, 3>);
 
-	fn setup(&self) -> Self::Setup {
+	fn prepare(&self) -> Self::Setup {
 		let clip_space = self.camera.view * self.projection;
 
 		let mut world_positions = vec![];

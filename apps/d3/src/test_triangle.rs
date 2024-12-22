@@ -1,8 +1,6 @@
 use crate::camera::Camera;
-use array::array;
-use array::Array;
-use matrix::vector;
-use matrix::Vector;
+use array::{array, Array};
+use matrix::{vector, Matrix, Vector};
 use render::Pipeline;
 
 pub type Vertex = (Vector<f32, 3>, Array<f32, 3>);
@@ -10,6 +8,7 @@ pub type Vertex = (Vector<f32, 3>, Array<f32, 3>);
 pub struct Scene {
 	pub object: Vec<[Vertex; 3]>,
 	pub camera: Camera,
+	pub projection: Matrix<f32, 4, 4>,
 }
 
 impl Scene {
@@ -22,17 +21,24 @@ impl Scene {
 
 		let projection = transform::perspective_near(width as f32 / height as f32, 2.0, 0.1);
 		// transform::perspective_near_far(width as f32 / height as f32, 50.0, 0.1, 100.0);
-		let camera = Camera::new(vector![0.0, 0.0, 4.5], vector![0.0, 0.0, 0.0], projection);
+		let camera = Camera::new(vector![0.0, 0.0, 4.5], vector![0.0, 0.0, 0.0]);
 
-		Self { object, camera }
+		Self {
+			object,
+			camera,
+			projection,
+		}
 	}
 }
 
 impl Pipeline for &Scene {
+	type Setup = ();
 	type Vertex = Vertex;
 	type Fragment = [u8; 4];
 	type Varying = Array<f32, 3>;
 	type Face = [Self::Vertex; 3];
+
+	fn prepare(&self) -> Self::Setup {}
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3] {
 		*face
@@ -40,12 +46,12 @@ impl Pipeline for &Scene {
 
 	fn vertex(
 		&self,
-		_face: &Self::Face,
 		vertex: &Self::Vertex,
+		_setup: &Self::Setup,
 	) -> (Vector<f32, 4>, Self::Varying) {
 		let (position, color) = vertex;
 		let world = position.v4();
-		let clip = world * self.camera.view * self.camera.projection;
+		let clip = world * self.camera.view * self.projection;
 		(clip, *color)
 	}
 
