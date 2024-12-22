@@ -41,6 +41,7 @@ pub struct App {
 }
 
 fn main() -> anyhow::Result<()> {
+	env_logger::init();
 	let args = Args::parse();
 	let mut state = State::Starting(args);
 	let event_loop = EventLoop::new()?;
@@ -66,9 +67,12 @@ impl ApplicationHandler for State {
 			let buffer_height = (size.height / args.scale) as usize;
 			let buffer_width = (size.width / args.scale) as usize;
 
-			println!(
-				"window={}x{} buffer={}x{}",
-				size.width, size.height, buffer_width, buffer_height,
+			log::info!(
+				"Create window {}x{}; buffer {}x{}",
+				size.width,
+				size.height,
+				buffer_width,
+				buffer_height,
 			);
 
 			let frame = {

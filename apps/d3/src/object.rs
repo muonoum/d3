@@ -21,18 +21,26 @@ pub struct Update {
 
 impl Object {
 	pub fn new(
-		mesh: &str,
+		path: &str,
 		scale: Vector<f32, 3>,
 		orientation: Vector<f32, 3>,
 		position: Vector<f32, 3>,
 		material: Material,
 		update: Option<Update>,
 	) -> Self {
-		let mesh = obj::Mesh::new(mesh).unwrap();
+		let mesh = obj::Mesh::new(path).unwrap();
 		let world_space = transform::scale_vector(scale)
 			* transform::rotate_vector(orientation)
 			* transform::translate_vector(position);
 		let normal_space = world_space.sub_matrix(3, 3).unwrap();
+
+		log::info!(
+			"Load {}: f={}; v={}; vn={}",
+			path,
+			mesh.faces.len(),
+			mesh.positions.len(),
+			mesh.normals.len(),
+		);
 
 		Object {
 			mesh,
