@@ -10,8 +10,9 @@ pub trait Pipeline {
 	type Fragment;
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3];
-	fn vertex(&self, face: &Self::Face, vertex: Self::Vertex) -> (Vector<f32, 4>, Self::Varying);
-	fn fragment(&self, face: &Self::Face, data: Self::Varying) -> Self::Fragment;
+	fn vertex(&self, face: &Self::Face, vertex: &Self::Vertex)
+	-> (Vector<f32, 4>, Self::Varying);
+	fn fragment(&self, face: &Self::Face, data: &Self::Varying) -> Self::Fragment;
 }
 
 fn bounding_box(
@@ -66,15 +67,15 @@ pub fn render<V, F, P, D>(
 	for face in mesh.iter() {
 		let [v1, v2, v3] = pipeline.face(face);
 
-		let (clip1, data1) = pipeline.vertex(face, v1);
+		let (clip1, data1) = pipeline.vertex(face, &v1);
 		let ndc1 = clip1.v3();
 		let screen1 = screen_space(ndc1);
 
-		let (clip2, data2) = pipeline.vertex(face, v2);
+		let (clip2, data2) = pipeline.vertex(face, &v2);
 		let ndc2 = clip2.v3();
 		let screen2 = screen_space(ndc2);
 
-		let (clip3, data3) = pipeline.vertex(face, v3);
+		let (clip3, data3) = pipeline.vertex(face, &v3);
 		let ndc3 = clip3.v3();
 		let screen3 = screen_space(ndc3);
 
@@ -92,9 +93,9 @@ pub fn render<V, F, P, D>(
 		let rz2 = 1.0 / -clip2[3];
 		let rz3 = 1.0 / -clip3[3];
 
-		let data1 = Interpolate::perspective(data1, rz1);
-		let data2 = Interpolate::perspective(data2, rz2);
-		let data3 = Interpolate::perspective(data3, rz3);
+		let data1 = Interpolate::scale(data1, rz1);
+		let data2 = Interpolate::scale(data2, rz2);
+		let data3 = Interpolate::scale(data3, rz3);
 
 		let (min_x, min_y, max_x, max_y) =
 			bounding_box((screen1, screen2, screen3), (width - 1, height - 1));
@@ -120,9 +121,9 @@ pub fn render<V, F, P, D>(
 
 					let i = y * width + x;
 					if depth[i] < z {
-						let data = Interpolate::interpolate(data1, data2, data3, u, v, w);
-						let data = Interpolate::perspective(data, z);
-						frame.put(x, y, pipeline.fragment(face, data));
+						let data = Interpolate::barycentric(data1, u, data2, v, data3, w);
+						let data = Interpolate::scale(data, z);
+						frame.put(x, y, pipeline.fragment(face, &data));
 						depth[i] = z;
 					}
 				}

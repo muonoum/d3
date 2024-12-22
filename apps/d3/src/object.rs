@@ -84,7 +84,7 @@ impl render::Pipeline for Render<'_> {
 	fn vertex(
 		&self,
 		_face: &Self::Face,
-		vertex: Self::Vertex,
+		vertex: &Self::Vertex,
 	) -> (Vector<f32, 4>, Self::Varying) {
 		let position = self.object.mesh.positions[vertex.position];
 		let normal = self.object.mesh.normals[vertex.normal] * self.object.normal_space;
@@ -96,13 +96,13 @@ impl render::Pipeline for Render<'_> {
 		)
 	}
 
-	fn fragment(&self, face: &Self::Face, (position, normal): Self::Varying) -> Self::Fragment {
+	fn fragment(&self, face: &Self::Face, (position, normal): &Self::Varying) -> Self::Fragment {
 		let color = blinn_phong(
 			match face.material {
 				Some(material) => material.into(),
 				None => self.object.material,
 			},
-			position,
+			*position,
 			normal.normalize(),
 			self.camera.position,
 			self.lights,
