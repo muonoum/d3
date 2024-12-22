@@ -1,4 +1,5 @@
-build:
+dice:
+	cargo run --release -- --scene scenes/dice.toml
 
 .PHONY: commit
 commit: message ?= $(shell git diff --name-only --cached | sed -r 's;([^ /]+/)+([^/ ]+);\2;g')
