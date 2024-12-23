@@ -110,9 +110,9 @@ impl render::Pipeline for Render<'_> {
 		vertex: &Self::Vertex,
 		setup: &Self::Setup,
 	) -> (Vector<f32, 4>, Self::Attributes) {
-		let uv = vertex.texture.map(|i| self.object.mesh.texture[i]);
 		let (positions, normals) = setup;
 		let (world, clip) = positions[vertex.position];
+		let uv = vertex.texture.map(|i| self.object.mesh.texture[i]);
 		(clip, (world, normals[vertex.normal], uv))
 	}
 
@@ -126,13 +126,15 @@ impl render::Pipeline for Render<'_> {
 				let x = f32::min(f32::max(0.0, uv[0] * width), width - 1.0);
 				let y = f32::min(f32::max(0.0, uv[1] * height), height - 1.0);
 				let rgb = texture.get_pixel(x as u32, y as u32);
-				let diffuse = array![
+
+				let diffuse_map = array![
 					rgb[0] as f32 / 255.0,
 					rgb[1] as f32 / 255.0,
 					rgb[2] as f32 / 255.0
 				];
+
 				let color = blinn_phong2(
-					diffuse,
+					diffuse_map,
 					match &face.material {
 						Some(material) => material.into(),
 						None => self.object.material,
@@ -185,7 +187,7 @@ fn blinn_phong(
 
 // TODO
 fn blinn_phong2(
-	diffuse_component: Array<f32, 3>,
+	diffuse_map: Array<f32, 3>,
 	material: Material,
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
@@ -199,7 +201,7 @@ fn blinn_phong2(
 		let halfway_vector = (light_dir + camera_dir).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 		let specular = normal.dot(halfway_vector).powi(material.specular_exponent);
-		sum + diffuse_component * diffuse * light.diffuse_color
+		sum + material.diffuse_component * diffuse_map * diffuse * light.diffuse_color
 			+ material.specular_component * specular * light.specular_color
 	}) * 255.0
 }
