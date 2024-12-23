@@ -1,7 +1,7 @@
 use anyhow::Context;
 use array::{array, Array};
 use core::str::SplitAsciiWhitespace;
-use matrix::{vector, Vector};
+use matrix::Vector;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -12,6 +12,7 @@ pub struct Mesh {
 	pub faces: Vec<Face>,
 	pub normals: Vec<Vector<f32, 3>>,
 	pub positions: Vec<Vector<f32, 3>>,
+	pub texture: Vec<Vector<f32, 2>>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -45,6 +46,7 @@ pub struct Face {
 pub struct Vertex {
 	pub position: usize,
 	pub normal: usize,
+	pub texture: Option<usize>,
 }
 
 impl Mesh {
@@ -57,6 +59,7 @@ impl Mesh {
 			positions: vec![],
 			normals: vec![],
 			faces: vec![],
+			texture: vec![],
 		};
 
 		let mut current_material: String = "".into();
@@ -76,12 +79,13 @@ impl Mesh {
 				Some("usemtl") => current_material = terms.next().context("usemtl")?.into(),
 				Some("v") => mesh.positions.push(read_vector(terms).context("position")?),
 				Some("vn") => mesh.normals.push(read_vector(terms).context("normal")?),
+				Some("vt") => mesh.texture.push(read_vector(terms).context("texture")?),
 				Some("f") => mesh.faces.push(
 					read_face(terms, material_lib.get(&current_material).cloned())
 						.context("face")?,
 				),
 
-				Some("#") | Some("####") | Some("vt") | Some("o") | Some("s") | None => {}
+				Some("#") | Some("####") | Some("o") | Some("s") | None => {}
 				Some(other) => anyhow::bail!("unexpected {}", other),
 			}
 		}
@@ -90,20 +94,28 @@ impl Mesh {
 	}
 }
 
-fn read_vector(mut terms: SplitAsciiWhitespace) -> Result<Vector<f32, 3>, anyhow::Error> {
-	Ok(vector![
-		terms.next().context("vector")?.parse()?,
-		terms.next().context("vector")?.parse()?,
-		terms.next().context("vector")?.parse()?,
-	])
+fn read_vector<const D: usize>(
+	mut terms: SplitAsciiWhitespace,
+) -> Result<Vector<f32, D>, anyhow::Error> {
+	let mut cells = vec![];
+
+	for _ in 0..D {
+		cells.push(terms.next().context("vector")?.parse()?);
+	}
+
+	Ok(Vector::new([cells.as_slice().try_into()?]))
 }
 
-fn read_array(mut terms: SplitAsciiWhitespace) -> Result<Array<f32, 3>, anyhow::Error> {
-	Ok(array![
-		terms.next().context("array")?.parse()?,
-		terms.next().context("array")?.parse()?,
-		terms.next().context("array")?.parse()?,
-	])
+fn read_array<const D: usize>(
+	mut terms: SplitAsciiWhitespace,
+) -> Result<Array<f32, D>, anyhow::Error> {
+	let mut cells = vec![];
+
+	for _ in 0..D {
+		cells.push(terms.next().context("array")?.parse()?);
+	}
+
+	Ok(Array::new(cells.as_slice().try_into()?))
 }
 
 fn read_face(
@@ -123,11 +135,13 @@ fn read_face(
 fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
 	let terms: Vec<&str> = term.split("/").take(3).collect();
 	let position = read_index(&terms, 0).context("position index")?;
+	let texture = read_index(&terms, 1); //.context("texture index")?;
 	let normal = read_index(&terms, 2).context("normal index")?;
 
 	Ok(Vertex {
 		position: position - 1,
 		normal: normal - 1,
+		texture: texture.map(|i| i - 1),
 	})
 }
 

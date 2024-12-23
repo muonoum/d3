@@ -1,5 +1,5 @@
+use crate::Buffer;
 use crate::Interpolate;
-use crate::buffer::Buffer;
 use matrix::Vector;
 use matrix::vector;
 
@@ -7,14 +7,19 @@ pub trait Pipeline {
 	type Setup;
 	type Face;
 	type Vertex;
-	type Varying;
+	type Attributes;
 	type Fragment;
 
-	fn prepare(&self) -> Self::Setup;
+	fn setup(&self) -> Self::Setup;
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3];
-	fn vertex(&self, vertex: &Self::Vertex, setup: &Self::Setup)
-	-> (Vector<f32, 4>, Self::Varying);
-	fn fragment(&self, face: &Self::Face, data: &Self::Varying) -> Self::Fragment;
+
+	fn vertex(
+		&self,
+		vertex: &Self::Vertex,
+		setup: &Self::Setup,
+	) -> (Vector<f32, 4>, Self::Attributes);
+
+	fn fragment(&self, face: &Self::Face, data: &Self::Attributes) -> Self::Fragment;
 }
 
 fn bounding_box(
@@ -47,13 +52,13 @@ fn clipped(v: Vector<f32, 4>) -> bool {
 	x || y || z
 }
 
-pub fn render<V, F, P, D>(
-	pipeline: impl Pipeline<Vertex = V, Face = F, Fragment = P, Varying = D>,
+pub fn render<V, F, P, A>(
+	pipeline: impl Pipeline<Vertex = V, Face = F, Fragment = P, Attributes = A>,
 	mesh: &[F],
 	frame: &mut impl Buffer<P>,
 	depth: &mut [f32],
 ) where
-	D: Copy + Interpolate,
+	A: Copy + Interpolate,
 {
 	let height = frame.height();
 	let width = frame.width();
@@ -66,7 +71,7 @@ pub fn render<V, F, P, D>(
 		]])
 	};
 
-	let setup = pipeline.prepare();
+	let setup = pipeline.setup();
 
 	for face in mesh.iter() {
 		let [v1, v2, v3] = pipeline.face(face);

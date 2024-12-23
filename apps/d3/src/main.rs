@@ -26,8 +26,8 @@ use args::Args;
 use buffer::PixelsBuffer;
 use matrix::Matrix;
 use matrix::{vector, Vector};
-use render::buffer::Buffer;
 use render::pipeline;
+use render::Buffer;
 use scene::Scene;
 
 enum State {

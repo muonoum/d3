@@ -78,9 +78,9 @@ impl render::Pipeline for Render<'_> {
 	type Face = obj::Face;
 	type Fragment = [u8; 4];
 	type Vertex = obj::Vertex;
-	type Varying = (Vector<f32, 3>, Vector<f32, 3>);
+	type Attributes = (Vector<f32, 3>, Vector<f32, 3>);
 
-	fn prepare(&self) -> Self::Setup {
+	fn setup(&self) -> Self::Setup {
 		let clip_space = self.camera.view * self.projection;
 
 		let positions = self.object.mesh.positions.iter().map(|v| {
@@ -106,13 +106,15 @@ impl render::Pipeline for Render<'_> {
 		&self,
 		vertex: &Self::Vertex,
 		setup: &Self::Setup,
-	) -> (Vector<f32, 4>, Self::Varying) {
+	) -> (Vector<f32, 4>, Self::Attributes) {
 		let (positions, normals) = setup;
 		let (world, clip) = positions[vertex.position];
 		(clip, (world, normals[vertex.normal]))
 	}
 
-	fn fragment(&self, face: &Self::Face, (position, normal): &Self::Varying) -> Self::Fragment {
+	fn fragment(&self, face: &Self::Face, attrs: &Self::Attributes) -> Self::Fragment {
+		let (position, normal) = attrs;
+
 		let color = blinn_phong(
 			match face.material {
 				Some(material) => material.into(),

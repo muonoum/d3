@@ -1,5 +1,5 @@
 use pixels::Pixels;
-use render::buffer::Buffer;
+use render::Buffer;
 
 pub struct PixelsBuffer {
 	buffer: Pixels,

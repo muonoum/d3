@@ -38,7 +38,7 @@ impl Pipeline for &Scene {
 	type Varying = Array<f32, 3>;
 	type Face = [Self::Vertex; 3];
 
-	fn prepare(&self) -> Self::Setup {}
+	fn setup(&self) -> Self::Setup {}
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3] {
 		*face
