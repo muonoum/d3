@@ -49,8 +49,9 @@ pub struct Vertex {
 
 impl Mesh {
 	pub fn new(path: &str) -> anyhow::Result<Mesh> {
-		let file = File::open(path)?;
-		let reader = BufReader::new(file);
+		let obj_path = Path::new(path);
+		let obj_file = File::open(obj_path)?;
+		let reader = BufReader::new(obj_file);
 
 		let mut mesh = Mesh {
 			positions: vec![],
@@ -67,27 +68,20 @@ impl Mesh {
 
 			match terms.next() {
 				Some("mtllib") => {
-					let parent = Path::new(path).parent().context("path")?;
-					let lib = Path::new(terms.next().context("mtllib")?);
-					let file = File::open(parent.join(lib))?;
-					read_materials(file, &mut material_lib)?;
+					let location = obj_path.parent().context("mtllib location")?;
+					let mtllib_path = Path::new(terms.next().context("mtllib path")?);
+					read_materials(&location.join(mtllib_path), &mut material_lib)?;
 				}
 
-				Some("usemtl") => {
-					let name = terms.next().context("usemtl")?;
-					current_material = name.into();
-				}
-
-				Some("vt") => {}
+				Some("usemtl") => current_material = terms.next().context("usemtl")?.into(),
 				Some("v") => mesh.positions.push(read_vector(terms).context("position")?),
 				Some("vn") => mesh.normals.push(read_vector(terms).context("normal")?),
-
 				Some("f") => mesh.faces.push(
 					read_face(terms, material_lib.get(&current_material).cloned())
 						.context("face")?,
 				),
 
-				Some("#") | Some("####") | Some("o") | Some("s") | None => {}
+				Some("#") | Some("####") | Some("vt") | Some("o") | Some("s") | None => {}
 				Some(other) => anyhow::bail!("unexpected {}", other),
 			}
 		}
@@ -141,7 +135,8 @@ fn read_index(terms: &Vec<&str>, i: usize) -> Option<usize> {
 	terms.get(i).and_then(|v| v.parse::<usize>().ok())
 }
 
-fn read_materials(file: File, lib: &mut HashMap<String, Material>) -> anyhow::Result<()> {
+fn read_materials(path: &Path, lib: &mut HashMap<String, Material>) -> anyhow::Result<()> {
+	let file = File::open(path)?;
 	let reader = BufReader::new(file);
 	let mut current_material: String = "".into();
 
