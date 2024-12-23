@@ -6,10 +6,6 @@ use crate::object::Object;
 use array::{array, Array};
 use matrix::{vector, Vector};
 
-// pub trait SceneDecoder<T> {
-// 	fn decode(table: &toml::Table) -> T;
-// }
-
 pub struct Scene {
 	pub objects: Vec<Object>,
 	pub lights: Vec<Light>,
@@ -20,8 +16,10 @@ impl Scene {
 	pub fn new(path: &str) -> Self {
 		log::info!("Load {}", path);
 
-		let scene_data = std::fs::read_to_string(path).unwrap();
-		let table = scene_data.parse::<toml::Table>().unwrap();
+		let table = std::fs::read_to_string(path)
+			.unwrap()
+			.parse::<toml::Table>()
+			.unwrap();
 
 		let camera = read_camera(table.get("camera").unwrap());
 
@@ -30,9 +28,8 @@ impl Scene {
 			.and_then(|v| v.as_array())
 			.unwrap()
 			.iter()
-			.map(|value| {
-				let table = value.as_table().unwrap();
-				let path = table.get("mesh").and_then(|v| v.as_str()).unwrap();
+			.map(|table| {
+				let path = table.get("mesh").unwrap().as_str().unwrap();
 
 				let scale = table.get("scale").and_then(read_vector).unwrap();
 				let orientation = table.get("orientation").and_then(read_vector).unwrap();
@@ -40,7 +37,7 @@ impl Scene {
 
 				let material = table.get("material").map(read_material);
 
-				let update = table.get("update").and_then(|v| v.as_table()).map(|table| {
+				let update = table.get("update").map(|table| {
 					let orientation = table.get("orientation").and_then(read_vector).unwrap();
 					object::Update { orientation }
 				});
@@ -97,24 +94,24 @@ fn read_triplet<T>(value: &toml::Value, f: impl Fn(f32, f32, f32) -> T) -> Optio
 	})
 }
 
-pub fn read_camera(data: &toml::Value) -> Camera {
-	let position = data.get("position").and_then(read_vector).unwrap();
-	let target = data.get("target").and_then(read_vector).unwrap();
+pub fn read_camera(table: &toml::Value) -> Camera {
+	let position = table.get("position").and_then(read_vector).unwrap();
+	let target = table.get("target").and_then(read_vector).unwrap();
 	Camera::new(position, target)
 }
 
-pub fn read_material(data: &toml::Value) -> Material {
-	let diffuse_component = data
+pub fn read_material(table: &toml::Value) -> Material {
+	let diffuse_component = table
 		.get("diffuse_component")
 		.and_then(read_array)
 		.unwrap_or_else(|| array![1.0; 3]);
 
-	let specular_component = data
+	let specular_component = table
 		.get("specular_component")
 		.and_then(read_array)
 		.unwrap_or_else(|| array![0.0; 3]);
 
-	let specular_exponent = data
+	let specular_exponent = table
 		.get("specular_exponent")
 		.and_then(|value| value.as_integer())
 		.unwrap_or(0);
@@ -126,15 +123,15 @@ pub fn read_material(data: &toml::Value) -> Material {
 	}
 }
 
-pub fn read_light(data: &toml::Value) -> Light {
-	let position = data.get("position").and_then(read_vector).unwrap();
+pub fn read_light(table: &toml::Value) -> Light {
+	let position = table.get("position").and_then(read_vector).unwrap();
 
-	let diffuse_color = data
+	let diffuse_color = table
 		.get("diffuse_color")
 		.and_then(read_array)
 		.unwrap_or_else(|| array![1.0; 3]);
 
-	let specular_color = data
+	let specular_color = table
 		.get("specular_color")
 		.and_then(read_array)
 		.unwrap_or_else(|| array![0.0; 3]);
