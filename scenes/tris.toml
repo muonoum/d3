@@ -1,0 +1,15 @@
+[camera]
+position = [0.0, 0.0, 4.5]
+target = [0.0, 0.0, 0.0]
+
+[[mesh]]
+position = [-1.0, 2.0, 0.0]
+color = [1.0, 0.0, 0.0]
+
+[[mesh]]
+position = [-2.0, -1.0, 0.0]
+color = [0.0, 0.0, 1.0]
+
+[[mesh]]
+position = [1.0, -1.0, 2.0]
+color = [0.0, 1.0, 0.0]

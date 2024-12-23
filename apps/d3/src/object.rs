@@ -73,11 +73,7 @@ pub struct Render<'a> {
 }
 
 impl render::Pipeline for Render<'_> {
-	type Setup = (
-		Vec<Vector<f32, 3>>,
-		Vec<Vector<f32, 4>>,
-		Vec<Vector<f32, 3>>,
-	);
+	type Setup = (Vec<(Vector<f32, 3>, Vector<f32, 4>)>, Vec<Vector<f32, 3>>);
 
 	type Face = obj::Face;
 	type Fragment = [u8; 4];
@@ -87,21 +83,19 @@ impl render::Pipeline for Render<'_> {
 	fn prepare(&self) -> Self::Setup {
 		let clip_space = self.camera.view * self.projection;
 
-		let mut world_positions = vec![];
-		let mut clip_positions = vec![];
-		let mut normals = vec![];
-
-		for v in self.object.mesh.positions.iter() {
+		let positions = self.object.mesh.positions.iter().map(|v| {
 			let world = v.v4() * self.object.world_space;
-			world_positions.push(world.v3());
-			clip_positions.push(world * clip_space);
-		}
+			(world.v3(), world * clip_space)
+		});
 
-		for v in self.object.mesh.normals.iter() {
-			normals.push(*v * self.object.normal_space);
-		}
+		let normals = self
+			.object
+			.mesh
+			.normals
+			.iter()
+			.map(|v| *v * self.object.normal_space);
 
-		(world_positions, clip_positions, normals)
+		(positions.collect(), normals.collect())
 	}
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3] {
@@ -113,12 +107,9 @@ impl render::Pipeline for Render<'_> {
 		vertex: &Self::Vertex,
 		setup: &Self::Setup,
 	) -> (Vector<f32, 4>, Self::Varying) {
-		let (world, clip, normals) = setup;
-
-		(
-			clip[vertex.position],
-			(world[vertex.position], normals[vertex.normal]),
-		)
+		let (positions, normals) = setup;
+		let (world, clip) = positions[vertex.position];
+		(clip, (world, normals[vertex.normal]))
 	}
 
 	fn fragment(&self, face: &Self::Face, (position, normal): &Self::Varying) -> Self::Fragment {

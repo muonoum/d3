@@ -11,15 +11,9 @@ pub trait Pipeline {
 	type Fragment;
 
 	fn prepare(&self) -> Self::Setup;
-
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3];
-
-	fn vertex(
-		&self,
-		vertex: &Self::Vertex,
-		setup: &Self::Setup,
-	) -> (Vector<f32, 4>, Self::Varying);
-
+	fn vertex(&self, vertex: &Self::Vertex, setup: &Self::Setup)
+	-> (Vector<f32, 4>, Self::Varying);
 	fn fragment(&self, face: &Self::Face, data: &Self::Varying) -> Self::Fragment;
 }
 
@@ -36,13 +30,13 @@ fn bounding_box(
 
 	let min_x = x1.min(x2.min(x3)).max(0);
 	let min_y = y1.min(y2.min(y3)).max(0);
-	let max_x = x1.max(x2.max(x3)).min(width);
-	let max_y = y1.max(y2.max(y3)).min(height);
+	let max_x = x1.max(x2.max(x3)).min(width - 1);
+	let max_y = y1.max(y2.max(y3)).min(height - 1);
 
 	(min_x, min_y, max_x, max_y)
 }
 
-fn edge<T: matrix::matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
+fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
 	(p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])
 }
 
@@ -78,24 +72,20 @@ pub fn render<V, F, P, D>(
 		let [v1, v2, v3] = pipeline.face(face);
 
 		let (clip1, data1) = pipeline.vertex(&v1, &setup);
-		let ndc1 = clip1.v3();
-		let screen1 = screen_space(ndc1);
-
 		let (clip2, data2) = pipeline.vertex(&v2, &setup);
-		let ndc2 = clip2.v3();
-		let screen2 = screen_space(ndc2);
-
 		let (clip3, data3) = pipeline.vertex(&v3, &setup);
-		let ndc3 = clip3.v3();
-		let screen3 = screen_space(ndc3);
-
-		let normal = Vector::cross(screen2 - screen1, screen3 - screen1);
-		if normal[2] > 0.0 {
-			continue;
-		}
 
 		// TODO: Actual clipping
 		if clipped(clip1) || clipped(clip2) || clipped(clip3) {
+			continue;
+		}
+
+		let screen1 = screen_space(clip1.v3());
+		let screen2 = screen_space(clip2.v3());
+		let screen3 = screen_space(clip3.v3());
+
+		let normal = Vector::cross(screen2 - screen1, screen3 - screen1);
+		if normal[2] > 0.0 {
 			continue;
 		}
 
@@ -108,7 +98,7 @@ pub fn render<V, F, P, D>(
 		let data3 = Interpolate::scale(data3, rz3);
 
 		let (min_x, min_y, max_x, max_y) =
-			bounding_box((screen1, screen2, screen3), (width - 1, height - 1));
+			bounding_box((screen1, screen2, screen3), (width, height));
 		let area = 1.0 / edge(screen1.into(), screen2.into(), screen3.into());
 		let point = vector![min_x as f32, min_y as f32];
 

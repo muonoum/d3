@@ -135,8 +135,7 @@ impl ApplicationHandler for State {
 				},
 
 				WindowEvent::RedrawRequested => {
-					let mut depth =
-						vec![f32::NEG_INFINITY; app.frame.width() * app.frame.height()];
+					let mut depth = vec![f32::NEG_INFINITY; app.frame.width() * app.frame.height()];
 					app.frame.clear([0, 0, 0, 255]);
 					app.scene.update(app.movement);
 

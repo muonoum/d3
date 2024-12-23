@@ -1,5 +1,5 @@
 dice:
-	RUST_LOG=d3 cargo run --release -- --scene scenes/dice.toml
+	cargo run --release -- --scene scenes/dice.toml
 
 .PHONY: commit
 commit: message ?= $(shell git diff --name-only --cached | sed -r 's;([^ /]+/)+([^/ ]+);\2;g')

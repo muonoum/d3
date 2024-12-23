@@ -62,11 +62,7 @@ pub fn rotate_z(a: f32) -> Matrix<f32, 4, 4> {
 	])
 }
 
-pub fn look_at(
-	from: Vector<f32, 3>,
-	to: Vector<f32, 3>,
-	up: Vector<f32, 3>,
-) -> Matrix<f32, 4, 4> {
+pub fn look_at(from: Vector<f32, 3>, to: Vector<f32, 3>, up: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	let forward = (from - to).normalize();
 	let right = up.cross(forward).normalize();
 	let up = forward.cross(right);
