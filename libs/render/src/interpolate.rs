@@ -12,10 +12,7 @@ impl<T: Interpolate> Interpolate for Option<T> {
 	}
 
 	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
-		match (a, b, c) {
-			(Some(a), Some(b), Some(c)) => Some(T::barycentric(a, u, b, v, c, w)),
-			_else => None,
-		}
+		a.and_then(|a| b.and_then(|b| c.map(|c| T::barycentric(a, u, b, v, c, w))))
 	}
 }
 
