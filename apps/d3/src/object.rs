@@ -78,7 +78,6 @@ pub struct Render<'a> {
 
 impl render::Pipeline for Render<'_> {
 	type Setup = (Vec<(Vector<f32, 3>, Vector<f32, 4>)>, Vec<Vector<f32, 3>>);
-
 	type Face = obj::Face;
 	type Fragment = [u8; 4];
 	type Vertex = obj::Vertex;
