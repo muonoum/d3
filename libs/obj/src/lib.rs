@@ -2,6 +2,7 @@ use anyhow::Context;
 use array::{array, Array};
 use core::str::SplitAsciiWhitespace;
 use matrix::vector::Vector;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -58,7 +59,7 @@ impl Mesh {
 		};
 
 		let mut current_material: String = "".into();
-		let mut material_lib = std::collections::HashMap::new();
+		let mut material_lib = HashMap::new();
 
 		for line in reader.lines() {
 			let line = line?;
@@ -69,7 +70,7 @@ impl Mesh {
 					let parent = Path::new(path).parent().context("path")?;
 					let lib = Path::new(terms.next().context("mtllib")?);
 					let file = File::open(parent.join(lib))?;
-					read_mtllib(file, &mut material_lib)?;
+					read_materials(file, &mut material_lib)?;
 				}
 
 				Some("usemtl") => {
@@ -112,13 +113,13 @@ fn read_face(
 	mut terms: SplitAsciiWhitespace,
 	material: Option<Material>,
 ) -> Result<Face, anyhow::Error> {
-	let v1 = read_vertex(terms.next().context("vertex")?)?;
-	let v2 = read_vertex(terms.next().context("vertex")?)?;
-	let v3 = read_vertex(terms.next().context("vertex")?)?;
-
 	Ok(Face {
-		vertices: [v1, v2, v3],
 		material,
+		vertices: [
+			read_vertex(terms.next().context("vertex")?)?,
+			read_vertex(terms.next().context("vertex")?)?,
+			read_vertex(terms.next().context("vertex")?)?,
+		],
 	})
 }
 
@@ -137,12 +138,9 @@ fn read_index(terms: &Vec<&str>, i: usize) -> Option<usize> {
 	terms.get(i).and_then(|v| v.parse::<usize>().ok())
 }
 
-fn read_mtllib(
-	file: std::fs::File,
-	lib: &mut std::collections::HashMap<String, Material>,
-) -> anyhow::Result<()> {
+fn read_materials(file: File, lib: &mut HashMap<String, Material>) -> anyhow::Result<()> {
 	let reader = BufReader::new(file);
-	let mut reading_material: String = "".into();
+	let mut current_material: String = "".into();
 
 	for line in reader.lines() {
 		let line = line?;
@@ -152,45 +150,53 @@ fn read_mtllib(
 			Some("newmtl") => {
 				let name = terms.next().context("newmtl")?;
 				lib.insert(name.into(), Material::default());
-				reading_material = name.into();
+				current_material = name.into();
 			}
 
 			Some("Ns") => {
-				let value = terms.next().context("Ns")?.parse::<f32>()?;
-				lib.entry(reading_material.clone())
-					.and_modify(|v| v.specular_exponent = value);
+				if let Some(v) = lib.get_mut(&current_material) {
+					v.specular_exponent = terms.next().context("Ns")?.parse::<f32>()?
+				}
 			}
 
 			Some("Ka") => {
-				let r = terms.next().context("Ka")?.parse::<f32>()?;
-				let g = terms.next().context("Ka")?.parse::<f32>()?;
-				let b = terms.next().context("Ka")?.parse::<f32>()?;
-				lib.entry(reading_material.clone())
-					.and_modify(|v| v.ambient_component = array![r, g, b]);
+				if let Some(v) = lib.get_mut(&current_material) {
+					v.ambient_component = array![
+						terms.next().context("Ka")?.parse::<f32>()?,
+						terms.next().context("Ka")?.parse::<f32>()?,
+						terms.next().context("Ka")?.parse::<f32>()?
+					];
+				}
 			}
 
 			Some("Kd") => {
-				let r = terms.next().context("Kd")?.parse::<f32>()?;
-				let g = terms.next().context("Kd")?.parse::<f32>()?;
-				let b = terms.next().context("Kd")?.parse::<f32>()?;
-				lib.entry(reading_material.clone())
-					.and_modify(|v| v.diffuse_component = array![r, g, b]);
+				if let Some(v) = lib.get_mut(&current_material) {
+					v.diffuse_component = array![
+						terms.next().context("Kd")?.parse::<f32>()?,
+						terms.next().context("Kd")?.parse::<f32>()?,
+						terms.next().context("Kd")?.parse::<f32>()?,
+					];
+				}
 			}
 
 			Some("Ks") => {
-				let r = terms.next().context("Ks")?.parse::<f32>()?;
-				let g = terms.next().context("Ks")?.parse::<f32>()?;
-				let b = terms.next().context("Ks")?.parse::<f32>()?;
-				lib.entry(reading_material.clone())
-					.and_modify(|v| v.specular_component = array![r, g, b]);
+				if let Some(v) = lib.get_mut(&current_material) {
+					v.specular_component = array![
+						terms.next().context("Ks")?.parse::<f32>()?,
+						terms.next().context("Ks")?.parse::<f32>()?,
+						terms.next().context("Ks")?.parse::<f32>()?,
+					];
+				}
 			}
 
 			Some("Ke") => {
-				let r = terms.next().context("Ks")?.parse::<f32>()?;
-				let g = terms.next().context("Ks")?.parse::<f32>()?;
-				let b = terms.next().context("Ks")?.parse::<f32>()?;
-				lib.entry(reading_material.clone())
-					.and_modify(|v| v.emissive_component = array![r, g, b]);
+				if let Some(v) = lib.get_mut(&current_material) {
+					v.emissive_component = array![
+						terms.next().context("Ks")?.parse::<f32>()?,
+						terms.next().context("Ks")?.parse::<f32>()?,
+						terms.next().context("Ks")?.parse::<f32>()?,
+					];
+				}
 			}
 
 			Some("#") | Some("Ni") | Some("d") | Some("illum") | None => {}
