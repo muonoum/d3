@@ -1,7 +1,7 @@
 use anyhow::Context;
 use array::{array, Array};
 use core::str::SplitAsciiWhitespace;
-use matrix::vector::Vector;
+use matrix::{vector, Vector};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -96,17 +96,20 @@ impl Mesh {
 	}
 }
 
-fn read_vector(terms: SplitAsciiWhitespace) -> Result<Vector<f32, 3>, anyhow::Error> {
-	let mut ts = terms
-		.map(|t| t.parse())
-		.take_while(Result::is_ok)
-		.map(Result::unwrap);
+fn read_vector(mut terms: SplitAsciiWhitespace) -> Result<Vector<f32, 3>, anyhow::Error> {
+	Ok(vector![
+		terms.next().context("vector")?.parse()?,
+		terms.next().context("vector")?.parse()?,
+		terms.next().context("vector")?.parse()?,
+	])
+}
 
-	Ok(Vector::new([[
-		ts.next().context("vector")?,
-		ts.next().context("vector")?,
-		ts.next().context("vector")?,
-	]]))
+fn read_array(mut terms: SplitAsciiWhitespace) -> Result<Array<f32, 3>, anyhow::Error> {
+	Ok(array![
+		terms.next().context("array")?.parse()?,
+		terms.next().context("array")?.parse()?,
+		terms.next().context("array")?.parse()?,
+	])
 }
 
 fn read_face(
@@ -161,41 +164,25 @@ fn read_materials(file: File, lib: &mut HashMap<String, Material>) -> anyhow::Re
 
 			Some("Ka") => {
 				if let Some(v) = lib.get_mut(&current_material) {
-					v.ambient_component = array![
-						terms.next().context("Ka")?.parse::<f32>()?,
-						terms.next().context("Ka")?.parse::<f32>()?,
-						terms.next().context("Ka")?.parse::<f32>()?
-					];
+					v.ambient_component = read_array(terms)?;
 				}
 			}
 
 			Some("Kd") => {
 				if let Some(v) = lib.get_mut(&current_material) {
-					v.diffuse_component = array![
-						terms.next().context("Kd")?.parse::<f32>()?,
-						terms.next().context("Kd")?.parse::<f32>()?,
-						terms.next().context("Kd")?.parse::<f32>()?,
-					];
+					v.diffuse_component = read_array(terms)?;
 				}
 			}
 
 			Some("Ks") => {
 				if let Some(v) = lib.get_mut(&current_material) {
-					v.specular_component = array![
-						terms.next().context("Ks")?.parse::<f32>()?,
-						terms.next().context("Ks")?.parse::<f32>()?,
-						terms.next().context("Ks")?.parse::<f32>()?,
-					];
+					v.specular_component = read_array(terms)?;
 				}
 			}
 
 			Some("Ke") => {
 				if let Some(v) = lib.get_mut(&current_material) {
-					v.emissive_component = array![
-						terms.next().context("Ks")?.parse::<f32>()?,
-						terms.next().context("Ks")?.parse::<f32>()?,
-						terms.next().context("Ks")?.parse::<f32>()?,
-					];
+					v.emissive_component = read_array(terms)?;
 				}
 			}
 
