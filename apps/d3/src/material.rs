@@ -7,8 +7,8 @@ pub struct Material {
 	pub specular_exponent: i32,
 }
 
-impl From<obj::Material> for Material {
-	fn from(obj: obj::Material) -> Self {
+impl From<&obj::Material> for Material {
+	fn from(obj: &obj::Material) -> Self {
 		Material {
 			diffuse_component: obj.diffuse_component,
 			specular_component: obj.specular_component,

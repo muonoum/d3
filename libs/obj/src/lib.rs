@@ -15,13 +15,14 @@ pub struct Mesh {
 	pub texture: Vec<Vector<f32, 2>>,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Material {
 	pub ambient_component: Array<f32, 3>,
 	pub diffuse_component: Array<f32, 3>,
 	pub emissive_component: Array<f32, 3>,
 	pub specular_component: Array<f32, 3>,
 	pub specular_exponent: f32,
+	// pub diffuse_map: Option<String>,
 }
 
 impl Default for Material {
@@ -32,11 +33,12 @@ impl Default for Material {
 			emissive_component: array![0.0;  3],
 			specular_component: array![0.0;  3],
 			specular_exponent: 0.0,
+			// diffuse_map: None,
 		}
 	}
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Face {
 	pub vertices: [Vertex; 3],
 	pub material: Option<Material>,
@@ -170,7 +172,9 @@ fn read_materials(path: &Path, lib: &mut HashMap<String, Material>) -> anyhow::R
 				Some("Kd") => v.diffuse_component = read_array(terms)?,
 				Some("Ks") => v.specular_component = read_array(terms)?,
 				Some("Ke") => v.emissive_component = read_array(terms)?,
-				Some("#") | Some("Ni") | Some("d") | Some("illum") | None => {}
+				// TODO
+				// Some("map_Kd") => v.diffuse_map = Some(terms.next().context("diffuse map")?.into()),
+				Some("#") | Some("Ni") | Some("d") | Some("illum") | Some("map_Kd") | None => {}
 				Some(other) => anyhow::bail!("unexpected {}", other),
 			}
 		}

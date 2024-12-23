@@ -30,6 +30,7 @@ impl Scene {
 			.iter()
 			.map(|table| {
 				let path = table.get("mesh").unwrap().as_str().unwrap();
+				let texture_path = table.get("texture").and_then(|v| v.as_str());
 
 				let scale = table.get("scale").and_then(read_vector).unwrap();
 				let orientation = table.get("orientation").and_then(read_vector).unwrap();
@@ -44,6 +45,7 @@ impl Scene {
 
 				Object::new(
 					path,
+					texture_path,
 					scale,
 					orientation,
 					position,
