@@ -148,46 +148,22 @@ fn read_materials(file: File, lib: &mut HashMap<String, Material>) -> anyhow::Re
 	for line in reader.lines() {
 		let line = line?;
 		let mut terms = line.split_ascii_whitespace();
+		let term = terms.next();
 
-		match terms.next() {
-			Some("newmtl") => {
-				let name = terms.next().context("newmtl")?;
-				lib.insert(name.into(), Material::default());
-				current_material = name.into();
+		if let Some("newmtl") = term {
+			let name = terms.next().context("newmtl")?;
+			lib.insert(name.into(), Material::default());
+			current_material = name.into();
+		} else if let Some(v) = lib.get_mut(&current_material) {
+			match term {
+				Some("Ns") => v.specular_exponent = terms.next().context("Ns")?.parse::<f32>()?,
+				Some("Ka") => v.ambient_component = read_array(terms)?,
+				Some("Kd") => v.diffuse_component = read_array(terms)?,
+				Some("Ks") => v.specular_component = read_array(terms)?,
+				Some("Ke") => v.emissive_component = read_array(terms)?,
+				Some("#") | Some("Ni") | Some("d") | Some("illum") | None => {}
+				Some(other) => anyhow::bail!("unexpected {}", other),
 			}
-
-			Some("Ns") => {
-				if let Some(v) = lib.get_mut(&current_material) {
-					v.specular_exponent = terms.next().context("Ns")?.parse::<f32>()?
-				}
-			}
-
-			Some("Ka") => {
-				if let Some(v) = lib.get_mut(&current_material) {
-					v.ambient_component = read_array(terms)?;
-				}
-			}
-
-			Some("Kd") => {
-				if let Some(v) = lib.get_mut(&current_material) {
-					v.diffuse_component = read_array(terms)?;
-				}
-			}
-
-			Some("Ks") => {
-				if let Some(v) = lib.get_mut(&current_material) {
-					v.specular_component = read_array(terms)?;
-				}
-			}
-
-			Some("Ke") => {
-				if let Some(v) = lib.get_mut(&current_material) {
-					v.emissive_component = read_array(terms)?;
-				}
-			}
-
-			Some("#") | Some("Ni") | Some("d") | Some("illum") | None => {}
-			Some(other) => anyhow::bail!("unexpected {}", other),
 		}
 	}
 
