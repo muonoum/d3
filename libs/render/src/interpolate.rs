@@ -19,7 +19,7 @@ impl<T: Interpolate> Interpolate for Option<T> {
 	}
 }
 
-impl Interpolate for Array<f32, 3> {
+impl<const D: usize> Interpolate for Array<f32, D> {
 	fn scale(self, rz: f32) -> Self {
 		self * rz
 	}
@@ -29,17 +29,7 @@ impl Interpolate for Array<f32, 3> {
 	}
 }
 
-impl Interpolate for Vector<f32, 2> {
-	fn scale(self, rz: f32) -> Self {
-		self * rz
-	}
-
-	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
-		a * u + b * v + c * w
-	}
-}
-
-impl Interpolate for Vector<f32, 3> {
+impl<const D: usize> Interpolate for Vector<f32, D> {
 	fn scale(self, rz: f32) -> Self {
 		self * rz
 	}
