@@ -26,7 +26,3 @@ position = [0.0, 0.0, 0.0]
 
 [objects.update]
 orientation = [0.005, 0.005, 0.0075]
-
-[objects.material]
-diffuse_component = [1.0, 1.0, 1.0]
-

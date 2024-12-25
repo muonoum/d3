@@ -9,7 +9,6 @@ specular_color = [0.5, 0.5, 0.5]
 
 [[objects]]
 mesh = "objs/ball.obj"
-texture = "textures/ball.png"
 scale = [1.0, 1.0, 1.0]
 orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]

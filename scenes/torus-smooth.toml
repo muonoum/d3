@@ -13,10 +13,5 @@ scale = [1.0, 1.0, 1.0]
 orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]
 
-[objects.material]
-diffuse_component = [1.0, 1.0, 1.0]
-specular_component = [0.3, 0.3, 0.3]
-specular_exponent = 40
-
 [objects.update]
 orientation = [0.008, 0.008, 0.012]
