@@ -17,10 +17,8 @@ mod args;
 mod buffer;
 mod camera;
 mod light;
-mod material;
 mod object;
 mod scene;
-// mod test_triangle;
 
 use args::Args;
 use buffer::PixelsBuffer;
@@ -39,7 +37,6 @@ pub struct App {
 	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
 	projection: Matrix<f32, 4, 4>,
-	// scene: test_triangle::Scene,
 	scene: Scene,
 	window: Window,
 }
@@ -91,7 +88,6 @@ impl ApplicationHandler for State {
 			let aspect = buffer_width as f32 / buffer_height as f32;
 			let projection = transform::perspective_near(aspect, 2.0, 0.1);
 			let scene = Scene::new(&args.scene);
-			// let scene = test_triangle::Scene::new(buffer_width, buffer_height);
 			window.request_redraw();
 
 			*self = State::Running(App {
@@ -139,19 +135,21 @@ impl ApplicationHandler for State {
 					app.frame.clear([0, 0, 0, 255]);
 					app.scene.update(app.movement);
 
-					// pipeline::render(&app.scene, &app.scene.object, &mut app.frame, &mut depth);
 					for object in app.scene.objects.iter() {
-						pipeline::render(
-							object::Render {
-								camera: &app.scene.camera,
-								lights: &app.scene.lights,
-								projection: app.projection,
-								object,
-							},
-							&object.mesh.faces,
-							&mut app.frame,
-							&mut depth,
-						);
+						for group in object.mesh.groups.iter() {
+							pipeline::render(
+								object::Render {
+									object,
+									group,
+									camera: &app.scene.camera,
+									lights: &app.scene.lights,
+									projection: app.projection,
+								},
+								&group.faces,
+								&mut app.frame,
+								&mut depth,
+							);
+						}
 					}
 
 					app.window.pre_present_notify();

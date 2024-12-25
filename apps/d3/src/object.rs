@@ -1,13 +1,11 @@
 use crate::camera::Camera;
 use crate::light::Light;
-use crate::material::Material;
 use array::{array, Array};
 use matrix::{Matrix, Vector};
+use std::sync::Arc;
 
 pub struct Object {
 	pub mesh: obj::Mesh,
-	pub texture: Option<image::RgbImage>,
-	pub material: Material,
 	pub scale: Vector<f32, 3>,
 	pub orientation: Vector<f32, 3>,
 	pub position: Vector<f32, 3>,
@@ -23,15 +21,12 @@ pub struct Update {
 impl Object {
 	pub fn new(
 		path: &str,
-		texture_path: Option<&str>,
 		scale: Vector<f32, 3>,
 		orientation: Vector<f32, 3>,
 		position: Vector<f32, 3>,
-		material: Material,
 		update: Option<Update>,
 	) -> Self {
 		let mesh = obj::Mesh::new(path).unwrap();
-		let texture = texture_path.map(|path| image::open(path).unwrap().to_rgb8());
 		let world_space = transform::scale_vector(scale)
 			* transform::rotate_vector(orientation)
 			* transform::translate_vector(position);
@@ -40,15 +35,13 @@ impl Object {
 		log::info!(
 			"Load {}: f={}; v={}; vn={}",
 			path,
-			mesh.faces.len(),
+			mesh.groups.iter().map(|g| g.faces.len()).sum::<usize>(),
 			mesh.positions.len(),
 			mesh.normals.len(),
 		);
 
 		Object {
 			mesh,
-			texture,
-			material,
 			scale,
 			orientation,
 			position,
@@ -71,6 +64,7 @@ impl Object {
 
 pub struct Render<'a> {
 	pub object: &'a Object,
+	pub group: &'a obj::Group,
 	pub camera: &'a Camera,
 	pub lights: &'a Vec<Light>,
 	pub projection: Matrix<f32, 4, 4>,
@@ -81,7 +75,11 @@ impl render::Pipeline for Render<'_> {
 	type Face = obj::Face;
 	type Fragment = [u8; 4];
 	type Vertex = obj::Vertex;
-	type Attributes = (Vector<f32, 3>, Vector<f32, 3>, Option<Vector<f32, 2>>);
+	type Attributes = (
+		Vector<f32, 3>,
+		Option<Vector<f32, 3>>,
+		Option<Vector<f32, 2>>,
+	);
 
 	fn setup(&self) -> Self::Setup {
 		let clip_space = self.camera.view * self.projection;
@@ -102,7 +100,7 @@ impl render::Pipeline for Render<'_> {
 	}
 
 	fn face(&self, face: &Self::Face) -> [Self::Vertex; 3] {
-		face.vertices
+		*face
 	}
 
 	fn vertex(
@@ -112,48 +110,25 @@ impl render::Pipeline for Render<'_> {
 	) -> (Vector<f32, 4>, Self::Attributes) {
 		let (positions, normals) = setup;
 		let (world, clip) = positions[vertex.position];
-		let uv = vertex.texture.map(|i| self.object.mesh.texture[i]);
-		(clip, (world, normals[vertex.normal], uv))
+		let uv = vertex.texture.map(|i| self.object.mesh.textures[i]);
+		let normal = vertex.normal.map(|i| normals[i]);
+		(clip, (world, normal, uv))
 	}
 
-	fn fragment(&self, face: &Self::Face, attrs: &Self::Attributes) -> Self::Fragment {
+	fn fragment(&self, _face: &Self::Face, attrs: &Self::Attributes) -> Self::Fragment {
 		let (position, normal, uv) = attrs;
 
-		// TODO
-		match (&self.object.texture, uv) {
-			(Some(texture), Some(uv)) => {
-				let (width, height) = (texture.width() as f32, texture.height() as f32);
-				let x = f32::min(f32::max(0.0, uv[0] * width), width - 1.0);
-				let y = f32::min(f32::max(0.0, uv[1] * height), height - 1.0);
-				let rgb = texture.get_pixel(x as u32, y as u32);
+		match (self.group.material.clone(), uv, normal) {
+			(Some(material), Some(uv), Some(normal)) => {
+				let diffuse_map = if let Some(ref map) = material.diffuse_map {
+					map_texture(map, uv)
+				} else {
+					array![1.0; 3]
+				};
 
-				let diffuse_map = array![
-					rgb[0] as f32 / 255.0,
-					rgb[1] as f32 / 255.0,
-					rgb[2] as f32 / 255.0
-				];
-
-				let color = blinn_phong2(
-					diffuse_map,
-					match &face.material {
-						Some(material) => material.into(),
-						None => self.object.material,
-					},
-					*position,
-					normal.normalize(),
-					self.camera.position,
-					self.lights,
-				);
-
-				[color[0] as u8, color[1] as u8, color[2] as u8, 255]
-			}
-
-			_else => {
 				let color = blinn_phong(
-					match &face.material {
-						Some(material) => material.into(),
-						None => self.object.material,
-					},
+					material,
+					diffuse_map,
 					*position,
 					normal.normalize(),
 					self.camera.position,
@@ -162,33 +137,41 @@ impl render::Pipeline for Render<'_> {
 
 				[color[0] as u8, color[1] as u8, color[2] as u8, 255]
 			}
+
+			(Some(material), None, Some(normal)) => {
+				let color = blinn_phong(
+					material,
+					array![1.0; 3],
+					*position,
+					normal.normalize(),
+					self.camera.position,
+					self.lights,
+				);
+
+				[color[0] as u8, color[1] as u8, color[2] as u8, 255]
+			}
+
+			_else => [255, 0, 255, 255],
 		}
 	}
 }
 
-fn blinn_phong(
-	material: Material,
-	position: Vector<f32, 3>,
-	normal: Vector<f32, 3>,
-	camera_position: Vector<f32, 3>,
-	lights: &[Light],
-) -> Array<f32, 3> {
-	let camera_dir = (camera_position - position).normalize();
+fn map_texture(texture: &image::RgbImage, uv: &Vector<f32, 2>) -> Array<f32, 3> {
+	let (width, height) = (texture.width() as f32, texture.height() as f32);
+	let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
+	let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
+	let rgb = texture.get_pixel(x as u32, y as u32);
 
-	lights.iter().fold(array![0.0; 3], |sum, light| {
-		let light_dir = (light.position - position).normalize();
-		let halfway_vector = (light_dir + camera_dir).normalize();
-		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-		let specular = normal.dot(halfway_vector).powi(material.specular_exponent);
-		sum + material.diffuse_component * diffuse * light.diffuse_color
-			+ material.specular_component * specular * light.specular_color
-	}) * 255.0
+	array![
+		rgb[0] as f32 / 255.0,
+		rgb[1] as f32 / 255.0,
+		rgb[2] as f32 / 255.0
+	]
 }
 
-// TODO
-fn blinn_phong2(
+fn blinn_phong(
+	material: Arc<obj::Material>,
 	diffuse_map: Array<f32, 3>,
-	material: Material,
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
 	camera_position: Vector<f32, 3>,
@@ -200,8 +183,10 @@ fn blinn_phong2(
 		let light_dir = (light.position - position).normalize();
 		let halfway_vector = (light_dir + camera_dir).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-		let specular = normal.dot(halfway_vector).powi(material.specular_exponent);
-		sum + material.diffuse_component * diffuse_map * diffuse * light.diffuse_color
-			+ material.specular_component * specular * light.specular_color
+		let specular = normal
+			.dot(halfway_vector)
+			.powi(material.specular_exponent as i32);
+		sum + material.diffuse * diffuse_map * diffuse * light.diffuse_color
+			+ material.specular * specular * light.specular_color
 	}) * 255.0
 }

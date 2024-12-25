@@ -1,104 +1,232 @@
 use anyhow::Context;
-use array::{array, Array};
-use core::str::SplitAsciiWhitespace;
+use array::{Array, array};
 use matrix::Vector;
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::{
+	collections::HashMap,
+	fs::File,
+	io::{BufRead, BufReader},
+	path::{Path, PathBuf},
+	str::SplitWhitespace,
+	sync::Arc,
+};
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Mesh {
-	pub faces: Vec<Face>,
-	pub normals: Vec<Vector<f32, 3>>,
 	pub positions: Vec<Vector<f32, 3>>,
-	pub texture: Vec<Vector<f32, 2>>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Material {
-	pub ambient_component: Array<f32, 3>,
-	pub diffuse_component: Array<f32, 3>,
-	pub emissive_component: Array<f32, 3>,
-	pub specular_component: Array<f32, 3>,
-	pub specular_exponent: f32,
-	// pub diffuse_map: Option<String>,
-}
-
-impl Default for Material {
-	fn default() -> Self {
-		Self {
-			ambient_component: array![0.0;  3],
-			diffuse_component: array![1.0;  3],
-			emissive_component: array![0.0;  3],
-			specular_component: array![0.0;  3],
-			specular_exponent: 0.0,
-			// diffuse_map: None,
-		}
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct Face {
-	pub vertices: [Vertex; 3],
-	pub material: Option<Material>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Vertex {
-	pub position: usize,
-	pub normal: usize,
-	pub texture: Option<usize>,
+	pub normals: Vec<Vector<f32, 3>>,
+	pub textures: Vec<Vector<f32, 2>>,
+	pub groups: Vec<Group>,
 }
 
 impl Mesh {
 	pub fn new(path: &str) -> anyhow::Result<Mesh> {
-		let obj_path = Path::new(path);
-		let obj_file = File::open(obj_path)?;
-		let reader = BufReader::new(obj_file);
-
-		let mut mesh = Mesh {
-			positions: vec![],
-			normals: vec![],
-			faces: vec![],
-			texture: vec![],
-		};
-
-		let mut current_material: String = "".into();
-		let mut material_lib = HashMap::new();
-
-		for line in reader.lines() {
-			let line = line?;
-			let mut terms = line.split_ascii_whitespace();
-
-			match terms.next() {
-				Some("mtllib") => {
-					let location = obj_path.parent().context("mtllib location")?;
-					let mtllib_path = Path::new(terms.next().context("mtllib path")?);
-					read_materials(&location.join(mtllib_path), &mut material_lib)?;
-				}
-
-				Some("usemtl") => current_material = terms.next().context("usemtl")?.into(),
-				Some("v") => mesh.positions.push(read_vector(terms).context("position")?),
-				Some("vn") => mesh.normals.push(read_vector(terms).context("normal")?),
-				Some("vt") => mesh.texture.push(read_vector(terms).context("texture")?),
-				Some("f") => mesh.faces.push(
-					read_face(terms, material_lib.get(&current_material).cloned())
-						.context("face")?,
-				),
-
-				Some("#") | Some("####") | Some("o") | Some("s") | None => {}
-				Some(other) => anyhow::bail!("unexpected {}", other),
-			}
-		}
-
-		Ok(mesh)
+		read_obj(path)
 	}
 }
 
-fn read_vector<const D: usize>(
-	mut terms: SplitAsciiWhitespace,
-) -> Result<Vector<f32, D>, anyhow::Error> {
+#[derive(Debug, Clone)]
+pub struct Group {
+	pub name: String,
+	pub material: Option<Arc<Material>>,
+	pub faces: Vec<Face>,
+}
+
+impl Group {
+	pub fn new(name: &str) -> Group {
+		Group {
+			name: name.into(),
+			material: None,
+			faces: Vec::new(),
+		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct Material {
+	pub name: String,
+
+	pub ambient: Array<f32, 3>,
+	pub ambient_map: Option<image::RgbImage>,
+
+	pub emissive: Array<f32, 3>,
+	pub emissive_map: Option<image::RgbImage>,
+
+	pub diffuse: Array<f32, 3>,
+	pub diffuse_map: Option<image::RgbImage>,
+
+	pub specular: Array<f32, 3>,
+	pub specular_map: Option<image::RgbImage>,
+	pub specular_exponent: f32,
+}
+
+impl Material {
+	pub fn new(name: &str) -> Material {
+		Material {
+			name: name.into(),
+			ambient: array![0.0; 3],
+			ambient_map: None,
+			emissive: array![0.0; 3],
+			emissive_map: None,
+			diffuse: array![1.0; 3],
+			diffuse_map: None,
+			specular: array![0.0; 3],
+			specular_map: None,
+			specular_exponent: 1.0,
+		}
+	}
+}
+
+pub type Face = [Vertex; 3];
+
+#[derive(Debug, Copy, Clone)]
+pub struct Vertex {
+	pub position: usize,
+	pub normal: Option<usize>,
+	pub texture: Option<usize>,
+}
+
+fn read_obj(path: &str) -> anyhow::Result<Mesh> {
+	let path = Path::new(path);
+	let file = File::open(path)?;
+	let reader = BufReader::new(file);
+	let mut mesh = Mesh::default();
+	let mut group: Option<Group> = None;
+	let mut materials = HashMap::<String, Arc<Material>>::new();
+
+	for line in reader.lines() {
+		let line = line?;
+		let mut terms = line.split_whitespace();
+
+		match terms.next() {
+			Some("mtllib") => {
+				let location = path.parent().context("mtllib")?;
+				read_materials(read_path(terms, location)?, location, &mut materials)?;
+			}
+
+			Some("g") => {
+				if let Some(ref group) = group {
+					mesh.groups.push(group.clone());
+				}
+
+				let name = terms.next().context("g")?;
+				group = Some(Group::new(name));
+			}
+
+			Some("f") => {
+				if let Some(ref mut group) = group {
+					group.faces.push(read_face(terms).context("f")?)
+				}
+			}
+
+			Some("usemtl") => {
+				if let Some(ref mut group) = group {
+					let name = terms.next().context("usemtl")?;
+					group.material = materials.get(name).cloned();
+				}
+			}
+
+			Some("v") => mesh.positions.push(read_vector(terms).context("v")?),
+			Some("vn") => mesh.normals.push(read_vector(terms).context("vn")?),
+			Some("vt") => mesh.textures.push(read_vector(terms).context("vt")?),
+			Some(_) | None => {}
+		}
+	}
+
+	if let Some(ref group) = group {
+		mesh.groups.push(group.clone());
+	}
+
+	Ok(mesh)
+}
+
+fn read_path(mut terms: SplitWhitespace, location: &Path) -> anyhow::Result<PathBuf> {
+	let path: PathBuf = terms.next().context("path")?.into();
+
+	Ok(if path.is_relative() {
+		location.join(path)
+	} else {
+		path.to_path_buf()
+	})
+}
+
+fn read_materials(
+	path: PathBuf,
+	location: &Path,
+	lib: &mut HashMap<String, Arc<Material>>,
+) -> anyhow::Result<()> {
+	let file = File::open(path)?;
+	let reader = BufReader::new(file);
+	let mut material: Option<(String, Material)> = None;
+
+	for line in reader.lines() {
+		let line = line?;
+		let mut terms = line.split_whitespace();
+		let term = terms.next();
+
+		if let Some("newmtl") = term {
+			if let Some((ref name, ref mtl)) = material {
+				lib.insert(name.clone(), Arc::new(mtl.clone()));
+			}
+
+			let name = terms.next().context("newmtl")?;
+			material = Some((name.into(), Material::new(name)))
+		} else if let Some((_, ref mut mtl)) = material {
+			match term {
+				Some("Ns") => {
+					mtl.specular_exponent =
+						terms.next().context("Ns")?.parse::<f32>().context("Ns")?
+				}
+
+				Some("Ka") => mtl.ambient = read_array(terms).context("Ka")?,
+				Some("Kd") => mtl.diffuse = read_array(terms).context("Kd")?,
+				Some("Ke") => mtl.emissive = read_array(terms).context("Ke")?,
+				Some("Ks") => mtl.specular = read_array(terms).context("Ks")?,
+
+				Some("map_Ka") => {
+					mtl.ambient_map = Some(
+						image::open(read_path(terms, location).context("map_Ka")?)
+							.context("map_Ka")?
+							.to_rgb8(),
+					)
+				}
+
+				Some("map_Kd") => {
+					mtl.diffuse_map = Some(
+						image::open(read_path(terms, location).context("map_Kd")?)
+							.context("map_Kd")?
+							.to_rgb8(),
+					)
+				}
+
+				Some("map_Ke") => {
+					mtl.emissive_map = Some(
+						image::open(read_path(terms, location).context("map_Ke")?)
+							.context("map_Ke")?
+							.to_rgb8(),
+					)
+				}
+
+				Some("map_Ks") => {
+					mtl.specular_map = Some(
+						image::open(read_path(terms, location).context("map_Ks")?)
+							.context("map_Ks")?
+							.to_rgb8(),
+					)
+				}
+
+				Some(_) | None => {}
+			}
+		}
+	}
+
+	if let Some((ref name, ref mtl)) = material {
+		lib.insert(name.clone(), Arc::new(mtl.clone()));
+	}
+
+	Ok(())
+}
+
+fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {
 	let mut cells = vec![];
 
 	for _ in 0..D {
@@ -108,9 +236,7 @@ fn read_vector<const D: usize>(
 	Ok(Vector::new([cells.as_slice().try_into()?]))
 }
 
-fn read_array<const D: usize>(
-	mut terms: SplitAsciiWhitespace,
-) -> Result<Array<f32, D>, anyhow::Error> {
+fn read_array<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Array<f32, D>> {
 	let mut cells = vec![];
 
 	for _ in 0..D {
@@ -120,65 +246,27 @@ fn read_array<const D: usize>(
 	Ok(Array::new(cells.as_slice().try_into()?))
 }
 
-fn read_face(
-	mut terms: SplitAsciiWhitespace,
-	material: Option<Material>,
-) -> Result<Face, anyhow::Error> {
-	Ok(Face {
-		material,
-		vertices: [
-			read_vertex(terms.next().context("vertex")?)?,
-			read_vertex(terms.next().context("vertex")?)?,
-			read_vertex(terms.next().context("vertex")?)?,
-		],
-	})
+fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
+	Ok([
+		read_vertex(terms.next().context("vertex")?)?,
+		read_vertex(terms.next().context("vertex")?)?,
+		read_vertex(terms.next().context("vertex")?)?,
+	])
 }
 
 fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
-	let terms: Vec<&str> = term.split("/").take(3).collect();
-	let position = read_index(&terms, 0).context("position index")?;
-	let texture = read_index(&terms, 1); //.context("texture index")?;
-	let normal = read_index(&terms, 2).context("normal index")?;
+	let terms = term.split("/").take(3).collect();
+	let position = read_index(&terms, 0).context("position")?;
+	let texture = read_index(&terms, 1);
+	let normal = read_index(&terms, 2);
 
 	Ok(Vertex {
 		position: position - 1,
-		normal: normal - 1,
+		normal: normal.map(|i| i - 1),
 		texture: texture.map(|i| i - 1),
 	})
 }
 
 fn read_index(terms: &Vec<&str>, i: usize) -> Option<usize> {
 	terms.get(i).and_then(|v| v.parse::<usize>().ok())
-}
-
-fn read_materials(path: &Path, lib: &mut HashMap<String, Material>) -> anyhow::Result<()> {
-	let file = File::open(path)?;
-	let reader = BufReader::new(file);
-	let mut current_material: String = "".into();
-
-	for line in reader.lines() {
-		let line = line?;
-		let mut terms = line.split_ascii_whitespace();
-		let term = terms.next();
-
-		if let Some("newmtl") = term {
-			let name = terms.next().context("newmtl")?;
-			lib.insert(name.into(), Material::default());
-			current_material = name.into();
-		} else if let Some(v) = lib.get_mut(&current_material) {
-			match term {
-				Some("Ns") => v.specular_exponent = terms.next().context("Ns")?.parse::<f32>()?,
-				Some("Ka") => v.ambient_component = read_array(terms)?,
-				Some("Kd") => v.diffuse_component = read_array(terms)?,
-				Some("Ks") => v.specular_component = read_array(terms)?,
-				Some("Ke") => v.emissive_component = read_array(terms)?,
-				// TODO
-				// Some("map_Kd") => v.diffuse_map = Some(terms.next().context("diffuse map")?.into()),
-				Some("#") | Some("Ni") | Some("d") | Some("illum") | Some("map_Kd") | None => {}
-				Some(other) => anyhow::bail!("unexpected {}", other),
-			}
-		}
-	}
-
-	Ok(())
 }

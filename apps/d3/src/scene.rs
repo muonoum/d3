@@ -1,6 +1,5 @@
 use crate::camera::Camera;
 use crate::light::Light;
-use crate::material::Material;
 use crate::object;
 use crate::object::Object;
 use array::{array, Array};
@@ -30,28 +29,17 @@ impl Scene {
 			.iter()
 			.map(|table| {
 				let path = table.get("mesh").unwrap().as_str().unwrap();
-				let texture_path = table.get("texture").and_then(|v| v.as_str());
 
 				let scale = table.get("scale").and_then(read_vector).unwrap();
 				let orientation = table.get("orientation").and_then(read_vector).unwrap();
 				let position = table.get("position").and_then(read_vector).unwrap();
-
-				let material = table.get("material").map(read_material);
 
 				let update = table.get("update").map(|table| {
 					let orientation = table.get("orientation").and_then(read_vector).unwrap();
 					object::Update { orientation }
 				});
 
-				Object::new(
-					path,
-					texture_path,
-					scale,
-					orientation,
-					position,
-					material.unwrap_or_default(),
-					update,
-				)
+				Object::new(path, scale, orientation, position, update)
 			});
 
 		let lights = table
@@ -100,29 +88,6 @@ pub fn read_camera(table: &toml::Value) -> Camera {
 	let position = table.get("position").and_then(read_vector).unwrap();
 	let target = table.get("target").and_then(read_vector).unwrap();
 	Camera::new(position, target)
-}
-
-pub fn read_material(table: &toml::Value) -> Material {
-	let diffuse_component = table
-		.get("diffuse_component")
-		.and_then(read_array)
-		.unwrap_or_else(|| array![1.0; 3]);
-
-	let specular_component = table
-		.get("specular_component")
-		.and_then(read_array)
-		.unwrap_or_else(|| array![0.0; 3]);
-
-	let specular_exponent = table
-		.get("specular_exponent")
-		.and_then(|value| value.as_integer())
-		.unwrap_or(0);
-
-	Material {
-		diffuse_component,
-		specular_component,
-		specular_exponent: specular_exponent as i32,
-	}
 }
 
 pub fn read_light(table: &toml::Value) -> Light {
