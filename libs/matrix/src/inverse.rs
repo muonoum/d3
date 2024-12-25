@@ -18,6 +18,7 @@ impl<T: Cell> Square<T, 3> {
 		Ok(Square::new([r1, r2, r3]))
 	}
 }
+
 impl<T: Cell> Square<T, 4> {
 	#[allow(clippy::result_unit_err)]
 	pub fn inverse(self) -> Result<Self, ()> {
