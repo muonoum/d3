@@ -168,11 +168,11 @@ impl App {
 				normals.push(*v * object.normal_space);
 			}
 
-			let var = |v: &obj::Vertex, rz| {
+			let var = |v: &obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
 				let texture = v.texture.map(|i| object.mesh.textures[i]);
-				(position, normal, texture).scale(rz)
+				(position, normal, texture)
 			};
 
 			for group in object.mesh.groups.iter() {
@@ -198,9 +198,9 @@ impl App {
 					let rz2 = 1.0 / -clip2[3];
 					let rz3 = 1.0 / -clip3[3];
 
-					let var1 = var(v1, rz1);
-					let var2 = var(v2, rz2);
-					let var3 = var(v3, rz3);
+					let var1 = var(v1).scale(rz1);
+					let var2 = var(v2).scale(rz2);
+					let var3 = var(v3).scale(rz3);
 
 					render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
 						let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
