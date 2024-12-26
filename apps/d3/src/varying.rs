@@ -53,6 +53,11 @@ impl<T: Varying> Varying for Option<T> {
 	}
 }
 
+impl Varying for () {
+	fn scale(self, _rz: f32) -> Self {}
+	fn barycentric(_a: Self, _u: f32, _b: Self, _v: f32, _c: Self, _w: f32) -> Self {}
+}
+
 impl<A, B> Varying for (A, B)
 where
 	A: Varying,

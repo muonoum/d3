@@ -84,12 +84,20 @@ impl Material {
 		}
 	}
 
+	pub fn try_ambient(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		uv.map(|uv| self.ambient(uv)).unwrap_or(self.ambient)
+	}
+
 	pub fn emissive(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
 		if let Some(ref texture) = self.emissive_map {
 			self.emissive * Self::map(texture, uv)
 		} else {
 			self.diffuse
 		}
+	}
+
+	pub fn try_emissive(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		uv.map(|uv| self.emissive(uv)).unwrap_or(self.emissive)
 	}
 
 	pub fn diffuse(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
@@ -100,12 +108,20 @@ impl Material {
 		}
 	}
 
+	pub fn try_diffuse(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		uv.map(|uv| self.diffuse(uv)).unwrap_or(self.diffuse)
+	}
+
 	pub fn specular(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
 		if let Some(ref texture) = self.specular_map {
 			self.specular * Self::map(texture, uv)
 		} else {
 			self.diffuse
 		}
+	}
+
+	pub fn try_specular(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		uv.map(|uv| self.specular(uv)).unwrap_or(self.specular)
 	}
 
 	fn map(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {

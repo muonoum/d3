@@ -8,7 +8,7 @@ macro_rules! vector {
 		$crate::vector::Vector::new([[$repeat; $n]])
 	};
 	($($value:expr),* $(,)?) => {
-    $crate::vector::Vector::new([[$($value),*]])
+		$crate::vector::Vector::new([[$($value), *]])
 	};
 }
 

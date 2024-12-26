@@ -14,7 +14,7 @@ macro_rules! array {
 		$crate::Array::new([$repeat; $n])
 	};
 	($($value:expr),* $(,)?) => {
-    $crate::Array::new([$($value),*])
+		$crate::Array::new([$($value), *])
 	};
 }
 

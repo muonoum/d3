@@ -1,19 +1,13 @@
 #![feature(let_chains)]
 
 use clap::Parser;
-use pixels::Pixels;
-use pixels::SurfaceTexture;
+use pixels::{Pixels, SurfaceTexture};
 use winit::application::ApplicationHandler;
-use winit::dpi::LogicalPosition;
-use winit::dpi::LogicalSize;
-use winit::event::ElementState;
-use winit::event::WindowEvent;
-use winit::event_loop::ActiveEventLoop;
-use winit::event_loop::ControlFlow;
-use winit::event_loop::EventLoop;
+use winit::dpi::{LogicalPosition, LogicalSize};
+use winit::event::{ElementState, KeyEvent, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
-use winit::window::Window;
-use winit::window::WindowId;
+use winit::window::{Window, WindowId};
 
 mod args;
 mod buffer;
@@ -35,14 +29,6 @@ use varying::Varying;
 enum State {
 	Starting(Args),
 	Running(App),
-}
-
-pub struct App {
-	frame: PixelsBuffer,
-	movement: Vector<f32, 3>,
-	projection: Matrix<f32, 4, 4>,
-	scene: Scene,
-	window: Window,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -70,37 +56,8 @@ impl ApplicationHandler for State {
 				)
 				.unwrap();
 
-			let size = window.inner_size();
-			let buffer_height = (size.height / args.scale) as usize;
-			let buffer_width = (size.width / args.scale) as usize;
-
-			log::info!(
-				"Create window {}x{}; buffer {}x{}",
-				size.width,
-				size.height,
-				buffer_width,
-				buffer_height,
-			);
-
-			let frame = {
-				let surface = SurfaceTexture::new(size.width, size.height, &window);
-				let buffer =
-					Pixels::new(buffer_width as u32, buffer_height as u32, surface).unwrap();
-				PixelsBuffer::new(buffer, buffer_width, buffer_height)
-			};
-
-			let aspect = buffer_width as f32 / buffer_height as f32;
-			let projection = transform::perspective_near(aspect, 2.0, 0.1);
-			let scene = Scene::new(&args.scene);
-			window.request_redraw();
-
-			*self = State::Running(App {
-				frame,
-				movement: vector![0.0; 3],
-				projection,
-				scene,
-				window,
-			});
+			let app = App::new(args, window);
+			*self = State::Running(app);
 		}
 	}
 
@@ -109,39 +66,78 @@ impl ApplicationHandler for State {
 			match event {
 				WindowEvent::CloseRequested => event_loop.exit(),
 				WindowEvent::RedrawRequested => app.draw(),
-
-				WindowEvent::KeyboardInput { event, .. } => match event.state {
-					ElementState::Pressed => match event.physical_key {
-						PhysicalKey::Code(KeyCode::ArrowLeft) => (),
-						PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.05,
-						PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = -0.05,
-						PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = -0.05,
-						PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = 0.05,
-						PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = 0.05,
-						PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = -0.05,
-						PhysicalKey::Code(KeyCode::ArrowRight) => (),
-						_else => (),
-					},
-					ElementState::Released => match event.physical_key {
-						PhysicalKey::Code(KeyCode::ArrowLeft) => (),
-						PhysicalKey::Code(KeyCode::ArrowUp) => app.movement[1] = 0.0,
-						PhysicalKey::Code(KeyCode::KeyW) => app.movement[2] = 0.0,
-						PhysicalKey::Code(KeyCode::KeyA) => app.movement[0] = 0.0,
-						PhysicalKey::Code(KeyCode::KeyS) => app.movement[2] = 0.0,
-						PhysicalKey::Code(KeyCode::KeyD) => app.movement[0] = 0.0,
-						PhysicalKey::Code(KeyCode::ArrowDown) => app.movement[1] = 0.0,
-						PhysicalKey::Code(KeyCode::ArrowRight) => (),
-						_else => (),
-					},
-				},
-
-				_event => {}
+				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
+				_else => {}
 			}
 		}
 	}
 }
 
+pub struct App {
+	frame: PixelsBuffer,
+	movement: Vector<f32, 3>,
+	projection: Matrix<f32, 4, 4>,
+	scene: Scene,
+	window: Window,
+}
+
 impl App {
+	fn new(args: &Args, window: Window) -> App {
+		let size = window.inner_size();
+		let buffer_height = (size.height / args.scale) as usize;
+		let buffer_width = (size.width / args.scale) as usize;
+
+		log::info!(
+			"Start app window={}x{}; buffer={}x{}",
+			size.width,
+			size.height,
+			buffer_width,
+			buffer_height,
+		);
+
+		let frame = {
+			let surface = SurfaceTexture::new(size.width, size.height, &window);
+			let buffer = Pixels::new(buffer_width as u32, buffer_height as u32, surface).unwrap();
+			PixelsBuffer::new(buffer, buffer_width, buffer_height)
+		};
+
+		let aspect = buffer_width as f32 / buffer_height as f32;
+		let projection = transform::perspective_near(aspect, 2.0, 0.1);
+		let scene = Scene::new(&args.scene);
+		window.request_redraw();
+
+		App {
+			frame,
+			movement: vector![0.0; 3],
+			projection,
+			scene,
+			window,
+		}
+	}
+
+	fn keyboard_input(&mut self, event: KeyEvent) {
+		match event.state {
+			ElementState::Pressed => match event.physical_key {
+				PhysicalKey::Code(KeyCode::ArrowUp) => self.movement[1] = 0.05,
+				PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -0.05,
+				PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -0.05,
+				PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = 0.05,
+				PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = 0.05,
+				PhysicalKey::Code(KeyCode::ArrowDown) => self.movement[1] = -0.05,
+				_else => (),
+			},
+			ElementState::Released => match event.physical_key {
+				PhysicalKey::Code(KeyCode::ArrowUp) => self.movement[1] = 0.0,
+				PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = 0.0,
+				PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = 0.0,
+				PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = 0.0,
+				PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = 0.0,
+				PhysicalKey::Code(KeyCode::ArrowDown) => self.movement[1] = 0.0,
+				_else => (),
+			},
+		}
+	}
+
 	fn draw(&mut self) {
 		let mut depth = vec![f32::NEG_INFINITY; self.frame.width() * self.frame.height()];
 		self.frame.clear([0, 0, 0, 255]);
@@ -155,15 +151,14 @@ impl App {
 		for object in self.scene.objects.iter() {
 			let clip_space = object.world_space * project;
 
-			let mut world = Vec::new();
-			let mut clip = Vec::new();
-			let mut normals = Vec::new();
-
+			let mut world = Vec::with_capacity(object.mesh.positions.len());
+			let mut clip = Vec::with_capacity(object.mesh.positions.len());
 			for v in object.mesh.positions.iter() {
 				world.push((v.v4() * object.world_space).v3());
 				clip.push(v.v4() * clip_space);
 			}
 
+			let mut normals = Vec::with_capacity(object.mesh.normals.len());
 			for v in object.mesh.normals.iter() {
 				normals.push(*v * object.normal_space);
 			}
@@ -212,7 +207,7 @@ impl App {
 							return;
 						}
 
-						let (position, normal, texture) =
+						let (position, normal, texture_coordinate) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
 						if let Some(ref material) = group.material
@@ -221,7 +216,7 @@ impl App {
 							let color = render::blinn_phong(
 								position,
 								normal.normalize(),
-								texture,
+								texture_coordinate,
 								self.scene.camera.position,
 								&self.scene.lights,
 								material,
