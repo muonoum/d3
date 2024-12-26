@@ -229,10 +229,9 @@ impl App {
 
 							let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
 							self.frame.put(x, y, color);
-							return;
+						} else {
+							self.frame.put(x, y, [255, 0, 255, 255]);
 						}
-
-						self.frame.put(x, y, [255, 0, 255, 255]);
 					});
 				}
 			}
