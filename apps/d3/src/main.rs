@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use clap::Parser;
 use pixels::Pixels;
 use pixels::SurfaceTexture;
@@ -23,7 +25,6 @@ mod scene;
 mod varying;
 
 use args::Args;
-use array::array;
 use buffer::Buffer;
 use buffer::PixelsBuffer;
 use matrix::Matrix;
@@ -214,25 +215,24 @@ impl App {
 						let (position, normal, texture) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
-						if group.material.is_none() || normal.is_none() {
-							self.frame.put(x, y, [255, 0, 255, 255]);
+						if let Some(ref material) = group.material
+							&& let Some(normal) = normal
+						{
+							let color = render::blinn_phong(
+								position,
+								normal.normalize(),
+								texture,
+								self.scene.camera.position,
+								&self.scene.lights,
+								material,
+							);
+
+							let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
+							self.frame.put(x, y, color);
 							return;
 						}
 
-						let material = group.material.clone().unwrap();
-						let normal = normal.unwrap();
-
-						let color = render::blinn_phong(
-							position,
-							normal.normalize(),
-							texture,
-							self.scene.camera.position,
-							&self.scene.lights,
-							material,
-						);
-
-						let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
-						self.frame.put(x, y, color);
+						self.frame.put(x, y, [255, 0, 255, 255]);
 					});
 				}
 			}

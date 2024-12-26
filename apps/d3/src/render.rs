@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use array::{array, Array};
 use matrix::{vector, Vector};
 
@@ -90,7 +88,7 @@ pub fn blinn_phong(
 	uvs: Option<Vector<f32, 2>>,
 	camera: Vector<f32, 3>,
 	lights: &[Light],
-	material: Arc<obj::Material>,
+	material: &obj::Material,
 ) -> Array<f32, 3> {
 	let camera_dir = (camera - position).normalize();
 
