@@ -1,6 +1,4 @@
 use anyhow::Context;
-use array::{Array, array};
-use matrix::Vector;
 use std::{
 	collections::HashMap,
 	fs::File,
@@ -9,6 +7,9 @@ use std::{
 	str::SplitWhitespace,
 	sync::Arc,
 };
+
+use array::{array, Array};
+use matrix::Vector;
 
 #[derive(Default, Debug)]
 pub struct Mesh {

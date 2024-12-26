@@ -9,8 +9,8 @@ pub trait Buffer<C> {
 
 pub struct PixelsBuffer {
 	buffer: Pixels,
-	pub width: usize,
-	pub height: usize,
+	width: usize,
+	height: usize,
 }
 
 impl PixelsBuffer {

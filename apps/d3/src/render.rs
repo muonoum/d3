@@ -84,18 +84,36 @@ pub fn rasterize(
 	}
 }
 
-pub fn map_texture(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-	let (width, height) = (texture.width() as f32, texture.height() as f32);
-	let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
-	let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
-	let rgb = texture.get_pixel(x as u32, y as u32);
+pub fn map_texture(
+	map: Option<&image::RgbImage>,
+	texture: Option<Vector<f32, 2>>,
+) -> Option<Array<f32, 3>> {
+	map.zip(texture).map(|(map, uv)| {
+		let (width, height) = (map.width() as f32, map.height() as f32);
+		let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
+		let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
+		let rgb = map.get_pixel(x as u32, y as u32);
 
-	array![
-		rgb[0] as f32 / 255.0,
-		rgb[1] as f32 / 255.0,
-		rgb[2] as f32 / 255.0
-	]
+		array![
+			rgb[0] as f32 / 255.0,
+			rgb[1] as f32 / 255.0,
+			rgb[2] as f32 / 255.0
+		]
+	})
 }
+
+// pub fn map_texture(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+// 	let (width, height) = (map.width() as f32, map.height() as f32);
+// 	let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
+// 	let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
+// 	let rgb = map.get_pixel(x as u32, y as u32);
+
+// 	array![
+// 		rgb[0] as f32 / 255.0,
+// 		rgb[1] as f32 / 255.0,
+// 		rgb[2] as f32 / 255.0
+// 	]
+// }
 
 pub fn blinn_phong(
 	material: Arc<obj::Material>,
