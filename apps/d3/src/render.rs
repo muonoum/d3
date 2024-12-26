@@ -43,7 +43,7 @@ pub fn bounding_box(
 	(min_x, min_y, max_x, max_y)
 }
 
-pub fn rasterize(
+pub fn triangle(
 	p1: Vector<f32, 3>,
 	p2: Vector<f32, 3>,
 	p3: Vector<f32, 3>,
@@ -84,46 +84,15 @@ pub fn rasterize(
 	}
 }
 
-pub fn map_texture(
-	map: Option<&image::RgbImage>,
-	texture: Option<Vector<f32, 2>>,
-) -> Option<Array<f32, 3>> {
-	map.zip(texture).map(|(map, uv)| {
-		let (width, height) = (map.width() as f32, map.height() as f32);
-		let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
-		let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
-		let rgb = map.get_pixel(x as u32, y as u32);
-
-		array![
-			rgb[0] as f32 / 255.0,
-			rgb[1] as f32 / 255.0,
-			rgb[2] as f32 / 255.0
-		]
-	})
-}
-
-// pub fn map_texture(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-// 	let (width, height) = (map.width() as f32, map.height() as f32);
-// 	let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
-// 	let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
-// 	let rgb = map.get_pixel(x as u32, y as u32);
-
-// 	array![
-// 		rgb[0] as f32 / 255.0,
-// 		rgb[1] as f32 / 255.0,
-// 		rgb[2] as f32 / 255.0
-// 	]
-// }
-
 pub fn blinn_phong(
-	material: Arc<obj::Material>,
-	diffuse_map: Array<f32, 3>,
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
-	camera_position: Vector<f32, 3>,
+	uvs: Option<Vector<f32, 2>>,
+	camera: Vector<f32, 3>,
 	lights: &[Light],
+	material: Arc<obj::Material>,
 ) -> Array<f32, 3> {
-	let camera_dir = (camera_position - position).normalize();
+	let camera_dir = (camera - position).normalize();
 
 	lights.iter().fold(array![0.0; 3], |sum, light| {
 		let light_dir = (light.position - position).normalize();
@@ -132,7 +101,16 @@ pub fn blinn_phong(
 		let specular = normal
 			.dot(halfway_vector)
 			.powi(material.specular_exponent as i32);
-		sum + material.diffuse * diffuse_map * diffuse * light.diffuse_color
-			+ material.specular * specular * light.specular_color
+
+		let diffuse_map = uvs
+			.map(|uv| material.diffuse(uv))
+			.unwrap_or(material.diffuse);
+
+		let specular_map = uvs
+			.map(|uv| material.specular(uv))
+			.unwrap_or(material.specular);
+
+		sum + diffuse_map * diffuse * light.diffuse_color
+			+ specular_map * specular * light.specular_color
 	}) * 255.0
 }

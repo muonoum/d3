@@ -107,7 +107,7 @@ impl ApplicationHandler for State {
 		if let State::Running(app) = self {
 			match event {
 				WindowEvent::CloseRequested => event_loop.exit(),
-				WindowEvent::RedrawRequested => app.redraw(),
+				WindowEvent::RedrawRequested => app.draw(),
 
 				WindowEvent::KeyboardInput { event, .. } => match event.state {
 					ElementState::Pressed => match event.physical_key {
@@ -141,7 +141,7 @@ impl ApplicationHandler for State {
 }
 
 impl App {
-	fn redraw(&mut self) {
+	fn draw(&mut self) {
 		let mut depth = vec![f32::NEG_INFINITY; self.frame.width() * self.frame.height()];
 		self.frame.clear([0, 0, 0, 255]);
 		self.scene.update(self.movement);
@@ -167,6 +167,13 @@ impl App {
 				normals.push(*v * object.normal_space);
 			}
 
+			let var = |v: &obj::Vertex, rz| {
+				let position = world[v.position];
+				let normal = v.normal.map(|i| normals[i]);
+				let texture = v.texture.map(|i| object.mesh.textures[i]);
+				(position, normal, texture).scale(rz)
+			};
+
 			for group in object.mesh.groups.iter() {
 				for [v1, v2, v3] in group.faces.iter() {
 					let clip1 = clip[v1.position];
@@ -190,28 +197,11 @@ impl App {
 					let rz2 = 1.0 / -clip2[3];
 					let rz3 = 1.0 / -clip3[3];
 
-					let var1 = (
-						world[v1.position],
-						v1.normal.map(|i| normals[i]),
-						v1.texture.map(|i| object.mesh.textures[i]),
-					)
-						.scale(rz1);
+					let var1 = var(v1, rz1);
+					let var2 = var(v2, rz2);
+					let var3 = var(v3, rz3);
 
-					let var2 = (
-						world[v2.position],
-						v2.normal.map(|i| normals[i]),
-						v2.texture.map(|i| object.mesh.textures[i]),
-					)
-						.scale(rz2);
-
-					let var3 = (
-						world[v3.position],
-						v3.normal.map(|i| normals[i]),
-						v3.texture.map(|i| object.mesh.textures[i]),
-					)
-						.scale(rz3);
-
-					render::rasterize(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
+					render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
 						let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
 
 						let i = y * width + x;
@@ -221,31 +211,24 @@ impl App {
 							return;
 						}
 
-						let (world, normal, texture) =
+						let (position, normal, texture) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
-						if group.material.is_none() {
+						if group.material.is_none() || normal.is_none() {
 							self.frame.put(x, y, [255, 0, 255, 255]);
-							return;
-						}
-
-						if normal.is_none() {
-							self.frame.put(x, y, [0, 255, 255, 255]);
 							return;
 						}
 
 						let material = group.material.clone().unwrap();
 						let normal = normal.unwrap();
-						let diffuse_map =
-							render::map_texture(material.diffuse_map.as_ref(), texture);
 
 						let color = render::blinn_phong(
-							material,
-							diffuse_map.unwrap_or_else(|| array![1.0; 3]),
-							world,
+							position,
 							normal.normalize(),
+							texture,
 							self.scene.camera.position,
 							&self.scene.lights,
+							material,
 						);
 
 						let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
