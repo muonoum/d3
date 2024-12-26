@@ -139,12 +139,20 @@ impl App {
 	}
 
 	fn draw(&mut self) {
-		let mut depth = vec![f32::NEG_INFINITY; self.frame.width() * self.frame.height()];
-		self.frame.clear([0, 0, 0, 255]);
 		self.scene.update(self.movement);
+		self.render();
 
+		self.window.pre_present_notify();
+		self.frame.render();
+		self.window.request_redraw();
+	}
+
+	fn render(&mut self) {
 		let width = self.frame.width();
 		let height = self.frame.height();
+		self.frame.clear([0, 0, 0, 255]);
+
+		let mut depth = vec![f32::NEG_INFINITY; width * height];
 		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
 		let project = self.scene.camera.view * self.projection;
 
@@ -153,17 +161,18 @@ impl App {
 
 			let mut world = Vec::with_capacity(object.mesh.positions.len());
 			let mut clip = Vec::with_capacity(object.mesh.positions.len());
+			let mut normals = Vec::with_capacity(object.mesh.normals.len());
+
 			for v in object.mesh.positions.iter() {
 				world.push((v.v4() * object.world_space).v3());
 				clip.push(v.v4() * clip_space);
 			}
 
-			let mut normals = Vec::with_capacity(object.mesh.normals.len());
 			for v in object.mesh.normals.iter() {
 				normals.push(*v * object.normal_space);
 			}
 
-			let var = |v: &obj::Vertex| {
+			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
 				let texture = v.texture.map(|i| object.mesh.textures[i]);
@@ -193,9 +202,9 @@ impl App {
 					let rz2 = 1.0 / -clip2[3];
 					let rz3 = 1.0 / -clip3[3];
 
-					let var1 = var(v1).scale(rz1);
-					let var2 = var(v2).scale(rz2);
-					let var3 = var(v3).scale(rz3);
+					let var1 = varying(v1).scale(rz1);
+					let var2 = varying(v2).scale(rz2);
+					let var3 = varying(v3).scale(rz3);
 
 					render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
 						let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
@@ -231,9 +240,5 @@ impl App {
 				}
 			}
 		}
-
-		self.window.pre_present_notify();
-		self.frame.render();
-		self.window.request_redraw();
 	}
 }
