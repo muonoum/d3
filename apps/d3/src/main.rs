@@ -253,11 +253,9 @@ impl ApplicationHandler for State {
 											&app.scene.lights,
 										);
 
-										app.frame.put(
-											x,
-											y,
-											[color[0] as u8, color[1] as u8, color[2] as u8, 255],
-										);
+										let color =
+											[color[0] as u8, color[1] as u8, color[2] as u8, 255];
+										app.frame.put(x, y, color);
 									},
 								);
 							}
