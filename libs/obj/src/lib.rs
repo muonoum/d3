@@ -74,6 +74,51 @@ impl Material {
 			specular_exponent: 1.0,
 		}
 	}
+
+	pub fn ambient(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		if let Some(ref texture) = self.ambient_map {
+			self.ambient * Self::map(texture, uv)
+		} else {
+			self.diffuse
+		}
+	}
+
+	pub fn emissive(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		if let Some(ref texture) = self.emissive_map {
+			self.emissive * Self::map(texture, uv)
+		} else {
+			self.diffuse
+		}
+	}
+
+	pub fn diffuse(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		if let Some(ref texture) = self.diffuse_map {
+			self.diffuse * Self::map(texture, uv)
+		} else {
+			self.diffuse
+		}
+	}
+
+	pub fn specular(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		if let Some(ref texture) = self.specular_map {
+			self.specular * Self::map(texture, uv)
+		} else {
+			self.diffuse
+		}
+	}
+
+	fn map(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		let (width, height) = (texture.width() as f32, texture.height() as f32);
+		let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
+		let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
+		let rgb = texture.get_pixel(x as u32, y as u32);
+
+		array![
+			rgb[0] as f32 / 255.0,
+			rgb[1] as f32 / 255.0,
+			rgb[2] as f32 / 255.0
+		]
+	}
 }
 
 pub type Face = [Vertex; 3];

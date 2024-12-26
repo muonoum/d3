@@ -449,7 +449,6 @@ dependencies = [
  "num",
  "obj",
  "pixels",
- "render",
  "toml",
  "transform",
  "winit",

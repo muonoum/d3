@@ -18,15 +18,18 @@ mod buffer;
 mod camera;
 mod light;
 mod object;
+mod render;
 mod scene;
+mod varying;
 
 use args::Args;
+use array::array;
+use buffer::Buffer;
 use buffer::PixelsBuffer;
 use matrix::Matrix;
 use matrix::{vector, Vector};
-use render::pipeline;
-use render::Buffer;
 use scene::Scene;
+use varying::Varying;
 
 enum State {
 	Starting(Args),
@@ -135,20 +138,129 @@ impl ApplicationHandler for State {
 					app.frame.clear([0, 0, 0, 255]);
 					app.scene.update(app.movement);
 
+					let width = app.frame.width();
+					let height = app.frame.height();
+					let screen_space = |v| render::screen_space(v, width as f32, height as f32);
+					let project = app.scene.camera.view * app.projection;
+
 					for object in app.scene.objects.iter() {
+						let clip_space = object.world_space * project;
+
+						let mut world = Vec::new();
+						let mut clip = Vec::new();
+						let mut normals = Vec::new();
+
+						for v in object.mesh.positions.iter() {
+							world.push((v.v4() * object.world_space).v3());
+							clip.push(v.v4() * clip_space);
+						}
+
+						for v in object.mesh.normals.iter() {
+							normals.push(*v * object.normal_space);
+						}
+
 						for group in object.mesh.groups.iter() {
-							pipeline::render(
-								object::Render {
-									object,
-									group,
-									camera: &app.scene.camera,
-									lights: &app.scene.lights,
-									projection: app.projection,
-								},
-								&group.faces,
-								&mut app.frame,
-								&mut depth,
-							);
+							for [v1, v2, v3] in group.faces.iter() {
+								let clip1 = clip[v1.position];
+								let clip2 = clip[v2.position];
+								let clip3 = clip[v3.position];
+
+								if render::clipped(clip1)
+									|| render::clipped(clip2) || render::clipped(clip3)
+								{
+									continue;
+								}
+
+								let screen1 = screen_space(clip1.v3());
+								let screen2 = screen_space(clip2.v3());
+								let screen3 = screen_space(clip3.v3());
+
+								let normal = (screen2 - screen1).cross(screen3 - screen1);
+								if normal[2] > 0.0 {
+									continue;
+								}
+
+								let rz1 = 1.0 / -clip1[3];
+								let rz2 = 1.0 / -clip2[3];
+								let rz3 = 1.0 / -clip3[3];
+
+								let var1 = (
+									world[v1.position],
+									v1.normal.map(|i| normals[i]),
+									v1.texture.map(|i| object.mesh.textures[i]),
+								)
+									.scale(rz1);
+
+								let var2 = (
+									world[v2.position],
+									v2.normal.map(|i| normals[i]),
+									v2.texture.map(|i| object.mesh.textures[i]),
+								)
+									.scale(rz2);
+
+								let var3 = (
+									world[v3.position],
+									v3.normal.map(|i| normals[i]),
+									v3.texture.map(|i| object.mesh.textures[i]),
+								)
+									.scale(rz3);
+
+								render::rasterize(
+									screen1,
+									screen2,
+									screen3,
+									width,
+									height,
+									|x, y, u, v, w| {
+										let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
+
+										let i = y * width + x;
+										if depth[i] < z {
+											depth[i] = z;
+										} else {
+											return;
+										}
+
+										let (world, normal, texture) =
+											Varying::barycentric(var1, u, var2, v, var3, w)
+												.scale(z);
+
+										if group.material.is_none() {
+											app.frame.put(x, y, [255, 0, 255, 255]);
+											return;
+										}
+
+										if normal.is_none() {
+											app.frame.put(x, y, [0, 255, 255, 255]);
+											return;
+										}
+
+										let material = group.material.clone().unwrap();
+										let normal = normal.unwrap();
+										let diffuse_map = material
+											.diffuse_map
+											.as_ref()
+											.zip(texture)
+											.map(|(map, uv)| render::map_texture(map, uv))
+											.unwrap_or_else(|| array![1.0; 3]);
+
+										let color = render::blinn_phong(
+											material,
+											diffuse_map,
+											world,
+											normal.normalize(),
+											app.scene.camera.position,
+											&app.scene.lights,
+										);
+
+										app.frame.put(
+											x,
+											y,
+											[color[0] as u8, color[1] as u8, color[2] as u8, 255],
+										);
+									},
+								);
+							}
 						}
 					}
 
