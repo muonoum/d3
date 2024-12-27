@@ -9,6 +9,7 @@ mod square;
 mod sub;
 
 pub mod matrix;
+pub mod transform;
 pub mod vector;
 
 pub use matrix::Cell;

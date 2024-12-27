@@ -91,3 +91,28 @@ where
 		(r0, r1, r2)
 	}
 }
+
+impl<A, B, C, D> Varying for (A, B, C, D)
+where
+	A: Varying,
+	B: Varying,
+	C: Varying,
+	D: Varying,
+{
+	fn scale(self, rz: f32) -> Self {
+		(
+			self.0.scale(rz),
+			self.1.scale(rz),
+			self.2.scale(rz),
+			self.3.scale(rz),
+		)
+	}
+
+	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
+		let r0 = A::barycentric(a.0, u, b.0, v, c.0, w);
+		let r1 = B::barycentric(a.1, u, b.1, v, c.1, w);
+		let r2 = C::barycentric(a.2, u, b.2, v, c.2, w);
+		let r3 = D::barycentric(a.3, u, b.3, v, c.3, w);
+		(r0, r1, r2, r3)
+	}
+}

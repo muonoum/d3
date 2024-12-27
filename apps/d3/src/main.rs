@@ -19,10 +19,8 @@ mod scene;
 mod varying;
 
 use args::Args;
-use buffer::Buffer;
-use buffer::PixelsBuffer;
-use matrix::Matrix;
-use matrix::{vector, Vector};
+use buffer::{Buffer, PixelsBuffer};
+use matrix::{transform, vector, Vector};
 use scene::Scene;
 use varying::Varying;
 
@@ -67,6 +65,11 @@ impl ApplicationHandler for State {
 				WindowEvent::CloseRequested => event_loop.exit(),
 				WindowEvent::RedrawRequested => app.draw(),
 				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
+
+				WindowEvent::Resized(size) => {
+					app.frame.resize(size.width as usize, size.height as usize)
+				}
+
 				_else => {}
 			}
 		}
@@ -76,7 +79,6 @@ impl ApplicationHandler for State {
 pub struct App {
 	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
-	projection: Matrix<f32, 4, 4>,
 	scene: Scene,
 	window: Window,
 }
@@ -88,11 +90,9 @@ impl App {
 		let buffer_width = (size.width / args.scale) as usize;
 
 		log::info!(
-			"Start app window={}x{}; buffer={}x{}",
-			size.width,
-			size.height,
-			buffer_width,
-			buffer_height,
+			"Start app window={:?}; buffer={:?}",
+			(size.width, size.height),
+			(buffer_width, buffer_height),
 		);
 
 		let frame = {
@@ -101,15 +101,14 @@ impl App {
 			PixelsBuffer::new(buffer, buffer_width, buffer_height)
 		};
 
-		let aspect = buffer_width as f32 / buffer_height as f32;
-		let projection = transform::perspective_near(aspect, 2.0, 0.1);
-		let scene = Scene::new(&args.scene);
+		let aspect_ratio = buffer_width as f32 / buffer_height as f32;
+		let projection = transform::perspective_near(aspect_ratio, 2.0, 0.1);
+		let scene = Scene::new(&args.scene, projection);
 		window.request_redraw();
 
 		App {
 			frame,
 			movement: vector![0.0; 3],
-			projection,
 			scene,
 			window,
 		}
@@ -140,37 +139,33 @@ impl App {
 
 	fn draw(&mut self) {
 		self.scene.update(self.movement);
-		self.render();
-
+		self.draw_frame();
 		self.window.pre_present_notify();
 		self.frame.render();
 		self.window.request_redraw();
 	}
 
-	fn render(&mut self) {
+	fn draw_frame(&mut self) {
+		self.frame.clear([0, 0, 0, 255]);
 		let width = self.frame.width();
 		let height = self.frame.height();
-		self.frame.clear([0, 0, 0, 255]);
 
 		let mut depth = vec![f32::NEG_INFINITY; width * height];
 		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
-		let project = self.scene.camera.view * self.projection;
+		let project = self.scene.camera.view * self.scene.projection;
 
 		for object in self.scene.objects.iter() {
 			let clip_space = object.world_space * project;
+			let positions = &object.mesh.positions;
+			let normals = &object.mesh.normals;
 
-			let mut world = Vec::with_capacity(object.mesh.positions.len());
-			let mut clip = Vec::with_capacity(object.mesh.positions.len());
-			let mut normals = Vec::with_capacity(object.mesh.normals.len());
+			let (world, clip): (Vec<Vector<f32, 3>>, Vec<Vector<f32, 4>>) = positions
+				.iter()
+				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
+				.unzip();
 
-			for v in object.mesh.positions.iter() {
-				world.push((v.v4() * object.world_space).v3());
-				clip.push(v.v4() * clip_space);
-			}
-
-			for v in object.mesh.normals.iter() {
-				normals.push(*v * object.normal_space);
-			}
+			let normals: Vec<Vector<f32, 3>> =
+				normals.iter().map(|v| *v * object.normal_space).collect();
 
 			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
@@ -185,7 +180,7 @@ impl App {
 					let clip2 = clip[v2.position];
 					let clip3 = clip[v3.position];
 
-					if render::clipped(clip1) || render::clipped(clip2) || render::clipped(clip3) {
+					if render::clipped(clip1) && render::clipped(clip2) && render::clipped(clip3) {
 						continue;
 					}
 
@@ -219,7 +214,7 @@ impl App {
 						let (position, normal, texture_coordinate) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
-						if let Some(ref material) = group.material
+						let color = if let Some(ref material) = group.material
 							&& let Some(normal) = normal
 						{
 							let color = render::blinn_phong(
@@ -231,11 +226,12 @@ impl App {
 								material,
 							);
 
-							let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
-							self.frame.put(x, y, color);
+							[color[0] as u8, color[1] as u8, color[2] as u8, 255]
 						} else {
-							self.frame.put(x, y, [255, 0, 255, 255]);
-						}
+							[255, 0, 255, 255]
+						};
+
+						self.frame.put(x, y, color);
 					});
 				}
 			}

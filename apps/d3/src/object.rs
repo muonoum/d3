@@ -1,4 +1,4 @@
-use matrix::{Matrix, Vector};
+use matrix::{transform, Matrix, Vector};
 
 pub struct Object {
 	pub mesh: obj::Mesh,

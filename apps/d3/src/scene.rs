@@ -3,16 +3,17 @@ use crate::light::Light;
 use crate::object;
 use crate::object::Object;
 use array::{array, Array};
-use matrix::{vector, Vector};
+use matrix::{vector, Matrix, Vector};
 
 pub struct Scene {
 	pub objects: Vec<Object>,
 	pub lights: Vec<Light>,
 	pub camera: Camera,
+	pub projection: Matrix<f32, 4, 4>,
 }
 
 impl Scene {
-	pub fn new(path: &str) -> Self {
+	pub fn new(path: &str, projection: Matrix<f32, 4, 4>) -> Self {
 		log::info!("Load {}", path);
 
 		let table = std::fs::read_to_string(path)
@@ -51,6 +52,7 @@ impl Scene {
 
 		Self {
 			camera,
+			projection,
 			objects: objects.collect(),
 			lights: lights.collect(),
 		}

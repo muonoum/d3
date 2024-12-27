@@ -1,4 +1,4 @@
-use matrix::{vector, Matrix, Vector};
+use matrix::{transform, vector, Matrix, Vector};
 
 pub struct Camera {
 	pub position: Vector<f32, 3>,
@@ -21,7 +21,7 @@ impl Camera {
 	pub fn update(&mut self, movement: Vector<f32, 3>) {
 		self.position += movement;
 		self.target += movement;
-		let up_vector = Vector::new([[0.0, 1.0, 0.0]]);
+		let up_vector = vector![0.0, 1.0, 0.0];
 		let world = transform::look_at(self.position, self.target, up_vector);
 		self.view = world.inverse().unwrap();
 	}

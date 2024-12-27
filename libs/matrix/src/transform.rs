@@ -1,5 +1,4 @@
-use matrix::matrix::Matrix;
-use matrix::vector::Vector;
+use crate::{Matrix, Vector};
 
 pub fn scale_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	scale(v[0], v[1], v[2])
