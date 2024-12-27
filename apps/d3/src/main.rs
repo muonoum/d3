@@ -159,13 +159,12 @@ impl App {
 			let positions = &object.mesh.positions;
 			let normals = &object.mesh.normals;
 
-			let (world, clip): (Vec<Vector<f32, 3>>, Vec<Vector<f32, 4>>) = positions
+			let (world, clip): (Vec<_>, Vec<_>) = positions
 				.iter()
 				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
 				.unzip();
 
-			let normals: Vec<Vector<f32, 3>> =
-				normals.iter().map(|v| *v * object.normal_space).collect();
+			let normals: Vec<_> = normals.iter().map(|v| *v * object.normal_space).collect();
 
 			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
@@ -204,9 +203,9 @@ impl App {
 					render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
 						let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
 
-						let i = y * width + x;
-						if depth[i] < z {
-							depth[i] = z;
+						let z_index = y * width + x;
+						if depth[z_index] < z {
+							depth[z_index] = z;
 						} else {
 							return;
 						}

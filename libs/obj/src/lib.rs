@@ -155,6 +155,7 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	let file = File::open(path)?;
 	let reader = BufReader::new(file);
 	let mut mesh = Mesh::default();
+	let mut default_group = Group::new("default");
 	let mut group: Option<Group> = None;
 	let mut materials = HashMap::<String, Arc<Material>>::new();
 
@@ -179,14 +180,19 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 
 			Some("f") => {
 				if let Some(ref mut group) = group {
-					group.faces.push(read_face(terms).context("f")?)
+					group.faces.push(read_face(terms).context("f")?);
+				} else {
+					default_group.faces.push(read_face(terms).context("f")?);
 				}
 			}
 
 			Some("usemtl") => {
+				let name = terms.next().context("usemtl")?;
+
 				if let Some(ref mut group) = group {
-					let name = terms.next().context("usemtl")?;
 					group.material = materials.get(name).cloned();
+				} else {
+					default_group.material = materials.get(name).cloned();
 				}
 			}
 
@@ -199,6 +205,10 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 
 	if let Some(ref group) = group {
 		mesh.groups.push(group.clone());
+	}
+
+	if !default_group.faces.is_empty() {
+		mesh.groups.push(default_group);
 	}
 
 	Ok(mesh)
