@@ -248,43 +248,23 @@ fn read_materials(
 				Some("Ks") => mtl.specular = read_array(terms).context("Ks")?,
 
 				Some("map_Ka") => {
-					mtl.ambient_map = Some(
-						image::open(read_path(terms, location).context("map_Ka")?)
-							.context("map_Ka")?
-							.to_rgb8(),
-					)
+					mtl.ambient_map = Some(read_map(terms, location).context("map_Ka")?)
 				}
 
 				Some("map_Kd") => {
-					mtl.diffuse_map = Some(
-						image::open(read_path(terms, location).context("map_Kd")?)
-							.context("map_Kd")?
-							.to_rgb8(),
-					)
+					mtl.diffuse_map = Some(read_map(terms, location).context("map_Kd")?)
 				}
 
 				Some("map_Ke") => {
-					mtl.emissive_map = Some(
-						image::open(read_path(terms, location).context("map_Ke")?)
-							.context("map_Ke")?
-							.to_rgb8(),
-					)
+					mtl.emissive_map = Some(read_map(terms, location).context("map_Ke")?)
 				}
 
 				Some("map_Ks") => {
-					mtl.specular_map = Some(
-						image::open(read_path(terms, location).context("map_Ks")?)
-							.context("map_Ks")?
-							.to_rgb8(),
-					)
+					mtl.specular_map = Some(read_map(terms, location).context("map_Ks")?)
 				}
 
 				Some("map_Bump") => {
-					mtl.normal_map = Some(
-						image::open(read_path(terms, location).context("map_Bump")?)
-							.context("map_Bump")?
-							.to_rgb8(),
-					)
+					mtl.normal_map = Some(read_map(terms, location).context("map_Bump")?);
 				}
 
 				Some(_) | None => {}
@@ -297,6 +277,10 @@ fn read_materials(
 	}
 
 	Ok(())
+}
+
+fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::RgbImage> {
+	Ok(image::open(read_path(terms, location)?)?.to_rgb8())
 }
 
 fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {
