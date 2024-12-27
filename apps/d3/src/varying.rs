@@ -6,23 +6,6 @@ pub trait Varying {
 	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self;
 }
 
-// TODO: Denne, for å dekke ting som Array og Vector, men gir
-// "Conflicting implementations of trait [..]".
-//
-// impl<T> Varying for T
-// where
-// 	T: std::ops::Mul<f32, Output = T>,
-// 	T: std::ops::Add<Output = T>,
-// {
-// 	fn scale(self, rz: f32) -> Self {
-// 		self * rz
-// 	}
-
-// 	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
-// 		a * u + b * v + c * w
-// 	}
-// }
-
 impl<const D: usize> Varying for Array<f32, D> {
 	fn scale(self, rz: f32) -> Self {
 		self * rz
