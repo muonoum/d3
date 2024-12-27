@@ -8,7 +8,7 @@ diffuse_color = [1.0, 1.0, 1.0]
 specular_color = [0.5, 0.5, 0.5]
 
 [[objects]]
-mesh = "objs/dice.obj"
+mesh = "objects/dice/dice.obj"
 scale = [0.6, 0.6, 0.6]
 orientation = [0.0, 0.0, 0.0]
 position = [-0.9, -0.3, 0.0]
@@ -17,7 +17,7 @@ position = [-0.9, -0.3, 0.0]
 orientation = [0.008, 0.008, 0.012]
 
 [[objects]]
-mesh = "objs/dice.obj"
+mesh = "objects/dice/dice.obj"
 scale = [0.6, 0.6, 0.6]
 orientation = [0.0, 0.0, 0.0]
 position = [0.9, 0.3, 0.0]

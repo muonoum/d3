@@ -18,7 +18,7 @@ pub fn screen_space(ndc: Vector<f32, 3>, width: f32, height: f32) -> Vector<f32,
 	]
 }
 
-pub fn edge<T: matrix::Cell>(a: Vector<T, 2>, b: Vector<T, 2>, p: Vector<T, 2>) -> T {
+pub fn edge(a: Vector<f32, 3>, b: Vector<f32, 3>, p: Vector<f32, 3>) -> f32 {
 	(p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0])
 }
 
@@ -50,12 +50,12 @@ pub fn triangle(
 	mut pixel: impl FnMut(usize, usize, f32, f32, f32),
 ) {
 	let (min_x, min_y, max_x, max_y) = bounding_box((p1, p2, p3), (width, height));
-	let area = 1.0 / edge(p1.into(), p2.into(), p3.into());
-	let point = vector![min_x as f32, min_y as f32];
+	let area = 1.0 / edge(p1, p2, p3);
+	let point = vector![min_x as f32, min_y as f32, 0.0];
 
-	let mut r1 = edge(p2.into(), p3.into(), point);
-	let mut r2 = edge(p3.into(), p1.into(), point);
-	let mut r3 = edge(p1.into(), p2.into(), point);
+	let mut r1 = edge(p2, p3, point);
+	let mut r2 = edge(p3, p1, point);
+	let mut r3 = edge(p1, p2, point);
 
 	for y in min_y..=max_y {
 		let mut u = r1;

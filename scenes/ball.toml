@@ -7,7 +7,7 @@ position = [0.0, 0.0, 3.0]
 diffuse_color = [1.0, 1.0, 1.0]
 
 [[objects]]
-mesh = "objs/ball.obj"
+mesh = "objects/ball/ball.obj"
 scale = [1.0, 1.0, 1.0]
 orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]

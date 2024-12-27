@@ -46,6 +46,8 @@ impl Group {
 pub struct Material {
 	pub name: String,
 
+	pub normal_map: Option<image::RgbImage>,
+
 	pub ambient: Array<f32, 3>,
 	pub ambient_map: Option<image::RgbImage>,
 
@@ -64,6 +66,7 @@ impl Material {
 	pub fn new(name: &str) -> Material {
 		Material {
 			name: name.into(),
+			normal_map: None,
 			ambient: array![0.0; 3],
 			ambient_map: None,
 			emissive: array![0.0; 3],
@@ -272,6 +275,14 @@ fn read_materials(
 					mtl.specular_map = Some(
 						image::open(read_path(terms, location).context("map_Ks")?)
 							.context("map_Ks")?
+							.to_rgb8(),
+					)
+				}
+
+				Some("map_Bump") => {
+					mtl.normal_map = Some(
+						image::open(read_path(terms, location).context("map_Bump")?)
+							.context("map_Bump")?
 							.to_rgb8(),
 					)
 				}

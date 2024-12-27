@@ -8,7 +8,7 @@ diffuse_color = [0.9, 0.75, 0.5]
 specular_color = [1.0, 1.0, 1.0]
 
 [[objects]]
-mesh = "objs/nefertiti.obj"
+mesh = "objects/nefertiti/nefertiti.obj"
 scale = [1.0, 1.0, 1.0]
 orientation = [0.0, 0.0, 0.0]
 position = [0.0, 0.0, 0.0]
