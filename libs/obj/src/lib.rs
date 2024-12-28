@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use anyhow::Context;
 use std::{
 	collections::HashMap,
@@ -16,6 +18,7 @@ pub struct Mesh {
 	pub positions: Vec<Vector<f32, 3>>,
 	pub normals: Vec<Vector<f32, 3>>,
 	pub textures: Vec<Vector<f32, 2>>,
+	pub materials: HashMap<String, Arc<Material>>,
 	pub groups: Vec<Group>,
 }
 
@@ -28,7 +31,7 @@ impl Mesh {
 #[derive(Debug, Clone)]
 pub struct Group {
 	pub name: String,
-	pub material: Option<Arc<Material>>,
+	pub material: Option<String>,
 	pub faces: Vec<Face>,
 }
 
@@ -127,8 +130,9 @@ impl Material {
 		uv.map(|uv| self.specular(uv)).unwrap_or(self.specular)
 	}
 
-	fn map(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		let (width, height) = (texture.width() as f32, texture.height() as f32);
+	pub fn map(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		let width = texture.width() as f32;
+		let height = texture.height() as f32;
 		let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
 		let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
 		let rgb = texture.get_pixel(x as u32, y as u32);
@@ -147,6 +151,7 @@ pub type Face = [Vertex; 3];
 pub struct Vertex {
 	pub position: usize,
 	pub normal: Option<usize>,
+	pub tangent: Option<Vector<f32, 3>>,
 	pub texture: Option<usize>,
 }
 
@@ -154,10 +159,10 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	let path = Path::new(path);
 	let file = File::open(path)?;
 	let reader = BufReader::new(file);
+
 	let mut mesh = Mesh::default();
 	let mut default_group = Group::new("default");
 	let mut group: Option<Group> = None;
-	let mut materials = HashMap::<String, Arc<Material>>::new();
 
 	for line in reader.lines() {
 		let line = line?;
@@ -166,7 +171,7 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 		match terms.next() {
 			Some("mtllib") => {
 				let location = path.parent().context("mtllib")?;
-				read_materials(read_path(terms, location)?, location, &mut materials)?;
+				read_materials(read_path(terms, location)?, location, &mut mesh.materials)?;
 			}
 
 			Some("g") => {
@@ -190,9 +195,9 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 				let name = terms.next().context("usemtl")?;
 
 				if let Some(ref mut group) = group {
-					group.material = materials.get(name).cloned();
+					group.material = Some(name.into());
 				} else {
-					default_group.material = materials.get(name).cloned();
+					default_group.material = Some(name.into());
 				}
 			}
 
@@ -331,6 +336,7 @@ fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
 		position: position - 1,
 		normal: normal.map(|i| i - 1),
 		texture: texture.map(|i| i - 1),
+		tangent: None,
 	})
 }
 

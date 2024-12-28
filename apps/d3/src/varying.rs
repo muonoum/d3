@@ -99,3 +99,62 @@ where
 		(r0, r1, r2, r3)
 	}
 }
+
+impl<A, B, C, D, E> Varying for (A, B, C, D, E)
+where
+	A: Varying,
+	B: Varying,
+	C: Varying,
+	D: Varying,
+	E: Varying,
+{
+	fn scale(self, rz: f32) -> Self {
+		(
+			self.0.scale(rz),
+			self.1.scale(rz),
+			self.2.scale(rz),
+			self.3.scale(rz),
+			self.4.scale(rz),
+		)
+	}
+
+	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
+		let r0 = A::barycentric(a.0, u, b.0, v, c.0, w);
+		let r1 = B::barycentric(a.1, u, b.1, v, c.1, w);
+		let r2 = C::barycentric(a.2, u, b.2, v, c.2, w);
+		let r3 = D::barycentric(a.3, u, b.3, v, c.3, w);
+		let r4 = E::barycentric(a.4, u, b.4, v, c.4, w);
+		(r0, r1, r2, r3, r4)
+	}
+}
+
+impl<A, B, C, D, E, F> Varying for (A, B, C, D, E, F)
+where
+	A: Varying,
+	B: Varying,
+	C: Varying,
+	D: Varying,
+	E: Varying,
+	F: Varying,
+{
+	fn scale(self, rz: f32) -> Self {
+		(
+			self.0.scale(rz),
+			self.1.scale(rz),
+			self.2.scale(rz),
+			self.3.scale(rz),
+			self.4.scale(rz),
+			self.5.scale(rz),
+		)
+	}
+
+	fn barycentric(a: Self, u: f32, b: Self, v: f32, c: Self, w: f32) -> Self {
+		let r0 = A::barycentric(a.0, u, b.0, v, c.0, w);
+		let r1 = B::barycentric(a.1, u, b.1, v, c.1, w);
+		let r2 = C::barycentric(a.2, u, b.2, v, c.2, w);
+		let r3 = D::barycentric(a.3, u, b.3, v, c.3, w);
+		let r4 = E::barycentric(a.4, u, b.4, v, c.4, w);
+		let r5 = F::barycentric(a.5, u, b.5, v, c.5, w);
+		(r0, r1, r2, r3, r4, r5)
+	}
+}

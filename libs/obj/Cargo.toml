@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.95"
 array = { version = "0.1.0", path = "../array" }
-image = { version = "0.25.5", default-features = false, features = ["png"] }
+image = { version = "0.25.5", default-features = false, features = ["jpeg", "png"] }
 matrix = { version = "0.1.0", path = "../matrix" }
