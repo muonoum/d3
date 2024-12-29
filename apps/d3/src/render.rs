@@ -92,23 +92,16 @@ pub fn blinn_phong(
 ) -> Array<f32, 3> {
 	let camera_dir = (camera - position).normalize();
 
-	lights.iter().fold(array![0.0; 3], |sum, light| {
+	(lights.iter()).fold(material.emissive(texture), |sum, light| {
 		let light_dir = (light.position - position).normalize();
 
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-		let mapped_diffuse = texture
-			.map(|uv| material.diffuse(uv))
-			.unwrap_or(material.diffuse);
-
 		let halfway_vector = (light_dir + camera_dir).normalize();
 		let specular = normal
 			.dot(halfway_vector)
-			.powi(material.specular_exponent as i32);
-		let mapped_specular = texture
-			.map(|uv| material.specular(uv))
-			.unwrap_or(material.specular);
+			.powi(material.specular_exponent(texture) as i32);
 
-		sum + mapped_diffuse * diffuse * light.diffuse_color
-			+ mapped_specular * specular * light.specular_color
+		sum + material.diffuse(texture) * diffuse * light.diffuse_color
+			+ material.specular(texture) * specular * light.specular_color
 	}) * 255.0
 }

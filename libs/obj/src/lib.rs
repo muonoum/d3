@@ -38,6 +38,22 @@ pub struct Vertex {
 	pub texture: Option<usize>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Material {
+	pub name: String,
+	pub normal_map: Option<image::RgbImage>,
+	pub ambient: Array<f32, 3>,
+	pub ambient_map: Option<image::RgbImage>,
+	pub emissive: Array<f32, 3>,
+	pub emissive_map: Option<image::RgbImage>,
+	pub diffuse: Array<f32, 3>,
+	pub diffuse_map: Option<image::RgbImage>,
+	pub specular: Array<f32, 3>,
+	pub specular_map: Option<image::RgbImage>,
+	pub specular_exponent_map: Option<image::GrayImage>,
+	pub specular_exponent: f32,
+}
+
 impl Mesh {
 	pub fn new(path: &str) -> anyhow::Result<Mesh> {
 		read_obj(path)
@@ -54,26 +70,6 @@ impl Group {
 	}
 }
 
-#[derive(Debug, Clone)]
-pub struct Material {
-	pub name: String,
-
-	pub normal_map: Option<image::RgbImage>,
-
-	pub ambient: Array<f32, 3>,
-	pub ambient_map: Option<image::RgbImage>,
-
-	pub emissive: Array<f32, 3>,
-	pub emissive_map: Option<image::RgbImage>,
-
-	pub diffuse: Array<f32, 3>,
-	pub diffuse_map: Option<image::RgbImage>,
-
-	pub specular: Array<f32, 3>,
-	pub specular_map: Option<image::RgbImage>,
-	pub specular_exponent: f32,
-}
-
 impl Material {
 	pub fn new(name: &str) -> Material {
 		Material {
@@ -87,43 +83,71 @@ impl Material {
 			diffuse_map: None,
 			specular: array![1.0; 3],
 			specular_map: None,
+			specular_exponent_map: None,
 			specular_exponent: 0.0,
 		}
 	}
 
-	pub fn ambient(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref map) = self.ambient_map {
-			self.ambient * Self::map_array(map, uv)
+	pub fn ambient(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		if let Some(uv) = uv
+			&& let Some(ref map) = self.ambient_map
+		{
+			self.ambient * Self::map_rgb_array(map, uv)
+		} else {
+			self.ambient
+		}
+	}
+
+	pub fn emissive(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		if let Some(uv) = uv
+			&& let Some(ref map) = self.emissive_map
+		{
+			self.emissive * Self::map_rgb_array(map, uv)
+		} else {
+			self.emissive
+		}
+	}
+
+	pub fn diffuse(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		if let Some(uv) = uv
+			&& let Some(ref map) = self.diffuse_map
+		{
+			self.diffuse * Self::map_rgb_array(map, uv)
 		} else {
 			self.diffuse
 		}
 	}
 
-	pub fn emissive(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref map) = self.emissive_map {
-			self.emissive * Self::map_array(map, uv)
+	pub fn specular(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+		if let Some(uv) = uv
+			&& let Some(ref map) = self.specular_map
+		{
+			self.specular * Self::map_rgb_array(map, uv)
 		} else {
-			self.diffuse
+			self.specular
 		}
 	}
 
-	pub fn diffuse(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref map) = self.diffuse_map {
-			self.diffuse * Self::map_array(map, uv)
+	pub fn specular_exponent(&self, uv: Option<Vector<f32, 2>>) -> f32 {
+		if let Some(uv) = uv
+			&& let Some(ref map) = self.specular_exponent_map
+		{
+			self.specular_exponent * Self::map_grayscale(map, uv)
 		} else {
-			self.diffuse
+			self.specular_exponent
 		}
 	}
 
-	pub fn specular(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref map) = self.specular_map {
-			self.specular * Self::map_array(map, uv)
-		} else {
-			self.diffuse
-		}
+	pub fn map_grayscale(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
+		let width = map.width() as f32;
+		let height = map.height() as f32;
+		let x = (uv[0] * width).clamp(0.0, width - 1.0);
+		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
+		let pixel = map.get_pixel(x as u32, y as u32);
+		pixel[0] as f32
 	}
 
-	pub fn map_array(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+	pub fn map_rgb_array(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
 		let width = map.width() as f32;
 		let height = map.height() as f32;
 		let x = (uv[0] * width).clamp(0.0, width - 1.0);
@@ -137,8 +161,8 @@ impl Material {
 		]
 	}
 
-	pub fn map_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
-		let array = Self::map_array(texture, uv);
+	pub fn map_rgb_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
+		let array = Self::map_rgb_array(texture, uv);
 		vector![array[0], array[1], array[2]]
 	}
 }
@@ -251,23 +275,28 @@ fn read_materials(
 				Some("Ks") => mtl.specular = read_array(terms).context("Ks")?,
 
 				Some("map_Ka") => {
-					mtl.ambient_map = Some(read_map(terms, location).context("map_Ka")?)
+					mtl.ambient_map = Some(read_rgb_map(terms, location).context("map_Ka")?)
 				}
 
 				Some("map_Kd") => {
-					mtl.diffuse_map = Some(read_map(terms, location).context("map_Kd")?)
+					mtl.diffuse_map = Some(read_rgb_map(terms, location).context("map_Kd")?)
 				}
 
 				Some("map_Ke") => {
-					mtl.emissive_map = Some(read_map(terms, location).context("map_Ke")?)
+					mtl.emissive_map = Some(read_rgb_map(terms, location).context("map_Ke")?)
 				}
 
 				Some("map_Ks") => {
-					mtl.specular_map = Some(read_map(terms, location).context("map_Ks")?)
+					mtl.specular_map = Some(read_rgb_map(terms, location).context("map_Ks")?)
+				}
+
+				Some("map_Ns") => {
+					mtl.specular_exponent_map =
+						Some(read_grayscale_map(terms, location).context("map_Ns")?)
 				}
 
 				Some("map_Bump") => {
-					mtl.normal_map = Some(read_map(terms, location).context("map_Bump")?);
+					mtl.normal_map = Some(read_rgb_map(terms, location).context("map_Bump")?);
 				}
 
 				Some(_) | None => {}
@@ -282,7 +311,14 @@ fn read_materials(
 	Ok(())
 }
 
-fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::RgbImage> {
+fn read_grayscale_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::GrayImage> {
+	let file = File::open(read_path(terms, location)?)?;
+	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
+	reader.no_limits();
+	Ok(reader.decode()?.to_luma8())
+}
+
+fn read_rgb_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::RgbImage> {
 	let file = File::open(read_path(terms, location)?)?;
 	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
 	reader.no_limits();
