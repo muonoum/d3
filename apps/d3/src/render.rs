@@ -85,7 +85,7 @@ pub fn triangle(
 pub fn blinn_phong(
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
-	texture_coordinate: Option<Vector<f32, 2>>,
+	texture: Option<Vector<f32, 2>>,
 	camera: Vector<f32, 3>,
 	lights: &[Light],
 	material: &obj::Material,
@@ -96,7 +96,7 @@ pub fn blinn_phong(
 		let light_dir = (light.position - position).normalize();
 
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-		let mapped_diffuse = texture_coordinate
+		let mapped_diffuse = texture
 			.map(|uv| material.diffuse(uv))
 			.unwrap_or(material.diffuse);
 
@@ -104,7 +104,7 @@ pub fn blinn_phong(
 		let specular = normal
 			.dot(halfway_vector)
 			.powi(material.specular_exponent as i32);
-		let mapped_specular = texture_coordinate
+		let mapped_specular = texture
 			.map(|uv| material.specular(uv))
 			.unwrap_or(material.specular);
 

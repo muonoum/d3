@@ -152,10 +152,10 @@ impl App {
 
 		let mut depth = vec![f32::NEG_INFINITY; width * height];
 		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
-		let project = self.scene.camera.view * self.scene.projection;
+		let projection = self.scene.camera.view * self.scene.projection;
 
 		for object in self.scene.objects.iter() {
-			let clip_space = object.world_space * project;
+			let clip_space = object.world_space * projection;
 
 			let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
 				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
@@ -165,23 +165,16 @@ impl App {
 				.map(|v| *v * object.normal_space)
 				.collect();
 
-			let tangents: Vec<_> = (object.mesh.tangents.iter())
-				.map(|v| *v * object.normal_space)
-				.collect();
-
 			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
 				let texture = v.texture.map(|i| object.mesh.textures[i]);
-				let tangent = v.tangent.map(|i| tangents[i]);
-				(position, normal, texture, tangent)
+				(position, normal, texture)
 			};
 
 			for group in object.mesh.groups.iter() {
-				let material = group
-					.material
-					.as_ref()
-					.and_then(|name| object.mesh.materials.get(name));
+				let material =
+					(group.material.as_ref()).and_then(|name| object.mesh.materials.get(name));
 
 				for [v1, v2, v3] in group.faces.iter() {
 					let clip1 = clip[v1.position];
@@ -219,7 +212,7 @@ impl App {
 							return;
 						}
 
-						let (position, normal, texture_coordinate, _tangent) =
+						let (position, normal, texture) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
 						let color = if let Some(material) = material
@@ -228,7 +221,7 @@ impl App {
 							let color = render::blinn_phong(
 								position,
 								normal.normalize(),
-								texture_coordinate,
+								texture,
 								self.scene.camera.position,
 								&self.scene.lights,
 								material,

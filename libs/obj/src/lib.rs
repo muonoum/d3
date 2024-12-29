@@ -17,16 +17,9 @@ use matrix::{vector, Vector};
 pub struct Mesh {
 	pub positions: Vec<Vector<f32, 3>>,
 	pub normals: Vec<Vector<f32, 3>>,
-	pub tangents: Vec<Vector<f32, 3>>,
 	pub textures: Vec<Vector<f32, 2>>,
 	pub materials: HashMap<String, Arc<Material>>,
 	pub groups: Vec<Group>,
-}
-
-impl Mesh {
-	pub fn new(path: &str) -> anyhow::Result<Mesh> {
-		read_obj(path)
-	}
 }
 
 #[derive(Debug, Clone)]
@@ -34,6 +27,21 @@ pub struct Group {
 	pub name: String,
 	pub material: Option<String>,
 	pub faces: Vec<Face>,
+}
+
+pub type Face = [Vertex; 3];
+
+#[derive(Debug, Copy, Clone)]
+pub struct Vertex {
+	pub position: usize,
+	pub normal: Option<usize>,
+	pub texture: Option<usize>,
+}
+
+impl Mesh {
+	pub fn new(path: &str) -> anyhow::Result<Mesh> {
+		read_obj(path)
+	}
 }
 
 impl Group {
@@ -133,16 +141,6 @@ impl Material {
 		let array = Self::map_array(texture, uv);
 		vector![array[0], array[1], array[2]]
 	}
-}
-
-pub type Face = [Vertex; 3];
-
-#[derive(Debug, Copy, Clone)]
-pub struct Vertex {
-	pub position: usize,
-	pub normal: Option<usize>,
-	pub tangent: Option<usize>,
-	pub texture: Option<usize>,
 }
 
 fn read_obj(path: &str) -> anyhow::Result<Mesh> {
@@ -329,7 +327,6 @@ fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
 		position: position - 1,
 		normal: normal.map(|i| i - 1),
 		texture: texture.map(|i| i - 1),
-		tangent: None,
 	})
 }
 
