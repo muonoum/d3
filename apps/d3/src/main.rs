@@ -156,21 +156,24 @@ impl App {
 
 		for object in self.scene.objects.iter() {
 			let clip_space = object.world_space * project;
-			let positions = &object.mesh.positions;
-			let normals = &object.mesh.normals;
-			let textures = &object.mesh.textures;
 
-			let (world, clip): (Vec<_>, Vec<_>) = positions
-				.iter()
+			let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
 				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
 				.unzip();
 
-			let normals: Vec<_> = normals.iter().map(|v| *v * object.normal_space).collect();
+			let normals: Vec<_> = (object.mesh.normals.iter())
+				.map(|v| *v * object.normal_space)
+				.collect();
+
+			let tangents: Vec<_> = (object.mesh.tangents.iter())
+				.map(|v| *v * object.normal_space)
+				.collect();
 
 			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
-				let texture = v.texture.map(|i| textures[i]);
+				let texture = v.texture.map(|i| object.mesh.textures[i]);
+				let tangent = v.tangent.map(|i| tangents[i]);
 				(position, normal, texture, tangent)
 			};
 
@@ -216,7 +219,7 @@ impl App {
 							return;
 						}
 
-						let (position, normal, texture_coordinate) =
+						let (position, normal, texture_coordinate, _tangent) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
 						let color = if let Some(material) = material
