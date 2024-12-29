@@ -92,7 +92,7 @@ pub fn blinn_phong(
 ) -> Array<f32, 3> {
 	let camera_dir = (camera - position).normalize();
 
-	(lights.iter()).fold(material.emissive(texture), |sum, light| {
+	let color = (lights.iter()).fold(material.emissive(texture), |sum, light| {
 		let light_dir = (light.position - position).normalize();
 
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
@@ -103,5 +103,7 @@ pub fn blinn_phong(
 
 		sum + material.diffuse(texture) * diffuse * light.diffuse_color
 			+ material.specular(texture) * specular * light.specular_color
-	}) * 255.0
+	});
+
+	(color * 255.0).clamp(0.0, 255.0)
 }

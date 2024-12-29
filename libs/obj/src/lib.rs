@@ -143,8 +143,7 @@ impl Material {
 		let height = map.height() as f32;
 		let x = (uv[0] * width).clamp(0.0, width - 1.0);
 		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
-		let pixel = map.get_pixel(x as u32, y as u32);
-		pixel[0] as f32
+		map.get_pixel(x as u32, y as u32)[0] as f32 / 255.0
 	}
 
 	pub fn map_rgb_array(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
