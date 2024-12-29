@@ -50,8 +50,8 @@ pub struct Material {
 	pub diffuse_map: Option<image::RgbImage>,
 	pub specular: Array<f32, 3>,
 	pub specular_map: Option<image::RgbImage>,
-	pub specular_exponent_map: Option<image::GrayImage>,
 	pub specular_exponent: f32,
+	pub specular_exponent_map: Option<image::GrayImage>,
 }
 
 impl Mesh {
@@ -83,8 +83,8 @@ impl Material {
 			diffuse_map: None,
 			specular: array![1.0; 3],
 			specular_map: None,
-			specular_exponent_map: None,
 			specular_exponent: 0.0,
+			specular_exponent_map: None,
 		}
 	}
 
