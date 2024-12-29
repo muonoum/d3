@@ -11,6 +11,14 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 		Self(cells)
 	}
 
+	pub fn from_row_vectors(vs: [crate::Vector<T, C>; R]) -> Matrix<T, R, C> {
+		Self::from_fn(|row, column| vs[row][column])
+	}
+
+	pub fn from_column_vectors(vs: [crate::Vector<T, R>; C]) -> Matrix<T, R, C> {
+		Self::from_fn(|row, column| vs[column][row])
+	}
+
 	pub fn from_fn(f: impl Fn(usize, usize) -> T) -> Self {
 		Self(std::array::from_fn(|row| {
 			std::array::from_fn(|column| f(row, column))
@@ -134,5 +142,18 @@ mod tests {
 		]);
 
 		assert_eq!(input.transpose(), want);
+	}
+
+	#[test]
+	fn from_vectors_test() {
+		let v1 = crate::vector![1.1, 1.2, 1.3];
+		let v2 = crate::vector![2.1, 2.2, 2.3];
+		let v3 = crate::vector![3.1, 3.2, 3.3];
+		let want1 = Matrix::new([[1.1, 1.2, 1.3], [2.1, 2.2, 2.3], [3.1, 3.2, 3.3]]);
+		let have1 = Matrix::from_row_vectors([v1, v2, v3]);
+		assert_eq!(want1, have1);
+		let want2 = Matrix::new([[1.1, 2.1, 3.1], [1.2, 2.2, 3.2], [1.3, 2.3, 3.3]]);
+		let have2 = Matrix::from_column_vectors([v1, v2, v3]);
+		assert_eq!(want2, have2);
 	}
 }

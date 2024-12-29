@@ -31,9 +31,23 @@ impl Scene {
 			.map(|table| {
 				let path = table.get("mesh").unwrap().as_str().unwrap();
 
-				let scale = table.get("scale").and_then(read_vector).unwrap();
-				let orientation = table.get("orientation").and_then(read_vector).unwrap();
-				let position = table.get("position").and_then(read_vector).unwrap();
+				let scale = if let Some(v) = table.get("scale") {
+					read_vector(v).unwrap()
+				} else {
+					vector![1.0; 3]
+				};
+
+				let orientation = if let Some(v) = table.get("orientation") {
+					read_vector(v).unwrap()
+				} else {
+					vector![0.0; 3]
+				};
+
+				let position = if let Some(v) = table.get("position") {
+					read_vector(v).unwrap()
+				} else {
+					vector![0.0; 3]
+				};
 
 				let update = table.get("update").map(|table| {
 					let orientation = table.get("orientation").and_then(read_vector).unwrap();
@@ -95,15 +109,17 @@ pub fn read_camera(table: &toml::Value) -> Camera {
 pub fn read_light(table: &toml::Value) -> Light {
 	let position = table.get("position").and_then(read_vector).unwrap();
 
-	let diffuse_color = table
-		.get("diffuse_color")
-		.and_then(read_array)
-		.unwrap_or_else(|| array![1.0; 3]);
+	let diffuse_color = if let Some(v) = table.get("diffuse_color") {
+		read_array(v).unwrap()
+	} else {
+		array![1.0; 3]
+	};
 
-	let specular_color = table
-		.get("specular_color")
-		.and_then(read_array)
-		.unwrap_or_else(|| array![0.0; 3]);
+	let specular_color = if let Some(v) = table.get("specular_color") {
+		read_array(v).unwrap()
+	} else {
+		array![0.0; 3]
+	};
 
 	Light {
 		position,

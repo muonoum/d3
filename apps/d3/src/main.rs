@@ -158,6 +158,7 @@ impl App {
 			let clip_space = object.world_space * project;
 			let positions = &object.mesh.positions;
 			let normals = &object.mesh.normals;
+			let textures = &object.mesh.textures;
 
 			let (world, clip): (Vec<_>, Vec<_>) = positions
 				.iter()
@@ -169,11 +170,16 @@ impl App {
 			let varying = |v: &obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
-				let texture = v.texture.map(|i| object.mesh.textures[i]);
-				(position, normal, texture)
+				let texture = v.texture.map(|i| textures[i]);
+				(position, normal, texture, tangent)
 			};
 
 			for group in object.mesh.groups.iter() {
+				let material = group
+					.material
+					.as_ref()
+					.and_then(|name| object.mesh.materials.get(name));
+
 				for [v1, v2, v3] in group.faces.iter() {
 					let clip1 = clip[v1.position];
 					let clip2 = clip[v2.position];
@@ -213,7 +219,7 @@ impl App {
 						let (position, normal, texture_coordinate) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
-						let color = if let Some(ref material) = group.material
+						let color = if let Some(material) = material
 							&& let Some(normal) = normal
 						{
 							let color = render::blinn_phong(

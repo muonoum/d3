@@ -11,12 +11,13 @@ use std::{
 };
 
 use array::{array, Array};
-use matrix::Vector;
+use matrix::{vector, Vector};
 
 #[derive(Default, Debug)]
 pub struct Mesh {
 	pub positions: Vec<Vector<f32, 3>>,
 	pub normals: Vec<Vector<f32, 3>>,
+	pub tangents: Vec<Vector<f32, 3>>,
 	pub textures: Vec<Vector<f32, 2>>,
 	pub materials: HashMap<String, Arc<Material>>,
 	pub groups: Vec<Group>,
@@ -70,78 +71,67 @@ impl Material {
 		Material {
 			name: name.into(),
 			normal_map: None,
-			ambient: array![0.0; 3],
+			ambient: array![0.2; 3],
 			ambient_map: None,
 			emissive: array![0.0; 3],
 			emissive_map: None,
-			diffuse: array![1.0; 3],
+			diffuse: array![0.8; 3],
 			diffuse_map: None,
-			specular: array![0.0; 3],
+			specular: array![1.0; 3],
 			specular_map: None,
-			specular_exponent: 1.0,
+			specular_exponent: 0.0,
 		}
 	}
 
 	pub fn ambient(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref texture) = self.ambient_map {
-			self.ambient * Self::map(texture, uv)
+		if let Some(ref map) = self.ambient_map {
+			self.ambient * Self::map_array(map, uv)
 		} else {
 			self.diffuse
 		}
-	}
-
-	pub fn try_ambient(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		uv.map(|uv| self.ambient(uv)).unwrap_or(self.ambient)
 	}
 
 	pub fn emissive(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref texture) = self.emissive_map {
-			self.emissive * Self::map(texture, uv)
+		if let Some(ref map) = self.emissive_map {
+			self.emissive * Self::map_array(map, uv)
 		} else {
 			self.diffuse
 		}
-	}
-
-	pub fn try_emissive(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		uv.map(|uv| self.emissive(uv)).unwrap_or(self.emissive)
 	}
 
 	pub fn diffuse(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref texture) = self.diffuse_map {
-			self.diffuse * Self::map(texture, uv)
+		if let Some(ref map) = self.diffuse_map {
+			self.diffuse * Self::map_array(map, uv)
 		} else {
 			self.diffuse
 		}
-	}
-
-	pub fn try_diffuse(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		uv.map(|uv| self.diffuse(uv)).unwrap_or(self.diffuse)
 	}
 
 	pub fn specular(&self, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		if let Some(ref texture) = self.specular_map {
-			self.specular * Self::map(texture, uv)
+		if let Some(ref map) = self.specular_map {
+			self.specular * Self::map_array(map, uv)
 		} else {
 			self.diffuse
 		}
 	}
 
-	pub fn try_specular(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		uv.map(|uv| self.specular(uv)).unwrap_or(self.specular)
-	}
-
-	pub fn map(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		let width = texture.width() as f32;
-		let height = texture.height() as f32;
-		let x = (0.0f32).max(uv[0] * width).min(width - 1.0);
-		let y = (0.0f32).max(uv[1] * height).min(height - 1.0);
-		let rgb = texture.get_pixel(x as u32, y as u32);
+	pub fn map_array(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+		let width = map.width() as f32;
+		let height = map.height() as f32;
+		let x = (uv[0] * width).clamp(0.0, width - 1.0);
+		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
+		let rgb = map.get_pixel(x as u32, y as u32);
 
 		array![
 			rgb[0] as f32 / 255.0,
 			rgb[1] as f32 / 255.0,
 			rgb[2] as f32 / 255.0
 		]
+	}
+
+	pub fn map_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
+		let array = Self::map_array(texture, uv);
+		vector![array[0], array[1], array[2]]
 	}
 }
 
@@ -151,7 +141,7 @@ pub type Face = [Vertex; 3];
 pub struct Vertex {
 	pub position: usize,
 	pub normal: Option<usize>,
-	pub tangent: Option<Vector<f32, 3>>,
+	pub tangent: Option<usize>,
 	pub texture: Option<usize>,
 }
 
@@ -295,7 +285,10 @@ fn read_materials(
 }
 
 fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::RgbImage> {
-	Ok(image::open(read_path(terms, location)?)?.to_rgb8())
+	let file = File::open(read_path(terms, location)?)?;
+	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
+	reader.no_limits();
+	Ok(reader.decode()?.to_rgb8())
 }
 
 fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {
