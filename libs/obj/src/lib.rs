@@ -172,8 +172,8 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	let reader = BufReader::new(file);
 
 	let mut mesh = Mesh::default();
-	let mut group: Option<Group> = None;
 	let mut default_group = Group::new("default");
+	let mut group: Option<Group> = None;
 
 	for line in reader.lines() {
 		let line = line?;
