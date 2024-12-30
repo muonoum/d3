@@ -17,9 +17,9 @@ use matrix::{vector, Vector};
 pub struct Mesh {
 	pub positions: Vec<Vector<f32, 3>>,
 	pub normals: Vec<Vector<f32, 3>>,
-	pub textures: Vec<Vector<f32, 2>>,
-	pub materials: HashMap<String, Arc<Material>>,
+	pub texture_coordinates: Vec<Vector<f32, 2>>,
 	pub groups: Vec<Group>,
+	pub materials: HashMap<String, Arc<Material>>,
 }
 
 #[derive(Debug, Clone)]
@@ -35,13 +35,12 @@ pub type Face = [Vertex; 3];
 pub struct Vertex {
 	pub position: usize,
 	pub normal: Option<usize>,
-	pub texture: Option<usize>,
+	pub texture_coordinate: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Material {
 	pub name: String,
-	pub normal_map: Option<image::RgbImage>,
 	pub ambient: Array<f32, 3>,
 	pub ambient_map: Option<image::RgbImage>,
 	pub emissive: Array<f32, 3>,
@@ -52,6 +51,7 @@ pub struct Material {
 	pub specular_map: Option<image::RgbImage>,
 	pub specular_exponent: f32,
 	pub specular_exponent_map: Option<image::GrayImage>,
+	pub normal_map: Option<image::RgbImage>,
 }
 
 impl Mesh {
@@ -92,7 +92,7 @@ impl Material {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.ambient_map
 		{
-			self.ambient * Self::map_rgb_array(map, uv)
+			self.ambient * Self::map_color(map, uv)
 		} else {
 			self.ambient
 		}
@@ -102,7 +102,7 @@ impl Material {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.emissive_map
 		{
-			self.emissive * Self::map_rgb_array(map, uv)
+			self.emissive * Self::map_color(map, uv)
 		} else {
 			self.emissive
 		}
@@ -112,7 +112,7 @@ impl Material {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.diffuse_map
 		{
-			self.diffuse * Self::map_rgb_array(map, uv)
+			self.diffuse * Self::map_color(map, uv)
 		} else {
 			self.diffuse
 		}
@@ -122,7 +122,7 @@ impl Material {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.specular_map
 		{
-			self.specular * Self::map_rgb_array(map, uv)
+			self.specular * Self::map_color(map, uv)
 		} else {
 			self.specular
 		}
@@ -146,7 +146,7 @@ impl Material {
 		map.get_pixel(x as u32, y as u32)[0] as f32 / 255.0
 	}
 
-	pub fn map_rgb_array(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+	pub fn map_color(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
 		let width = map.width() as f32;
 		let height = map.height() as f32;
 		let x = (uv[0] * width).clamp(0.0, width - 1.0);
@@ -160,8 +160,8 @@ impl Material {
 		]
 	}
 
-	pub fn map_rgb_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
-		let array = Self::map_rgb_array(texture, uv);
+	pub fn map_color_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
+		let array = Self::map_color(texture, uv);
 		vector![array[0], array[1], array[2]]
 	}
 }
@@ -172,8 +172,8 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	let reader = BufReader::new(file);
 
 	let mut mesh = Mesh::default();
-	let mut default_group = Group::new("default");
 	let mut group: Option<Group> = None;
+	let mut default_group = Group::new("default");
 
 	for line in reader.lines() {
 		let line = line?;
@@ -195,10 +195,12 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 			}
 
 			Some("f") => {
+				let face = read_face(terms).context("f")?;
+
 				if let Some(ref mut group) = group {
-					group.faces.push(read_face(terms).context("f")?);
+					group.faces.push(face);
 				} else {
-					default_group.faces.push(read_face(terms).context("f")?);
+					default_group.faces.push(face);
 				}
 			}
 
@@ -214,7 +216,10 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 
 			Some("v") => mesh.positions.push(read_vector(terms).context("v")?),
 			Some("vn") => mesh.normals.push(read_vector(terms).context("vn")?),
-			Some("vt") => mesh.textures.push(read_vector(terms).context("vt")?),
+			Some("vt") => mesh
+				.texture_coordinates
+				.push(read_vector(terms).context("vt")?),
+
 			Some(_) | None => {}
 		}
 	}
@@ -268,34 +273,34 @@ fn read_materials(
 						terms.next().context("Ns")?.parse::<f32>().context("Ns")?
 				}
 
-				Some("Ka") => mtl.ambient = read_array(terms).context("Ka")?,
-				Some("Kd") => mtl.diffuse = read_array(terms).context("Kd")?,
-				Some("Ke") => mtl.emissive = read_array(terms).context("Ke")?,
-				Some("Ks") => mtl.specular = read_array(terms).context("Ks")?,
-
-				Some("map_Ka") => {
-					mtl.ambient_map = Some(read_rgb_map(terms, location).context("map_Ka")?)
-				}
-
-				Some("map_Kd") => {
-					mtl.diffuse_map = Some(read_rgb_map(terms, location).context("map_Kd")?)
-				}
-
-				Some("map_Ke") => {
-					mtl.emissive_map = Some(read_rgb_map(terms, location).context("map_Ke")?)
-				}
-
-				Some("map_Ks") => {
-					mtl.specular_map = Some(read_rgb_map(terms, location).context("map_Ks")?)
-				}
+				Some("Ka") => mtl.ambient = read_color(terms).context("Ka")?,
+				Some("Kd") => mtl.diffuse = read_color(terms).context("Kd")?,
+				Some("Ke") => mtl.emissive = read_color(terms).context("Ke")?,
+				Some("Ks") => mtl.specular = read_color(terms).context("Ks")?,
 
 				Some("map_Ns") => {
 					mtl.specular_exponent_map =
-						Some(read_grayscale_map(terms, location).context("map_Ns")?)
+						Some(read_map(terms, location).context("map_Ns")?.to_luma8())
+				}
+
+				Some("map_Ka") => {
+					mtl.ambient_map = Some(read_map(terms, location).context("map_Ka")?.to_rgb8())
+				}
+
+				Some("map_Kd") => {
+					mtl.diffuse_map = Some(read_map(terms, location).context("map_Kd")?.to_rgb8())
+				}
+
+				Some("map_Ke") => {
+					mtl.emissive_map = Some(read_map(terms, location).context("map_Ke")?.to_rgb8())
+				}
+
+				Some("map_Ks") => {
+					mtl.specular_map = Some(read_map(terms, location).context("map_Ks")?.to_rgb8())
 				}
 
 				Some("map_Bump") => {
-					mtl.normal_map = Some(read_rgb_map(terms, location).context("map_Bump")?);
+					mtl.normal_map = Some(read_map(terms, location).context("map_Bump")?.to_rgb8());
 				}
 
 				Some(_) | None => {}
@@ -310,18 +315,11 @@ fn read_materials(
 	Ok(())
 }
 
-fn read_grayscale_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::GrayImage> {
+fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::DynamicImage> {
 	let file = File::open(read_path(terms, location)?)?;
 	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
 	reader.no_limits();
-	Ok(reader.decode()?.to_luma8())
-}
-
-fn read_rgb_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::RgbImage> {
-	let file = File::open(read_path(terms, location)?)?;
-	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
-	reader.no_limits();
-	Ok(reader.decode()?.to_rgb8())
+	Ok(reader.decode()?)
 }
 
 fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {
@@ -334,7 +332,7 @@ fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vec
 	Ok(Vector::new([cells.as_slice().try_into()?]))
 }
 
-fn read_array<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Array<f32, D>> {
+fn read_color<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Array<f32, D>> {
 	let mut cells = vec![];
 
 	for _ in 0..D {
@@ -355,13 +353,13 @@ fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
 fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
 	let terms = term.split("/").take(3).collect();
 	let position = read_index(&terms, 0).context("position")?;
-	let texture = read_index(&terms, 1);
+	let texture_coordinate = read_index(&terms, 1);
 	let normal = read_index(&terms, 2);
 
 	Ok(Vertex {
 		position: position - 1,
 		normal: normal.map(|i| i - 1),
-		texture: texture.map(|i| i - 1),
+		texture_coordinate: texture_coordinate.map(|i| i - 1),
 	})
 }
 

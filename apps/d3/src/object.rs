@@ -26,14 +26,17 @@ impl Object {
 		let world_space = transform::scale_vector(scale)
 			* transform::rotate_vector(orientation)
 			* transform::translate_vector(position);
-		let normal_space = world_space.sub_matrix(3, 3).unwrap();
+		let normal_space = (world_space.inverse())
+			.and_then(|m| m.transpose().sub_matrix(3, 3))
+			.unwrap();
 
 		log::info!(
-			"Load {}: f={}; v={}; vn={}",
+			"Load {}: f={}; v={}; n={}; uv={}",
 			path,
 			mesh.groups.iter().map(|g| g.faces.len()).sum::<usize>(),
 			mesh.positions.len(),
 			mesh.normals.len(),
+			mesh.texture_coordinates.len(),
 		);
 
 		Object {
