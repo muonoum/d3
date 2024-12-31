@@ -41,7 +41,7 @@ pub fn bounding_box(
 	(min_x, min_y, max_x, max_y)
 }
 
-pub fn fragment(
+pub fn triangle(
 	p1: Vector<f32, 3>,
 	p2: Vector<f32, 3>,
 	p3: Vector<f32, 3>,

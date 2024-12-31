@@ -132,7 +132,7 @@ impl App {
 				let var2 = varying(v2).scale(rz2);
 				let var3 = varying(v3).scale(rz3);
 
-				render::fragment(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
+				render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
 					let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
 
 					let z_index = y * width + x;
