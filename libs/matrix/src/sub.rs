@@ -44,6 +44,7 @@ impl<T: Cell> Matrix<T, 2, 2> {
 
 impl<T: Cell> Matrix<T, 3, 3> {
 	#[allow(clippy::result_unit_err)]
+	#[rustfmt::skip]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 2, 2>, ()> {
 		match (row, col) {
 			(0, 0) => Ok(Matrix::new([
@@ -98,6 +99,7 @@ impl<T: Cell> Matrix<T, 3, 3> {
 
 impl<T: Cell> Matrix<T, 4, 4> {
 	#[allow(clippy::result_unit_err)]
+	#[rustfmt::skip]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 3, 3>, ()> {
 		match (row, col) {
 			(0, 0) => Ok(Matrix::new([
@@ -213,9 +215,15 @@ mod tests {
 		assert_eq!(input.sub_matrix(1, 0), Ok(Matrix::new([[12.0]])));
 		assert_eq!(input.sub_matrix(1, 1), Ok(Matrix::new([[11.0]])));
 	}
+
 	#[test]
+	#[rustfmt::skip]
 	fn sub3_test() {
-		let input = Matrix::new([[11.0, 12.0, 13.0], [21.0, 22.0, 23.0], [31.0, 32.0, 33.0]]);
+		let input = Matrix::new([
+			[11.0, 12.0, 13.0],
+			[21.0, 22.0, 23.0],
+			[31.0, 32.0, 33.0]
+		]);
 
 		assert_eq!(
 			input.sub_matrix(0, 0),
@@ -264,6 +272,7 @@ mod tests {
 	}
 
 	#[test]
+	#[rustfmt::skip]
 	fn sub4_test() {
 		let input = Matrix::new([
 			[11.0, 12.0, 13.0, 14.0],

@@ -2,8 +2,8 @@ use crate::camera::Camera;
 use crate::light::Light;
 use crate::object;
 use crate::object::Object;
-use array::{array, Array};
-use matrix::{vector, Matrix, Vector};
+use array::{Array, array};
+use matrix::{Matrix, Vector, vector};
 
 pub struct Scene {
 	pub objects: Vec<Object>,

@@ -112,6 +112,7 @@ mod tests {
 
 	#[test]
 	fn transpose_test() {
+		#[rustfmt::skip]
 		let input = Matrix::new([
 			[11.0, 12.0, 13.0, 14.0],
 			[21.0, 22.0, 23.0, 24.0],
@@ -119,6 +120,7 @@ mod tests {
 			[41.0, 42.0, 43.0, 44.0],
 		]);
 
+		#[rustfmt::skip]
 		let want = Matrix::new([
 			[11.0, 21.0, 31.0, 41.0],
 			[12.0, 22.0, 32.0, 42.0],
@@ -128,17 +130,19 @@ mod tests {
 
 		assert_eq!(input.transpose(), want);
 
+		#[rustfmt::skip]
 		let input = Matrix::new([
 			[2.0, -9.0, 3.0],
 			[13.0, 11.0, -17.0],
 			[3.0, 6.0, 15.0],
-			[4.0, 13.0, 1.0],
+			[4.0, 13.0, 1.0]
 		]);
 
+		#[rustfmt::skip]
 		let want = Matrix::new([
 			[2.0, 13.0, 3.0, 4.0],
 			[-9.0, 11.0, 6.0, 13.0],
-			[3.0, -17.0, 15.0, 1.0],
+			[3.0, -17.0, 15.0, 1.0]
 		]);
 
 		assert_eq!(input.transpose(), want);
@@ -149,10 +153,24 @@ mod tests {
 		let v1 = crate::vector![1.1, 1.2, 1.3];
 		let v2 = crate::vector![2.1, 2.2, 2.3];
 		let v3 = crate::vector![3.1, 3.2, 3.3];
-		let want1 = Matrix::new([[1.1, 1.2, 1.3], [2.1, 2.2, 2.3], [3.1, 3.2, 3.3]]);
+
+		#[rustfmt::skip]
+		let want1 = Matrix::new([
+			[1.1, 1.2, 1.3],
+			[2.1, 2.2, 2.3],
+			[3.1, 3.2, 3.3]
+		]);
+
 		let have1 = Matrix::from_row_vectors([v1, v2, v3]);
 		assert_eq!(want1, have1);
-		let want2 = Matrix::new([[1.1, 2.1, 3.1], [1.2, 2.2, 3.2], [1.3, 2.3, 3.3]]);
+
+		#[rustfmt::skip]
+		let want2 = Matrix::new([
+			[1.1, 2.1, 3.1],
+			[1.2, 2.2, 3.2],
+			[1.3, 2.3, 3.3]
+		]);
+
 		let have2 = Matrix::from_column_vectors([v1, v2, v3]);
 		assert_eq!(want2, have2);
 	}

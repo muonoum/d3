@@ -1,5 +1,5 @@
-use array::{array, Array};
-use matrix::{vector, Vector};
+use array::{Array, array};
+use matrix::{Vector, vector};
 
 use crate::light::Light;
 
@@ -41,7 +41,7 @@ pub fn bounding_box(
 	(min_x, min_y, max_x, max_y)
 }
 
-pub fn triangle(
+pub fn fragment(
 	p1: Vector<f32, 3>,
 	p2: Vector<f32, 3>,
 	p3: Vector<f32, 3>,
@@ -80,6 +80,52 @@ pub fn triangle(
 		r2 += p3[0] - p1[0];
 		r3 += p1[0] - p2[0];
 	}
+}
+
+#[allow(dead_code)]
+pub fn fragments(
+	p1: Vector<f32, 3>,
+	p2: Vector<f32, 3>,
+	p3: Vector<f32, 3>,
+	width: usize,
+	height: usize,
+) -> impl Iterator<Item = (usize, usize, f32, f32, f32)> {
+	let (min_x, min_y, max_x, max_y) = bounding_box((p1, p2, p3), (width, height));
+	let area = 1.0 / edge(p1, p2, p3);
+	let point = vector![min_x as f32, min_y as f32, 0.0];
+
+	let mut r1 = edge(p2, p3, point);
+	let mut r2 = edge(p3, p1, point);
+	let mut r3 = edge(p1, p2, point);
+
+	std::iter::from_coroutine(
+		#[coroutine]
+		move || {
+			for y in min_y..=max_y {
+				let mut u = r1;
+				let mut v = r2;
+				let mut w = r3;
+
+				for x in min_x..=max_x {
+					if u >= 0.0 && v >= 0.0 && w >= 0.0 {
+						let u = u * area;
+						let v = v * area;
+						let w = w * area;
+
+						yield (x, y, u, v, w);
+					}
+
+					u += p3[1] - p2[1];
+					v += p1[1] - p3[1];
+					w += p2[1] - p1[1];
+				}
+
+				r1 += p2[0] - p3[0];
+				r2 += p3[0] - p1[0];
+				r3 += p1[0] - p2[0];
+			}
+		},
+	)
 }
 
 pub fn blinn_phong(

@@ -1,3 +1,5 @@
+#![feature(coroutines)]
+#![feature(iter_from_coroutine)]
 #![feature(let_chains)]
 
 use clap::Parser;

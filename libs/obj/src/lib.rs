@@ -1,3 +1,5 @@
+#![feature(coroutines)]
+#![feature(iter_from_coroutine)]
 #![feature(let_chains)]
 
 use anyhow::Context;
@@ -10,8 +12,8 @@ use std::{
 	sync::Arc,
 };
 
-use array::{array, Array};
-use matrix::{vector, Vector};
+use array::{Array, array};
+use matrix::{Vector, vector};
 
 #[derive(Default, Debug)]
 pub struct Mesh {
@@ -24,21 +26,23 @@ pub struct Mesh {
 }
 
 impl<'a> Mesh {
-	pub fn groups(
-		&'a self,
-	) -> impl Iterator<Item = (&'a Group, Option<&'a Arc<Material>>)> + use<'a> {
-		let mut iter = self.groups.iter();
+	pub fn faces(&'a self) -> impl Iterator<Item = ([Vertex; 3], Option<&'a Arc<Material>>)> {
+		std::iter::from_coroutine(
+			#[coroutine]
+			|| {
+				for group in self.groups.iter() {
+					let material = group
+						.material
+						.as_ref()
+						.and_then(|name| self.materials.get(name));
 
-		std::iter::from_fn(move || {
-			iter.next().map(|group| {
-				let material = group
-					.material
-					.as_ref()
-					.and_then(|name| self.materials.get(name));
-
-				(group, material)
-			})
-		})
+					for [a, b, c] in group.faces.iter() {
+						let vs = [self.vertices[*a], self.vertices[*b], self.vertices[*c]];
+						yield (vs, material);
+					}
+				}
+			},
+		)
 	}
 }
 
@@ -47,17 +51,6 @@ pub struct Group {
 	pub name: String,
 	pub material: Option<String>,
 	pub faces: Vec<Face>,
-}
-
-impl<'a> Group {
-	pub fn faces(&'a self, vertices: &'a [Vertex]) -> impl Iterator<Item = [Vertex; 3]> + use<'a> {
-		let mut iter = self.faces.iter();
-
-		std::iter::from_fn(move || {
-			iter.next()
-				.map(|[a, b, c]| [vertices[*a], vertices[*b], vertices[*c]])
-		})
-	}
 }
 
 type Index = (usize, Option<usize>, Option<usize>);

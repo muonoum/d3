@@ -1,4 +1,4 @@
-use matrix::{transform, vector, Matrix, Vector};
+use matrix::{Matrix, Vector, transform, vector};
 
 pub struct Camera {
 	pub position: Vector<f32, 3>,

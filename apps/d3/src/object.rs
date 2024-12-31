@@ -1,4 +1,4 @@
-use matrix::{transform, Matrix, Vector};
+use matrix::{Matrix, Vector, transform};
 
 pub struct Object {
 	pub mesh: obj::Mesh,
@@ -26,7 +26,8 @@ impl Object {
 		let world_space = transform::scale_vector(scale)
 			* transform::rotate_vector(orientation)
 			* transform::translate_vector(position);
-		let normal_space = (world_space.inverse())
+		let normal_space = world_space
+			.inverse()
 			.and_then(|m| m.transpose().sub_matrix(3, 3))
 			.unwrap();
 
