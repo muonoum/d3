@@ -36,7 +36,7 @@ impl Object {
 			mesh.groups.iter().map(|g| g.faces.len()).sum::<usize>(),
 			mesh.positions.len(),
 			mesh.normals.len(),
-			mesh.texture_coordinates.len(),
+			mesh.uvs.len(),
 		);
 
 		Object {

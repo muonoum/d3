@@ -116,6 +116,14 @@ impl<T: Cell, const D: usize> std::ops::Sub for Vector<T, D> {
 	}
 }
 
+impl<T: Cell, const D: usize> std::ops::Sub<T> for Vector<T, D> {
+	type Output = Self;
+
+	fn sub(self, other: T) -> Self {
+		Self::from_fn(|row, col| self[(row, col)] - other)
+	}
+}
+
 impl<const D: usize> std::ops::Neg for Vector<f32, D> {
 	type Output = Self;
 

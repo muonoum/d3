@@ -99,20 +99,15 @@ impl App {
 				.map(|v| *v * object.normal_space)
 				.collect();
 
-			let varying = |v: &obj::Vertex| {
+			let varying = |v: obj::Vertex| {
 				let position = world[v.position];
 				let normal = v.normal.map(|i| normals[i]);
-				let texture = v
-					.texture_coordinate
-					.map(|i| object.mesh.texture_coordinates[i]);
-				(position, normal, texture)
+				let uv = v.uv.map(|i| object.mesh.uvs[i]);
+				(position, normal, uv)
 			};
 
-			for group in object.mesh.groups.iter() {
-				let material =
-					(group.material.as_ref()).and_then(|name| object.mesh.materials.get(name));
-
-				for [v1, v2, v3] in group.faces.iter() {
+			for (group, material) in object.mesh.groups() {
+				for [v1, v2, v3] in group.faces(&object.mesh.vertices) {
 					let clip1 = clip[v1.position];
 					let clip2 = clip[v2.position];
 					let clip3 = clip[v3.position];
@@ -148,7 +143,7 @@ impl App {
 							return;
 						}
 
-						let (position, normal, texture) =
+						let (position, normal, uv) =
 							Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
 
 						let color = if let Some(material) = material
@@ -157,7 +152,7 @@ impl App {
 							let color = render::blinn_phong(
 								position,
 								normal.normalize(),
-								texture,
+								uv,
 								self.scene.camera.position,
 								&self.scene.lights,
 								material,

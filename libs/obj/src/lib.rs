@@ -17,9 +17,29 @@ use matrix::{vector, Vector};
 pub struct Mesh {
 	pub positions: Vec<Vector<f32, 3>>,
 	pub normals: Vec<Vector<f32, 3>>,
-	pub texture_coordinates: Vec<Vector<f32, 2>>,
-	pub groups: Vec<Group>,
+	pub uvs: Vec<Vector<f32, 2>>,
+	pub vertices: Vec<Vertex>,
 	pub materials: HashMap<String, Arc<Material>>,
+	pub groups: Vec<Group>,
+}
+
+impl<'a> Mesh {
+	pub fn groups(
+		&'a self,
+	) -> impl Iterator<Item = (&'a Group, Option<&'a Arc<Material>>)> + use<'a> {
+		let mut iter = self.groups.iter();
+
+		std::iter::from_fn(move || {
+			iter.next().map(|group| {
+				let material = group
+					.material
+					.as_ref()
+					.and_then(|name| self.materials.get(name));
+
+				(group, material)
+			})
+		})
+	}
 }
 
 #[derive(Debug, Clone)]
@@ -29,13 +49,26 @@ pub struct Group {
 	pub faces: Vec<Face>,
 }
 
-pub type Face = [Vertex; 3];
+impl<'a> Group {
+	pub fn faces(&'a self, vertices: &'a [Vertex]) -> impl Iterator<Item = [Vertex; 3]> + use<'a> {
+		let mut iter = self.faces.iter();
+
+		std::iter::from_fn(move || {
+			iter.next()
+				.map(|[a, b, c]| [vertices[*a], vertices[*b], vertices[*c]])
+		})
+	}
+}
+
+type Index = (usize, Option<usize>, Option<usize>);
+// pub type Face = [Vertex; 3];
+pub type Face = [usize; 3];
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vertex {
 	pub position: usize,
 	pub normal: Option<usize>,
-	pub texture_coordinate: Option<usize>,
+	pub uv: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -132,13 +165,13 @@ impl Material {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.specular_exponent_map
 		{
-			self.specular_exponent * Self::map_grayscale(map, uv)
+			self.specular_exponent * Self::map_scalar(map, uv)
 		} else {
 			self.specular_exponent
 		}
 	}
 
-	pub fn map_grayscale(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
+	pub fn map_scalar(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
 		let width = map.width() as f32;
 		let height = map.height() as f32;
 		let x = (uv[0] * width).clamp(0.0, width - 1.0);
@@ -160,7 +193,7 @@ impl Material {
 		]
 	}
 
-	pub fn map_color_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
+	pub fn map_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
 		let array = Self::map_color(texture, uv);
 		vector![array[0], array[1], array[2]]
 	}
@@ -174,6 +207,21 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	let mut mesh = Mesh::default();
 	let mut default_group = Group::new("default");
 	let mut group: Option<Group> = None;
+
+	let mut indices = HashMap::<Index, usize>::new();
+	let mut add_vertex = |index| {
+		indices.get(&index).cloned().unwrap_or_else(|| {
+			mesh.vertices.push(Vertex {
+				position: index.0,
+				normal: index.1,
+				uv: index.2,
+			});
+
+			let new_index = mesh.vertices.len() - 1;
+			indices.insert(index, new_index);
+			new_index
+		})
+	};
 
 	for line in reader.lines() {
 		let line = line?;
@@ -195,12 +243,19 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 			}
 
 			Some("f") => {
-				let face = read_face(terms).context("f")?;
+				// let face = read_face(terms).context("f")?;
+				let [v1, v2, v3] = read_face(terms).context("f")?;
+
+				let v1 = add_vertex(v1);
+				let v2 = add_vertex(v2);
+				let v3 = add_vertex(v3);
 
 				if let Some(ref mut group) = group {
-					group.faces.push(face);
+					// group.faces.push(face);
+					group.faces.push([v1, v2, v3]);
 				} else {
-					default_group.faces.push(face);
+					// default_group.faces.push(face);
+					default_group.faces.push([v1, v2, v3]);
 				}
 			}
 
@@ -216,9 +271,7 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 
 			Some("v") => mesh.positions.push(read_vector(terms).context("v")?),
 			Some("vn") => mesh.normals.push(read_vector(terms).context("vn")?),
-			Some("vt") => mesh
-				.texture_coordinates
-				.push(read_vector(terms).context("vt")?),
+			Some("vt") => mesh.uvs.push(read_vector(terms).context("vt")?),
 
 			Some(_) | None => {}
 		}
@@ -342,7 +395,8 @@ fn read_color<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Arra
 	Ok(Array::new(cells.as_slice().try_into()?))
 }
 
-fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
+// fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
+fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<[Index; 3]> {
 	Ok([
 		read_vertex(terms.next().context("vertex")?)?,
 		read_vertex(terms.next().context("vertex")?)?,
@@ -350,17 +404,20 @@ fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
 	])
 }
 
-fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
+// fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
+fn read_vertex(term: &str) -> Result<Index, anyhow::Error> {
 	let terms = term.split("/").take(3).collect();
 	let position = read_index(&terms, 0).context("position")?;
-	let texture_coordinate = read_index(&terms, 1);
+	let uv = read_index(&terms, 1);
 	let normal = read_index(&terms, 2);
 
-	Ok(Vertex {
-		position: position - 1,
-		normal: normal.map(|i| i - 1),
-		texture_coordinate: texture_coordinate.map(|i| i - 1),
-	})
+	Ok((position - 1, normal.map(|i| i - 1), uv.map(|i| i - 1)))
+
+	// Ok(Vertex {
+	// 	position: position - 1,
+	// 	normal: normal.map(|i| i - 1),
+	// 	uv: uv.map(|i| i - 1),
+	// })
 }
 
 fn read_index(terms: &Vec<&str>, i: usize) -> Option<usize> {
