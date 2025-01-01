@@ -14,7 +14,7 @@ orientation = [0.0, 0.0, 0.0]
 position = [-0.9, -0.3, 0.0]
 
 [objects.update]
-orientation = [0.008, 0.008, 0.012]
+orientation = [0.8, 1.4, 0.0]
 
 [[objects]]
 mesh = "objects/dice/dice.obj"
@@ -23,4 +23,4 @@ orientation = [0.0, 0.0, 0.0]
 position = [0.9, 0.3, 0.0]
 
 [objects.update]
-orientation = [-0.008, -0.008, -0.012]
+orientation = [-0.8, -1.4, 0.0]

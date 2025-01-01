@@ -35,28 +35,34 @@ pub fn rotate_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 }
 
 pub fn rotate_x(a: f32) -> Matrix<f32, 4, 4> {
+	let (sin, cos) = a.sin_cos();
+
 	Matrix::new([
 		[1.0, 0.0, 0.0, 0.0],
-		[0.0, a.cos(), a.sin(), 0.0],
-		[0.0, -a.sin(), a.cos(), 0.0],
+		[0.0, cos, -sin, 0.0],
+		[0.0, sin, cos, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
 }
 
 pub fn rotate_y(a: f32) -> Matrix<f32, 4, 4> {
+	let (sin, cos) = a.sin_cos();
+
 	Matrix::new([
-		[a.cos(), 0.0, -a.sin(), 0.0],
+		[cos, 0.0, sin, 0.0],
 		[0.0, 1.0, 0.0, 0.0],
-		[a.sin(), 0.0, a.cos(), 0.0],
+		[-sin, 0.0, cos, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
 }
 
 pub fn rotate_z(a: f32) -> Matrix<f32, 4, 4> {
+	let (sin, cos) = a.sin_cos();
+
 	Matrix::new([
-		[a.cos(), 0.0, -a.sin(), 0.0],
-		[0.0, 1.0, 0.0, 0.0],
-		[a.sin(), 0.0, a.cos(), 0.0],
+		[cos, -sin, 0.0, 0.0],
+		[sin, cos, 0.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
 }

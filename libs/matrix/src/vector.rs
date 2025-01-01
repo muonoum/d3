@@ -84,6 +84,14 @@ impl<T: Cell, const D: usize> std::ops::Add for Vector<T, D> {
 	}
 }
 
+impl<T: Cell, const D: usize> std::ops::AddAssign for Vector<T, D> {
+	fn add_assign(&mut self, other: Self) {
+		for i in 0..D {
+			self[(0, i)] += other[(0, i)];
+		}
+	}
+}
+
 impl<T: Cell, const D: usize> std::ops::Add<T> for Vector<T, D> {
 	type Output = Self;
 
@@ -100,19 +108,27 @@ impl<T: Cell, const D: usize> std::ops::AddAssign<T> for Vector<T, D> {
 	}
 }
 
-impl<T: Cell, const D: usize> std::ops::AddAssign for Vector<T, D> {
-	fn add_assign(&mut self, other: Self) {
-		for i in 0..D {
-			self[(0, i)] += other[(0, i)];
-		}
-	}
-}
-
 impl<T: Cell, const D: usize> std::ops::Sub for Vector<T, D> {
 	type Output = Self;
 
 	fn sub(self, other: Self) -> Self {
 		Self::from_fn(|row, col| self[(row, col)] - other[(row, col)])
+	}
+}
+
+impl<T: Cell, const D: usize> std::ops::SubAssign for Vector<T, D> {
+	fn sub_assign(&mut self, other: Self) {
+		for i in 0..D {
+			self[(0, i)] -= other[(0, i)];
+		}
+	}
+}
+
+impl<T: Cell, const D: usize> std::ops::SubAssign<T> for Vector<T, D> {
+	fn sub_assign(&mut self, other: T) {
+		for i in 0..D {
+			self[(0, i)] -= other;
+		}
 	}
 }
 

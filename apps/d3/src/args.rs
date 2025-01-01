@@ -9,6 +9,9 @@ pub struct Args {
 	#[arg(long, default_value_t = 2)]
 	pub scale: u32,
 
+	#[arg(long, default_value_t = false)]
+	pub fullscreen: bool,
+
 	#[arg(long)]
 	pub scene: String,
 }

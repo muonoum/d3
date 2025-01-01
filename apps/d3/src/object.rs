@@ -1,3 +1,5 @@
+use std::time;
+
 use matrix::{Matrix, Vector, transform};
 
 pub struct Object {
@@ -51,12 +53,15 @@ impl Object {
 		}
 	}
 
-	pub fn update(&mut self) {
+	pub fn update(&mut self, dt: time::Duration) {
 		if let Some(update) = &self.update {
-			self.orientation += update.orientation;
+			let dt = dt.as_secs_f32();
+
+			self.orientation += update.orientation * dt;
 			self.world_space = transform::scale_vector(self.scale)
 				* transform::rotate_vector(self.orientation)
 				* transform::translate_vector(self.position);
+
 			self.normal_space = self.world_space.sub_matrix(3, 3).unwrap();
 		}
 	}

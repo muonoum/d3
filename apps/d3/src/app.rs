@@ -1,5 +1,7 @@
 use pixels::{Pixels, SurfaceTexture};
-use winit::event::{ElementState, KeyEvent};
+use std::time;
+use winit::dpi::{PhysicalPosition, PhysicalSize};
+use winit::event::{ElementState, KeyEvent, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::Window;
 
@@ -8,13 +10,18 @@ use crate::buffer::{Buffer, PixelsBuffer};
 use crate::render;
 use crate::scene::Scene;
 use crate::varying::Varying;
-use matrix::{Vector, transform, vector};
+use matrix::{Matrix, Vector, transform, vector};
 
 pub struct App {
+	last_frame: time::Instant,
 	pub frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
+	orientation: Vector<f32, 2>,
+	focused: bool,
+	fov: f32,
 	scene: Scene,
 	window: Window,
+	projection: Matrix<f32, 4, 4>,
 }
 
 impl App {
@@ -35,44 +42,90 @@ impl App {
 			PixelsBuffer::new(buffer, buffer_width, buffer_height)
 		};
 
+		let fov = 2.0;
 		let aspect_ratio = buffer_width as f32 / buffer_height as f32;
-		let projection = transform::perspective_near(aspect_ratio, 2.0, 0.1);
-		let scene = Scene::new(&args.scene, projection);
+		let projection = transform::perspective_near(aspect_ratio, fov, 0.1);
+		let scene = Scene::new(&args.scene);
 		window.request_redraw();
 
 		App {
+			last_frame: time::Instant::now(),
 			frame,
 			movement: vector![0.0; 3],
+			orientation: vector![0.0; 2],
+			focused: true,
+			fov,
 			scene,
 			window,
+			projection,
 		}
 	}
 
+	pub fn focused(&mut self, focused: bool) {
+		self.focused = focused;
+	}
+
+	pub fn resize(&mut self, size: PhysicalSize<u32>) {
+		let aspect_ratio = size.width as f32 / size.height as f32;
+		self.frame.resize(size.width as usize, size.height as usize);
+		self.projection = transform::perspective_near(aspect_ratio, self.fov, 0.1);
+	}
+
+	pub fn mouse_wheel(&mut self, delta: MouseScrollDelta) {
+		if !self.focused {
+			return;
+		}
+
+		match delta {
+			MouseScrollDelta::LineDelta(_h, _v) => {}
+			MouseScrollDelta::PixelDelta(PhysicalPosition { x: _, y }) => {
+				let size = self.window.inner_size();
+				let aspect_ratio = size.width as f32 / size.height as f32;
+				self.fov = (self.fov + y as f32 / 1000.0).clamp(0.1, 5.0);
+				self.projection = transform::perspective_near(aspect_ratio, self.fov, 0.1);
+			}
+		}
+	}
+
+	pub fn mouse_motion(&mut self, (dx, dy): (f64, f64)) {
+		if !self.focused {
+			return;
+		}
+
+		self.orientation[0] = dx as f32;
+		self.orientation[1] = dy as f32;
+	}
+
 	pub fn keyboard_input(&mut self, event: KeyEvent) {
-		match event.state {
-			ElementState::Pressed => match event.physical_key {
-				PhysicalKey::Code(KeyCode::ArrowUp) => self.movement[1] = 0.05,
-				PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -0.05,
-				PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -0.05,
-				PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = 0.05,
-				PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = 0.05,
-				PhysicalKey::Code(KeyCode::ArrowDown) => self.movement[1] = -0.05,
-				_else => (),
-			},
-			ElementState::Released => match event.physical_key {
-				PhysicalKey::Code(KeyCode::ArrowUp) => self.movement[1] = 0.0,
-				PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = 0.0,
-				PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = 0.0,
-				PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = 0.0,
-				PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = 0.0,
-				PhysicalKey::Code(KeyCode::ArrowDown) => self.movement[1] = 0.0,
-				_else => (),
-			},
+		if !self.focused {
+			return;
+		}
+
+		let d = if event.state == ElementState::Pressed {
+			1.0
+		} else {
+			0.0
+		};
+
+		match event.physical_key {
+			PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -d,
+			PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -d,
+			PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = d,
+			PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = d,
+			PhysicalKey::Code(KeyCode::Space) => self.movement[1] = d,
+			PhysicalKey::Code(KeyCode::ShiftLeft) => self.movement[1] = -d,
+			_else => (),
 		}
 	}
 
 	pub fn draw(&mut self) {
-		self.scene.update(self.movement);
+		let now = time::Instant::now();
+		let dt = now - self.last_frame;
+		self.last_frame = now;
+
+		self.scene.update(dt, self.movement, self.orientation);
+		self.orientation = vector![0.0; 2];
+
 		self.draw_frame();
 		self.window.pre_present_notify();
 		self.frame.render();
@@ -86,7 +139,7 @@ impl App {
 
 		let mut depth = vec![f32::NEG_INFINITY; width * height];
 		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
-		let projection = self.scene.camera.view * self.scene.projection;
+		let projection = self.scene.camera.view * self.projection;
 
 		for object in self.scene.objects.iter() {
 			let clip_space = object.world_space * projection;

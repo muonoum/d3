@@ -5,9 +5,9 @@
 use clap::Parser;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalPosition, LogicalSize};
-use winit::event::WindowEvent;
+use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
-use winit::window::{Window, WindowId};
+use winit::window::{Fullscreen, Window, WindowId};
 
 mod app;
 mod args;
@@ -22,7 +22,6 @@ mod varying;
 
 use app::App;
 use args::Args;
-use buffer::Buffer;
 
 enum State {
 	Starting(Args),
@@ -50,7 +49,12 @@ impl ApplicationHandler for State {
 						.with_title("d3")
 						.with_inner_size(LogicalSize::new(args.width, args.height))
 						.with_position(LogicalPosition::new(0, 0))
-						.with_resizable(false),
+						.with_resizable(false)
+						.with_fullscreen(if args.fullscreen {
+							Some(Fullscreen::Borderless(None))
+						} else {
+							None
+						}),
 				)
 				.unwrap();
 
@@ -59,17 +63,24 @@ impl ApplicationHandler for State {
 		}
 	}
 
+	fn device_event(&mut self, _event_loop: &ActiveEventLoop, _: DeviceId, event: DeviceEvent) {
+		if let State::Running(app) = self {
+			match event {
+				DeviceEvent::MouseMotion { delta } => app.mouse_motion(delta),
+				DeviceEvent::MouseWheel { delta } => app.mouse_wheel(delta),
+				_else => {}
+			}
+		}
+	}
+
 	fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
 		if let State::Running(app) = self {
 			match event {
+				WindowEvent::Focused(focused) => app.focused(focused),
 				WindowEvent::CloseRequested => event_loop.exit(),
 				WindowEvent::RedrawRequested => app.draw(),
 				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
-
-				WindowEvent::Resized(size) => {
-					app.frame.resize(size.width as usize, size.height as usize)
-				}
-
+				WindowEvent::Resized(size) => app.resize(size),
 				_else => {}
 			}
 		}

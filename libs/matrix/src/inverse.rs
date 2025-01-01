@@ -11,11 +11,7 @@ impl<T: Cell> Square<T, 3> {
 			T::one() / det
 		};
 
-		let adj = self.adjugate()?;
-		let r1 = [det * adj[(0, 0)], det * adj[(0, 1)], det * adj[(0, 2)]];
-		let r2 = [det * adj[(1, 0)], det * adj[(1, 1)], det * adj[(1, 2)]];
-		let r3 = [det * adj[(2, 0)], det * adj[(2, 1)], det * adj[(2, 2)]];
-		Ok(Square::new([r1, r2, r3]))
+		Ok(self.adjugate()? * det)
 	}
 }
 
@@ -29,37 +25,7 @@ impl<T: Cell> Square<T, 4> {
 			T::one() / det
 		};
 
-		let adj = self.adjugate()?;
-
-		let r1 = [
-			det * adj[(0, 0)],
-			det * adj[(0, 1)],
-			det * adj[(0, 2)],
-			det * adj[(0, 3)],
-		];
-
-		let r2 = [
-			det * adj[(1, 0)],
-			det * adj[(1, 1)],
-			det * adj[(1, 2)],
-			det * adj[(1, 3)],
-		];
-
-		let r3 = [
-			det * adj[(2, 0)],
-			det * adj[(2, 1)],
-			det * adj[(2, 2)],
-			det * adj[(2, 3)],
-		];
-
-		let r4 = [
-			det * adj[(3, 0)],
-			det * adj[(3, 1)],
-			det * adj[(3, 2)],
-			det * adj[(3, 3)],
-		];
-
-		Ok(Square::new([r1, r2, r3, r4]))
+		Ok(self.adjugate()? * det)
 	}
 }
 
