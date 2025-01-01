@@ -1,4 +1,14 @@
 *.blend1
+/objects
+/scenes
+!/objects/ball
+!/objects/colors
+!/objects/dice
+!/objects/torus
+!/scenes/ball.toml
+!/scenes/colors.toml
+!/scenes/dice.toml
+!/scenes/torus.toml
 /target
 /temp
 /work

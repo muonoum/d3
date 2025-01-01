@@ -28,10 +28,17 @@ impl Object {
 		let world_space = transform::scale_vector(scale)
 			* transform::rotate_vector(orientation)
 			* transform::translate_vector(position);
-		let normal_space = world_space
-			.inverse()
-			.and_then(|m| m.transpose().sub_matrix(3, 3))
-			.unwrap();
+		let normal_space = world_space.sub_matrix(3, 3).unwrap();
+
+		// let normal_space = world_space
+		// 	.cofactor_matrix()
+		// 	.and_then(|m| m.transpose().sub_matrix(3, 3))
+		// 	.unwrap();
+
+		// let normal_space = world_space
+		// 	.inverse()
+		// 	.and_then(|m| m.transpose().sub_matrix(3, 3))
+		// 	.unwrap();
 
 		log::info!(
 			"Load {}: f={}; v={}; n={}; uv={}",
@@ -61,7 +68,6 @@ impl Object {
 			self.world_space = transform::scale_vector(self.scale)
 				* transform::rotate_vector(self.orientation)
 				* transform::translate_vector(self.position);
-
 			self.normal_space = self.world_space.sub_matrix(3, 3).unwrap();
 		}
 	}
