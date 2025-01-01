@@ -1,6 +1,5 @@
 [camera]
 position = [0.0, 0.0, 3.5]
-target = [0.0, 0.0, 0.0]
 
 [[lights]]
 diffuse_color = [0.3, 0.5, 0.7]
@@ -9,9 +8,6 @@ position = [0.0, 0.0, 5.0]
 
 [[objects]]
 mesh = "objects/torus/torus-smooth.obj"
-scale = [1.0, 1.0, 1.0]
-orientation = [0.0, 0.0, 0.0]
-position = [0.0, 0.0, 0.0]
 
 [objects.update]
-orientation = [0.012, 0.018, 0.0]
+orientation = [0.8, 1.4, 0.0]

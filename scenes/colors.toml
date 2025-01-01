@@ -1,6 +1,5 @@
 [camera]
 position = [0.0, 0.0, 5.0]
-target = [0.0, 0.0, 0.0]
 
 [[lights]]
 position = [0.0, 0.0, 5.0]
@@ -9,4 +8,4 @@ position = [0.0, 0.0, 5.0]
 mesh = "objects/colors/colors.obj"
 
 [objects.update]
-orientation = [0.008, 0.008, 0.012]
+orientation = [0.8, 1.4, 0.0]
