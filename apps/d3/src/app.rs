@@ -70,20 +70,24 @@ impl App {
 		}
 	}
 
+	pub fn grab(&mut self) {
+		self.window.set_cursor_visible(false);
+		self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+		self.state = State::Active;
+	}
+
+	pub fn ungrab(&mut self) {
+		self.window.set_cursor_visible(true);
+		self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
+		self.state = State::Inactive;
+	}
+
 	pub fn focused(&mut self, focused: bool) {
 		match (&self.state, focused) {
 			(State::Initial, false) => {}
-			(State::Initial, true) => {
-				self.window.set_cursor_visible(false);
-				self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
-				self.state = State::Active;
-			}
-
+			(State::Initial, true) => self.grab(),
 			(_state, true) => {}
-			(_state, false) => {
-				self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
-				self.state = State::Inactive;
-			}
+			(_state, false) => self.ungrab(),
 		}
 	}
 
@@ -100,6 +104,7 @@ impl App {
 
 		match delta {
 			MouseScrollDelta::LineDelta(_h, _v) => {}
+
 			MouseScrollDelta::PixelDelta(PhysicalPosition { x: _, y }) => {
 				let size = self.window.inner_size();
 				let aspect_ratio = size.width as f32 / size.height as f32;
@@ -120,9 +125,7 @@ impl App {
 
 	pub fn mouse_input(&mut self, state: ElementState, _button: MouseButton) {
 		if state == ElementState::Pressed {
-			self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
-			self.window.set_cursor_visible(false);
-			self.state = State::Active;
+			self.grab()
 		}
 	}
 
@@ -138,12 +141,7 @@ impl App {
 		};
 
 		match event.physical_key {
-			PhysicalKey::Code(KeyCode::Escape) => {
-				self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
-				self.window.set_cursor_visible(true);
-				self.state = State::Inactive;
-			}
-
+			PhysicalKey::Code(KeyCode::Escape) => self.ungrab(),
 			PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -d,
 			PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -d,
 			PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = d,
