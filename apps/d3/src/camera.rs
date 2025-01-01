@@ -16,7 +16,7 @@ pub struct Camera {
 impl Camera {
 	pub fn new(position: Vector<f32, 3>) -> Self {
 		let mut camera = Camera {
-			speed: 6.0,
+			speed: 8.0,
 			sensitivity: 10.0,
 			position,
 			pitch: 0.0,
@@ -37,30 +37,18 @@ impl Camera {
 		orientation: Vector<f32, 2>,
 	) {
 		let dt = dt.as_secs_f32();
+		// let forward = (self.target - self.position).normalize();
+		// let right = forward.cross(self.up);
 		let right = self.target.cross(self.up).normalize();
 		let forward = right.cross(self.up).normalize();
 
-		if movement[0] > 0.0 {
-			self.position += right * self.speed * dt;
-		} else if movement[0] < 0.0 {
-			self.position -= right * self.speed * dt;
-		}
+		self.position += forward * movement[2] * self.speed * dt;
+		self.position += right * movement[0] * self.speed * dt;
+		self.position += self.up * movement[1] * self.speed * dt;
 
-		if movement[1] > 0.0 {
-			self.position += self.up * self.speed * dt;
-		} else if movement[1] < 0.0 {
-			self.position -= self.up * self.speed * dt;
-		}
-
-		if movement[2] > 0.0 {
-			self.position += forward * self.speed * dt;
-		} else if movement[2] < 0.0 {
-			self.position -= forward * self.speed * dt;
-		}
-
-		self.yaw += orientation[0] * self.sensitivity * dt;
 		self.pitch -= orientation[1] * self.sensitivity * dt;
-		self.pitch = self.pitch.clamp(-89.0, 89.0);
+		self.pitch = self.pitch.clamp(-90.0, 90.0);
+		self.yaw += orientation[0] * self.sensitivity * dt;
 
 		self.update_matrix();
 	}
@@ -70,8 +58,7 @@ impl Camera {
 		let (sin_pitch, cos_pitch) = self.pitch.to_radians().sin_cos();
 		self.target = vector![cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch].normalize();
 
-		self.view = transform::look_at(self.position, self.position + self.target, self.up)
-			.inverse()
-			.unwrap();
+		let world = transform::look_at(self.position, self.position + self.target, self.up);
+		self.view = world.inverse().unwrap();
 	}
 }

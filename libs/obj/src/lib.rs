@@ -1,3 +1,4 @@
+#![feature(array_chunks)]
 #![feature(coroutines)]
 #![feature(iter_from_coroutine)]
 #![feature(let_chains)]
@@ -39,13 +40,8 @@ impl<'a> Mesh {
 						.as_ref()
 						.and_then(|name| self.materials.get(name));
 
-					for vs in group.vertices.chunks_exact(3) {
-						let vs = [
-							self.vertices[vs[0]],
-							self.vertices[vs[1]],
-							self.vertices[vs[2]],
-						];
-
+					for [a, b, c] in group.vertices.array_chunks::<3>() {
+						let vs = [self.vertices[*a], self.vertices[*b], self.vertices[*c]];
 						yield (vs, material);
 					}
 				}
