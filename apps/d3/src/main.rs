@@ -79,6 +79,7 @@ impl ApplicationHandler for State {
 				WindowEvent::Focused(focused) => app.focused(focused),
 				WindowEvent::CloseRequested => event_loop.exit(),
 				WindowEvent::RedrawRequested => app.draw(),
+				WindowEvent::MouseInput { state, button, .. } => app.mouse_input(state, button),
 				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
 				WindowEvent::Resized(size) => app.resize(size),
 				_else => {}

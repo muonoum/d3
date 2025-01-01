@@ -1,9 +1,9 @@
 use pixels::{Pixels, SurfaceTexture};
 use std::time;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::event::{ElementState, KeyEvent, MouseScrollDelta};
+use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
-use winit::window::Window;
+use winit::window::{CursorGrabMode, Window};
 
 use crate::args::Args;
 use crate::buffer::{Buffer, PixelsBuffer};
@@ -12,12 +12,20 @@ use crate::scene::Scene;
 use crate::varying::Varying;
 use matrix::{Matrix, Vector, transform, vector};
 
+#[derive(PartialEq)]
+enum State {
+	Initial,
+	Active,
+	Inactive,
+}
+
 pub struct App {
 	last_frame: time::Instant,
 	pub frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
 	orientation: Vector<f32, 2>,
-	focused: bool,
+	state: State,
+	// focused: bool,
 	fov: f32,
 	scene: Scene,
 	window: Window,
@@ -46,6 +54,7 @@ impl App {
 		let aspect_ratio = buffer_width as f32 / buffer_height as f32;
 		let projection = transform::perspective_near(aspect_ratio, fov, 0.1);
 		let scene = Scene::new(&args.scene);
+
 		window.request_redraw();
 
 		App {
@@ -53,7 +62,7 @@ impl App {
 			frame,
 			movement: vector![0.0; 3],
 			orientation: vector![0.0; 2],
-			focused: true,
+			state: State::Initial,
 			fov,
 			scene,
 			window,
@@ -62,7 +71,20 @@ impl App {
 	}
 
 	pub fn focused(&mut self, focused: bool) {
-		self.focused = focused;
+		match (&self.state, focused) {
+			(State::Initial, false) => {}
+			(State::Initial, true) => {
+				self.window.set_cursor_visible(false);
+				self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+				self.state = State::Active;
+			}
+
+			(_state, true) => {}
+			(_state, false) => {
+				self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
+				self.state = State::Inactive;
+			}
+		}
 	}
 
 	pub fn resize(&mut self, size: PhysicalSize<u32>) {
@@ -72,7 +94,7 @@ impl App {
 	}
 
 	pub fn mouse_wheel(&mut self, delta: MouseScrollDelta) {
-		if !self.focused {
+		if self.state != State::Active {
 			return;
 		}
 
@@ -88,7 +110,7 @@ impl App {
 	}
 
 	pub fn mouse_motion(&mut self, (dx, dy): (f64, f64)) {
-		if !self.focused {
+		if self.state != State::Active {
 			return;
 		}
 
@@ -96,8 +118,16 @@ impl App {
 		self.orientation[1] = dy as f32;
 	}
 
+	pub fn mouse_input(&mut self, state: ElementState, _button: MouseButton) {
+		if state == ElementState::Pressed {
+			self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
+			self.window.set_cursor_visible(false);
+			self.state = State::Active;
+		}
+	}
+
 	pub fn keyboard_input(&mut self, event: KeyEvent) {
-		if !self.focused {
+		if self.state != State::Active {
 			return;
 		}
 
@@ -108,6 +138,12 @@ impl App {
 		};
 
 		match event.physical_key {
+			PhysicalKey::Code(KeyCode::Escape) => {
+				self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
+				self.window.set_cursor_visible(true);
+				self.state = State::Inactive;
+			}
+
 			PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -d,
 			PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -d,
 			PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = d,
