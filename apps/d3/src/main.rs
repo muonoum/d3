@@ -17,7 +17,6 @@ mod light;
 mod object;
 mod render;
 mod scene;
-mod shader;
 mod varying;
 
 use app::App;
