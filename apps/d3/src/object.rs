@@ -41,9 +41,9 @@ impl Object {
 		// 	.unwrap();
 
 		log::info!(
-			"Load {}: f={}; v={}; n={}; uv={}",
+			"Load {}: v={}; p={}; n={}; uv={}",
 			path,
-			mesh.groups.iter().map(|g| g.faces.len()).sum::<usize>(),
+			mesh.groups.iter().map(|g| g.vertices.len()).sum::<usize>(),
 			mesh.positions.len(),
 			mesh.normals.len(),
 			mesh.uvs.len(),

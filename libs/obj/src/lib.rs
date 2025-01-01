@@ -13,7 +13,10 @@ use std::{
 };
 
 use array::{Array, array};
-use matrix::{Vector, vector};
+use matrix::Vector;
+
+mod material;
+pub use material::Material;
 
 #[derive(Default, Debug)]
 pub struct Mesh {
@@ -26,7 +29,7 @@ pub struct Mesh {
 }
 
 impl<'a> Mesh {
-	pub fn faces(&'a self) -> impl Iterator<Item = ([Vertex; 3], Option<&'a Arc<Material>>)> {
+	pub fn triangles(&'a self) -> impl Iterator<Item = ([Vertex; 3], Option<&'a Arc<Material>>)> {
 		std::iter::from_coroutine(
 			#[coroutine]
 			|| {
@@ -36,8 +39,13 @@ impl<'a> Mesh {
 						.as_ref()
 						.and_then(|name| self.materials.get(name));
 
-					for [a, b, c] in group.faces.iter() {
-						let vs = [self.vertices[*a], self.vertices[*b], self.vertices[*c]];
+					for vs in group.vertices.chunks_exact(3) {
+						let vs = [
+							self.vertices[vs[0]],
+							self.vertices[vs[1]],
+							self.vertices[vs[2]],
+						];
+
 						yield (vs, material);
 					}
 				}
@@ -50,11 +58,10 @@ impl<'a> Mesh {
 pub struct Group {
 	pub name: String,
 	pub material: Option<String>,
-	pub faces: Vec<Face>,
+	pub vertices: Vec<usize>,
 }
 
 type Index = (usize, Option<usize>, Option<usize>);
-// pub type Face = [Vertex; 3];
 pub type Face = [usize; 3];
 
 #[derive(Debug, Copy, Clone)]
@@ -62,22 +69,6 @@ pub struct Vertex {
 	pub position: usize,
 	pub normal: Option<usize>,
 	pub uv: Option<usize>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Material {
-	pub name: String,
-	pub ambient: Array<f32, 3>,
-	pub ambient_map: Option<image::RgbImage>,
-	pub emissive: Array<f32, 3>,
-	pub emissive_map: Option<image::RgbImage>,
-	pub diffuse: Array<f32, 3>,
-	pub diffuse_map: Option<image::RgbImage>,
-	pub specular: Array<f32, 3>,
-	pub specular_map: Option<image::RgbImage>,
-	pub specular_exponent: f32,
-	pub specular_exponent_map: Option<image::GrayImage>,
-	pub normal_map: Option<image::RgbImage>,
 }
 
 impl Mesh {
@@ -91,104 +82,8 @@ impl Group {
 		Group {
 			name: name.into(),
 			material: None,
-			faces: Vec::new(),
+			vertices: Vec::new(),
 		}
-	}
-}
-
-impl Material {
-	pub fn new(name: &str) -> Material {
-		Material {
-			name: name.into(),
-			normal_map: None,
-			ambient: array![0.2; 3],
-			ambient_map: None,
-			emissive: array![0.0; 3],
-			emissive_map: None,
-			diffuse: array![0.8; 3],
-			diffuse_map: None,
-			specular: array![1.0; 3],
-			specular_map: None,
-			specular_exponent: 0.0,
-			specular_exponent_map: None,
-		}
-	}
-
-	pub fn ambient(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		if let Some(uv) = uv
-			&& let Some(ref map) = self.ambient_map
-		{
-			self.ambient * Self::map_color(map, uv)
-		} else {
-			self.ambient
-		}
-	}
-
-	pub fn emissive(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		if let Some(uv) = uv
-			&& let Some(ref map) = self.emissive_map
-		{
-			self.emissive * Self::map_color(map, uv)
-		} else {
-			self.emissive
-		}
-	}
-
-	pub fn diffuse(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		if let Some(uv) = uv
-			&& let Some(ref map) = self.diffuse_map
-		{
-			self.diffuse * Self::map_color(map, uv)
-		} else {
-			self.diffuse
-		}
-	}
-
-	pub fn specular(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
-		if let Some(uv) = uv
-			&& let Some(ref map) = self.specular_map
-		{
-			self.specular * Self::map_color(map, uv)
-		} else {
-			self.specular
-		}
-	}
-
-	pub fn specular_exponent(&self, uv: Option<Vector<f32, 2>>) -> f32 {
-		if let Some(uv) = uv
-			&& let Some(ref map) = self.specular_exponent_map
-		{
-			self.specular_exponent * Self::map_scalar(map, uv)
-		} else {
-			self.specular_exponent
-		}
-	}
-
-	pub fn map_scalar(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
-		let width = map.width() as f32;
-		let height = map.height() as f32;
-		let x = (uv[0] * width).clamp(0.0, width - 1.0);
-		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
-		map.get_pixel(x as u32, y as u32)[0] as f32 / 255.0
-	}
-
-	pub fn map_color(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		let width = map.width() as f32;
-		let height = map.height() as f32;
-		let x = (uv[0] * width).clamp(0.0, width - 1.0);
-		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
-		let rgb = map.get_pixel(x as u32, y as u32);
-
-		array![
-			rgb[0] as f32 / 255.0,
-			rgb[1] as f32 / 255.0,
-			rgb[2] as f32 / 255.0
-		]
-	}
-
-	pub fn map_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
-		let array = Self::map_color(texture, uv);
-		vector![array[0], array[1], array[2]]
 	}
 }
 
@@ -236,19 +131,14 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 			}
 
 			Some("f") => {
-				// let face = read_face(terms).context("f")?;
-				let [v1, v2, v3] = read_face(terms).context("f")?;
+				for index in read_face(terms).context("f")?.iter() {
+					let vertex = add_vertex(*index);
 
-				let v1 = add_vertex(v1);
-				let v2 = add_vertex(v2);
-				let v3 = add_vertex(v3);
-
-				if let Some(ref mut group) = group {
-					// group.faces.push(face);
-					group.faces.push([v1, v2, v3]);
-				} else {
-					// default_group.faces.push(face);
-					default_group.faces.push([v1, v2, v3]);
+					if let Some(ref mut group) = group {
+						group.vertices.push(vertex);
+					} else {
+						default_group.vertices.push(vertex);
+					}
 				}
 			}
 
@@ -274,7 +164,7 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 		mesh.groups.push(group.clone());
 	}
 
-	if !default_group.faces.is_empty() {
+	if !default_group.vertices.is_empty() {
 		mesh.groups.push(default_group);
 	}
 
@@ -388,29 +278,24 @@ fn read_color<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Arra
 	Ok(Array::new(cells.as_slice().try_into()?))
 }
 
-// fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<Face> {
-fn read_face(mut terms: SplitWhitespace) -> anyhow::Result<[Index; 3]> {
-	Ok([
-		read_vertex(terms.next().context("vertex")?)?,
-		read_vertex(terms.next().context("vertex")?)?,
-		read_vertex(terms.next().context("vertex")?)?,
-	])
+fn read_face(terms: SplitWhitespace) -> anyhow::Result<Vec<Index>> {
+	let mut vertices = Vec::new();
+
+	for term in terms {
+		vertices.push(read_vertex(term).context("vertex")?);
+	}
+
+	Ok(vertices)
 }
 
-// fn read_vertex(term: &str) -> Result<Vertex, anyhow::Error> {
 fn read_vertex(term: &str) -> Result<Index, anyhow::Error> {
 	let terms = term.split("/").take(3).collect();
+
 	let position = read_index(&terms, 0).context("position")?;
 	let uv = read_index(&terms, 1);
 	let normal = read_index(&terms, 2);
 
 	Ok((position - 1, normal.map(|i| i - 1), uv.map(|i| i - 1)))
-
-	// Ok(Vertex {
-	// 	position: position - 1,
-	// 	normal: normal.map(|i| i - 1),
-	// 	uv: uv.map(|i| i - 1),
-	// })
 }
 
 fn read_index(terms: &Vec<&str>, i: usize) -> Option<usize> {

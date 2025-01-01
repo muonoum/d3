@@ -192,7 +192,7 @@ impl App {
 				(position, normal, uv)
 			};
 
-			for ([v1, v2, v3], material) in object.mesh.faces() {
+			for ([v1, v2, v3], material) in object.mesh.triangles() {
 				let clip1 = clip[v1.position];
 				let clip2 = clip[v2.position];
 				let clip3 = clip[v3.position];
