@@ -37,8 +37,6 @@ impl Camera {
 		orientation: Vector<f32, 2>,
 	) {
 		let dt = dt.as_secs_f32();
-		// let forward = (self.target - self.position).normalize();
-		// let right = forward.cross(self.up);
 		let right = self.target.cross(self.up).normalize();
 		let forward = right.cross(self.up).normalize();
 

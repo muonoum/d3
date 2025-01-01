@@ -49,25 +49,29 @@ impl App {
 			PixelsBuffer::new(buffer, buffer_width, buffer_height)
 		};
 
-		let fov = 2.0;
-		let aspect_ratio = buffer_width as f32 / buffer_height as f32;
-		let projection = transform::perspective_near(aspect_ratio, fov, 0.1);
-		let scene = Scene::new(&args.scene);
-
 		window.set_cursor_visible(false);
 		window.request_redraw();
 
-		App {
+		let mut app = App {
 			last_frame: time::Instant::now(),
 			frame,
 			movement: vector![0.0; 3],
 			orientation: vector![0.0; 2],
 			state: State::Initial,
-			fov,
-			scene,
+			fov: 1.0,
+			scene: Scene::new(&args.scene),
 			window,
-			projection,
-		}
+			projection: Matrix::identity(),
+		};
+
+		app.update_projection();
+		app
+	}
+
+	pub fn update_projection(&mut self) {
+		let size = self.window.inner_size();
+		let aspect_ratio = size.width as f32 / size.height as f32;
+		self.projection = transform::perspective_near_far(aspect_ratio, self.fov, 0.1, 100.0);
 	}
 
 	pub fn grab(&mut self) {
@@ -91,10 +95,8 @@ impl App {
 		}
 	}
 
-	pub fn resize(&mut self, size: PhysicalSize<u32>) {
-		let aspect_ratio = size.width as f32 / size.height as f32;
-		self.frame.resize(size.width as usize, size.height as usize);
-		self.projection = transform::perspective_near(aspect_ratio, self.fov, 0.1);
+	pub fn resize(&mut self, _size: PhysicalSize<u32>) {
+		self.update_projection();
 	}
 
 	pub fn mouse_wheel(&mut self, delta: MouseScrollDelta) {
@@ -106,10 +108,8 @@ impl App {
 			MouseScrollDelta::LineDelta(_h, _v) => {}
 
 			MouseScrollDelta::PixelDelta(PhysicalPosition { x: _, y }) => {
-				let size = self.window.inner_size();
-				let aspect_ratio = size.width as f32 / size.height as f32;
-				self.fov = (self.fov + y as f32 / 1000.0).clamp(0.1, 5.0);
-				self.projection = transform::perspective_near(aspect_ratio, self.fov, 0.1);
+				self.fov = (self.fov + y as f32 / 1000.0).clamp(0.1, 1.0);
+				self.update_projection();
 			}
 		}
 	}
@@ -152,7 +152,7 @@ impl App {
 		}
 	}
 
-	pub fn draw(&mut self) {
+	pub fn update(&mut self) {
 		let now = time::Instant::now();
 		let dt = now - self.last_frame;
 		self.last_frame = now;
@@ -160,13 +160,13 @@ impl App {
 		self.scene.update(dt, self.movement, self.orientation);
 		self.orientation = vector![0.0; 2];
 
-		self.draw_frame();
+		self.draw();
 		self.window.pre_present_notify();
 		self.frame.render();
 		self.window.request_redraw();
 	}
 
-	fn draw_frame(&mut self) {
+	fn draw(&mut self) {
 		self.frame.clear([0, 0, 0, 255]);
 		let width = self.frame.width();
 		let height = self.frame.height();

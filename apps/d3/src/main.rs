@@ -65,8 +65,8 @@ impl ApplicationHandler for State {
 	fn device_event(&mut self, _event_loop: &ActiveEventLoop, _: DeviceId, event: DeviceEvent) {
 		if let State::Running(app) = self {
 			match event {
-				DeviceEvent::MouseMotion { delta } => app.mouse_motion(delta),
 				DeviceEvent::MouseWheel { delta } => app.mouse_wheel(delta),
+				DeviceEvent::MouseMotion { delta } => app.mouse_motion(delta),
 				_else => {}
 			}
 		}
@@ -75,12 +75,12 @@ impl ApplicationHandler for State {
 	fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
 		if let State::Running(app) = self {
 			match event {
-				WindowEvent::Focused(focused) => app.focused(focused),
 				WindowEvent::CloseRequested => event_loop.exit(),
-				WindowEvent::RedrawRequested => app.draw(),
+				WindowEvent::Focused(focused) => app.focused(focused),
 				WindowEvent::MouseInput { state, button, .. } => app.mouse_input(state, button),
 				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
 				WindowEvent::Resized(size) => app.resize(size),
+				WindowEvent::RedrawRequested => app.update(),
 				_else => {}
 			}
 		}

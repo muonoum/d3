@@ -80,33 +80,25 @@ pub fn look_at(from: Vector<f32, 3>, to: Vector<f32, 3>, up: Vector<f32, 3>) -> 
 	])
 }
 
-pub fn perspective_near(aspect: f32, fov: f32, near: f32) -> Matrix<f32, 4, 4> {
+pub fn perspective_near_far(ratio: f32, fov_y: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+	let fov = (fov_y / 2.0).tan().recip();
+
 	Matrix::new([
-		[fov / aspect, 0.0, 0.0, 0.0],
+		[fov / ratio, 0.0, 0.0, 0.0],
 		[0.0, fov, 0.0, 0.0],
-		[0.0, 0.0, 0.0, -1.0],
-		[0.0, 0.0, -near, 0.0],
+		[0.0, 0.0, (far + near) / (near - far), -1.0],
+		[0.0, 0.0, (2.0 * far * near) / (near - far), 0.0],
 	])
 }
 
-pub fn perspective_near_far(aspect: f32, fov: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
-	let right = f32::tan(fov * 0.5 * std::f32::consts::PI / 180.0) * near;
-	let left = -right;
-	let top = ((right - left) / aspect) / 2.0;
-	let bottom = -top;
-
-	let m11 = 2.0 * near / { right - left };
-	let m22 = 2.0 * near / { top - bottom };
-	let m31 = (right + left) / (right - left);
-	let m32 = (top + bottom) / (top - bottom);
-	let m33 = -(far + near) / { far - near };
-	let m43 = -(2.0 * far * near) / (far - near);
+pub fn perspective_near(ratio: f32, fov_y: f32, near: f32) -> Matrix<f32, 4, 4> {
+	let fov = (fov_y / 2.0).tan().recip();
 
 	Matrix::new([
-		[m11, 0.0, 0.0, 0.0],
-		[0.0, m22, 0.0, 0.0],
-		[m31, m32, m33, -1.0],
-		[0.0, 0.0, m43, 0.0],
+		[fov / ratio, 0.0, 0.0, 0.0],
+		[0.0, fov, 0.0, 0.0],
+		[0.0, 0.0, 0.0, -1.0],
+		[0.0, 0.0, -near, 0.0],
 	])
 }
 
