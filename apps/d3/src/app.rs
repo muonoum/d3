@@ -25,7 +25,6 @@ pub struct App {
 	movement: Vector<f32, 3>,
 	orientation: Vector<f32, 2>,
 	state: State,
-	// focused: bool,
 	fov: f32,
 	scene: Scene,
 	window: Window,
