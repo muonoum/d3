@@ -12,7 +12,7 @@ use crate::scene::Scene;
 use crate::varying::Varying;
 use matrix::{Matrix, Vector, transform, vector};
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum State {
 	Initial,
 	Active,
@@ -54,6 +54,7 @@ impl App {
 		let projection = transform::perspective_near(aspect_ratio, fov, 0.1);
 		let scene = Scene::new(&args.scene);
 
+		window.set_cursor_visible(false);
 		window.request_redraw();
 
 		App {
