@@ -21,7 +21,7 @@ enum State {
 
 pub struct App {
 	last_frame: time::Instant,
-	pub frame: PixelsBuffer,
+	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
 	orientation: Vector<f32, 2>,
 	state: State,
