@@ -76,10 +76,10 @@ impl ApplicationHandler for State {
 		if let State::Running(app) = self {
 			match event {
 				WindowEvent::CloseRequested => event_loop.exit(),
-				WindowEvent::Focused(focused) => app.focused(focused),
+				WindowEvent::Focused(focused) => app.set_focused(focused),
 				WindowEvent::MouseInput { state, button, .. } => app.mouse_input(state, button),
 				WindowEvent::KeyboardInput { event, .. } => app.keyboard_input(event),
-				WindowEvent::Resized(size) => app.resize(size),
+				WindowEvent::Resized(size) => app.resized(size),
 				WindowEvent::RedrawRequested => app.update(),
 				_else => {}
 			}

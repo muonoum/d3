@@ -38,15 +38,15 @@ impl Camera {
 	) {
 		let dt = dt.as_secs_f32();
 		let right = self.target.cross(self.up).normalize();
-		let forward = right.cross(self.up).normalize();
+		let forward = self.up.cross(right).normalize();
 
-		self.position += forward * movement[2] * self.speed * dt;
 		self.position += right * movement[0] * self.speed * dt;
 		self.position += self.up * movement[1] * self.speed * dt;
+		self.position += forward * movement[2] * self.speed * dt;
 
+		self.yaw += orientation[0] * self.sensitivity * dt;
 		self.pitch -= orientation[1] * self.sensitivity * dt;
 		self.pitch = self.pitch.clamp(-90.0, 90.0);
-		self.yaw += orientation[0] * self.sensitivity * dt;
 
 		self.update_matrix();
 	}

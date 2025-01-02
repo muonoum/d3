@@ -10,7 +10,7 @@ use crate::buffer::{Buffer, PixelsBuffer};
 use crate::render;
 use crate::scene::Scene;
 use crate::varying::Varying;
-use matrix::{Matrix, Vector, transform, vector};
+use matrix::{Matrix, Vector, transform};
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -49,19 +49,22 @@ impl App {
 			PixelsBuffer::new(buffer, buffer_width, buffer_height)
 		};
 
-		window.set_cursor_visible(false);
 		window.request_redraw();
 
+		// window
+		// 	.set_cursor_position(PhysicalPosition::new(size.width / 2, size.height / 2))
+		// 	.unwrap();
+
 		let mut app = App {
-			last_frame: time::Instant::now(),
 			frame,
-			movement: vector![0.0; 3],
-			orientation: vector![0.0; 2],
-			state: State::Initial,
-			fov: 1.0,
-			scene: Scene::new(&args.scene),
 			window,
+			last_frame: time::Instant::now(),
+			movement: Vector::zero(),
+			orientation: Vector::zero(),
+			state: State::Initial,
+			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
+			fov: 1.0,
 		};
 
 		app.update_projection();
@@ -86,7 +89,7 @@ impl App {
 		self.state = State::Inactive;
 	}
 
-	pub fn focused(&mut self, focused: bool) {
+	pub fn set_focused(&mut self, focused: bool) {
 		match (&self.state, focused) {
 			(State::Initial, false) => {}
 			(State::Initial, true) => self.grab(),
@@ -95,7 +98,7 @@ impl App {
 		}
 	}
 
-	pub fn resize(&mut self, _size: PhysicalSize<u32>) {
+	pub fn resized(&mut self, _size: PhysicalSize<u32>) {
 		self.update_projection();
 	}
 
@@ -105,9 +108,9 @@ impl App {
 		}
 
 		match delta {
-			MouseScrollDelta::LineDelta(_h, _v) => {}
+			MouseScrollDelta::LineDelta(..) => {}
 
-			MouseScrollDelta::PixelDelta(PhysicalPosition { x: _, y }) => {
+			MouseScrollDelta::PixelDelta(PhysicalPosition { y, .. }) => {
 				self.fov = (self.fov + y as f32 / 1000.0).clamp(0.1, 1.0);
 				self.update_projection();
 			}
@@ -142,9 +145,9 @@ impl App {
 
 		match event.physical_key {
 			PhysicalKey::Code(KeyCode::Escape) => self.ungrab(),
-			PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = -d,
+			PhysicalKey::Code(KeyCode::KeyW) => self.movement[2] = d,
 			PhysicalKey::Code(KeyCode::KeyA) => self.movement[0] = -d,
-			PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = d,
+			PhysicalKey::Code(KeyCode::KeyS) => self.movement[2] = -d,
 			PhysicalKey::Code(KeyCode::KeyD) => self.movement[0] = d,
 			PhysicalKey::Code(KeyCode::Space) => self.movement[1] = d,
 			PhysicalKey::Code(KeyCode::ShiftLeft) => self.movement[1] = -d,
@@ -158,7 +161,7 @@ impl App {
 		self.last_frame = now;
 
 		self.scene.update(dt, self.movement, self.orientation);
-		self.orientation = vector![0.0; 2];
+		self.orientation = Vector::zero();
 
 		self.draw();
 		self.window.pre_present_notify();

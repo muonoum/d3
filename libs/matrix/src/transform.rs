@@ -80,17 +80,6 @@ pub fn look_at(from: Vector<f32, 3>, to: Vector<f32, 3>, up: Vector<f32, 3>) -> 
 	])
 }
 
-pub fn perspective_near_far(ratio: f32, fov_y: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
-	let fov = (fov_y / 2.0).tan().recip();
-
-	Matrix::new([
-		[fov / ratio, 0.0, 0.0, 0.0],
-		[0.0, fov, 0.0, 0.0],
-		[0.0, 0.0, (far + near) / (near - far), -1.0],
-		[0.0, 0.0, (2.0 * far * near) / (near - far), 0.0],
-	])
-}
-
 pub fn perspective_near(ratio: f32, fov_y: f32, near: f32) -> Matrix<f32, 4, 4> {
 	let fov = (fov_y / 2.0).tan().recip();
 
@@ -100,6 +89,13 @@ pub fn perspective_near(ratio: f32, fov_y: f32, near: f32) -> Matrix<f32, 4, 4> 
 		[0.0, 0.0, 0.0, -1.0],
 		[0.0, 0.0, -near, 0.0],
 	])
+}
+
+pub fn perspective_near_far(ratio: f32, fov_y: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {
+	let mut m = perspective_near(ratio, fov_y, near);
+	m[(2, 2)] = (far + near) / (near - far);
+	m[(3, 2)] = (2.0 * far * near) / (near - far);
+	m
 }
 
 pub fn viewport(width: f32, height: f32) -> Matrix<f32, 4, 4> {
