@@ -1,6 +1,8 @@
 use num::traits::{FromPrimitive, Num, NumAssignOps};
 use std::ops::{Div, Index, IndexMut, Mul};
 
+use crate::{Vector, vector};
+
 pub trait Cell = Copy + Num + PartialOrd + FromPrimitive + NumAssignOps;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -9,6 +11,10 @@ pub struct Matrix<T: Cell, const R: usize, const C: usize>([[T; C]; R]);
 impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 	pub fn new(cells: [[T; C]; R]) -> Self {
 		Self(cells)
+	}
+
+	pub fn row_vectors(&self) -> [Vector<T, C>; R] {
+		self.0.map(|row| Vector::new([row]))
 	}
 
 	pub fn from_row_vectors(vs: [crate::Vector<T, C>; R]) -> Matrix<T, R, C> {

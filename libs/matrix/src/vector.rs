@@ -44,7 +44,7 @@ impl<T: Cell> From<Vector<T, 3>> for Vector<T, 2> {
 
 impl<T: Cell> Vector<T, 3> {
 	pub fn v4(self) -> Vector<T, 4> {
-		vector![self[0], self[1], self[2], T::one(),]
+		vector![self[0], self[1], self[2], T::one()]
 	}
 
 	pub fn cross(self, other: Self) -> Self {
