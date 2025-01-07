@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use array::{Array, array};
 use matrix::{Matrix, Vector};
 
 pub fn edge(f: Vector<f32, 3>, v: Vector<f32, 2>) -> f32 {
@@ -90,40 +87,4 @@ pub fn bounding_box(
 	let max_y = v1[1].max(v2[1]).max(v3[1]).min(height as f32 - 1.0) as usize;
 
 	(min_x, max_x, min_y, max_y)
-}
-
-pub fn material_color(
-	light: Vector<f32, 3>,
-	camera: Vector<f32, 3>,
-	position: Vector<f32, 3>,
-	normal: Option<Vector<f32, 3>>,
-	uv: Option<Vector<f32, 2>>,
-	material: Option<&Arc<obj::Material>>,
-) -> Option<[u8; 4]> {
-	material.map(|m| {
-		let color = normal
-			.map(|n| lighting(light, camera, position, n, uv, m))
-			.unwrap_or_else(|| m.diffuse(uv))
-			* 255.0;
-		[color[0] as u8, color[1] as u8, color[2] as u8, 255]
-	})
-}
-
-pub fn lighting(
-	light: Vector<f32, 3>,
-	camera: Vector<f32, 3>,
-	position: Vector<f32, 3>,
-	normal: Vector<f32, 3>,
-	uv: Option<Vector<f32, 2>>,
-	material: &Arc<obj::Material>,
-) -> Array<f32, 3> {
-	let camera_dir = (camera - position).normalize();
-	let light_dir = (light - position).normalize();
-	let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
-	let halfway_vector = (light_dir + camera_dir).normalize();
-	let specular = normal
-		.dot(halfway_vector)
-		.powi(material.specular_exponent(uv) as i32);
-	material.diffuse(uv) * diffuse * array![1.0; 3]
-		+ material.specular(uv) * specular * array![0.5; 3]
 }

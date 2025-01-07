@@ -9,8 +9,10 @@ use matrix::{Matrix, Vector, transform, vector};
 
 use crate::args::Args;
 use crate::buffer::{Buffer, PixelsBuffer};
-use crate::render2 as render;
+use crate::render;
+use crate::render2;
 use crate::scene::Scene;
+use crate::varying::Varying;
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -171,15 +173,116 @@ impl App {
 		self.last_frame = now;
 
 		self.scene.update(dt, self.movement, self.orientation);
+		// TODO
+		// use array::array;
+		// self.scene.lights = vec![crate::light::Light {
+		// 	position: self.scene.camera.position,
+		// 	diffuse_color: array![1.0; 3],
+		// 	specular_color: array![0.5; 3],
+		// }];
+
 		self.orientation = Vector::zero();
-		self.draw();
+		// self.draw1();
+		self.draw2();
 
 		self.window.pre_present_notify();
 		self.frame.render();
 		self.window.request_redraw();
 	}
 
-	fn draw(&mut self) {
+	#[allow(dead_code)]
+	fn draw1(&mut self) {
+		self.frame.clear([0, 0, 0, 255]);
+		let width = self.frame.width();
+		let height = self.frame.height();
+
+		let mut depth_buffer = vec![f32::NEG_INFINITY; width * height];
+		let projection = self.scene.camera.view * self.projection;
+		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
+
+		for object in self.scene.objects.iter() {
+			let clip_space = object.world_space * projection;
+
+			let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
+				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
+				.unzip();
+
+			let normals: Vec<_> = (object.mesh.normals.iter())
+				.map(|v| *v * object.normal_space)
+				.collect();
+
+			let varying = |v: obj::Vertex| {
+				let position = world[v.position];
+				let normal = v.normal.map(|i| normals[i]);
+				let uv = v.uv.map(|i| object.mesh.uvs[i]);
+				(position, normal, uv)
+			};
+
+			for ([v1, v2, v3], material) in object.mesh.triangles() {
+				let clip1 = clip[v1.position];
+				let clip2 = clip[v2.position];
+				let clip3 = clip[v3.position];
+
+				if render::clipped(clip1) && render::clipped(clip2) && render::clipped(clip3) {
+					continue;
+				}
+
+				let screen1 = screen_space(clip1.v3());
+				let screen2 = screen_space(clip2.v3());
+				let screen3 = screen_space(clip3.v3());
+
+				let normal = (screen2 - screen1).cross(screen3 - screen1);
+				if normal[2] > 0.0 {
+					continue;
+				}
+
+				let rz1 = 1.0 / -clip1[3];
+				let rz2 = 1.0 / -clip2[3];
+				let rz3 = 1.0 / -clip3[3];
+
+				let var1 = varying(v1).scale(rz1);
+				let var2 = varying(v2).scale(rz2);
+				let var3 = varying(v3).scale(rz3);
+
+				render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
+					let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
+
+					let z_index = y * width + x;
+					if depth_buffer[z_index] < z {
+						depth_buffer[z_index] = z;
+					} else {
+						return;
+					}
+
+					let (position, normal, uv) =
+						Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
+
+					let color = if let Some(material) = material
+						&& let Some(material) = object.mesh.materials.get(material)
+						&& let Some(normal) = normal
+					{
+						let color = render::blinn_phong(
+							position,
+							normal.normalize(),
+							uv,
+							self.scene.camera.position,
+							&self.scene.lights,
+							material,
+						);
+
+						[color[0] as u8, color[1] as u8, color[2] as u8, 255]
+					} else {
+						[255, 0, 255, 255]
+					};
+
+					self.frame.put(x, y, color);
+				});
+			}
+		}
+	}
+
+	#[allow(dead_code)]
+	fn draw2(&mut self) {
 		self.frame.clear([0, 0, 0, 255]);
 		let width = self.frame.width();
 		let height = self.frame.height();
@@ -214,7 +317,7 @@ impl App {
 				let clip2 = clip[v2.position];
 				let clip3 = clip[v3.position];
 
-				if render::clipped(clip1, clip2, clip3) {
+				if render2::clipped(clip1, clip2, clip3) {
 					continue;
 				}
 
@@ -222,11 +325,11 @@ impl App {
 				let p2 = screen_space(clip2);
 				let p3 = screen_space(clip3);
 
-				if let Some(mat) = render::adjugate(p1, p2, p3) {
+				if let Some(mat) = render2::adjugate(p1, p2, p3) {
 					triangles_drawn += 1;
 
 					let (min_x, max_x, min_y, max_y) =
-						render::bounding_box(p1, p2, p3, width, height);
+						render2::bounding_box(p1, p2, p3, width, height);
 					let [e1, e2, e3] = mat.row_vectors();
 					let w = e1 + e2 + e3;
 
@@ -258,12 +361,12 @@ impl App {
 						for x in min_x..=max_x {
 							let screen = vector![x as f32 + 0.5, y as f32 + 0.5];
 
-							let e1 = render::edge(e1, screen);
-							let e2 = render::edge(e2, screen);
-							let e3 = render::edge(e3, screen);
+							let e1 = render2::edge(e1, screen);
+							let e2 = render2::edge(e2, screen);
+							let e3 = render2::edge(e3, screen);
 
 							if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
-								let w = 1.0 / render::edge(w, screen);
+								let w = 1.0 / render2::edge(w, screen);
 								let weights = vector![e1, e2, e3] * w;
 								let z = weights.dot(vector![p1[2], p2[2], p3[2]]);
 								let z_index = y * width + x;
@@ -271,22 +374,29 @@ impl App {
 									continue;
 								}
 
-								let color = render::material_color(
-									self.scene.camera.position, // TODO: light position
-									self.scene.camera.position,
-									// TODO: Parameters
-									weights * positions,
-									normals.map(|v| (weights * v).normalize()),
-									uvs.map(|v| weights * v),
-									material.and_then(|name| object.mesh.materials.get(name)),
-								);
+								let color = if let Some(material) = material
+									&& let Some(material) = object.mesh.materials.get(material)
+									&& let Some(normals) = normals
+								{
+									let color = render::blinn_phong(
+										weights * positions,
+										(weights * normals).normalize(),
+										uvs.map(|v| weights * v),
+										self.scene.camera.position,
+										&self.scene.lights,
+										material,
+									);
+
+									[color[0] as u8, color[1] as u8, color[2] as u8, 255]
+								} else {
+									[255, 0, 255, 255]
+								};
 
 								// let color = weights * colors * 255.0;
 								// let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
 
 								depth_buffer[z_index] = z;
-								self.frame.put(x, y, color.unwrap_or([255, 0, 255, 255]));
-								// self.frame.put(x, y, color);
+								self.frame.put(x, y, color);
 								pixels_drawn += 1;
 							}
 						}
