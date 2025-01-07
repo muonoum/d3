@@ -1,6 +1,6 @@
 use matrix::{Matrix, Vector, vector};
 
-pub fn edge(f: Vector<f32, 3>, v: Vector<f32, 2>) -> f32 {
+pub fn interpolate(f: Vector<f32, 3>, v: Vector<f32, 2>) -> f32 {
 	v[0] * f[0] + v[1] * f[1] + f[2]
 }
 

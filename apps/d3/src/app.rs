@@ -354,12 +354,12 @@ impl App {
 						for x in min_x..=max_x {
 							let screen = vector![x as f32 + 0.5, y as f32 + 0.5];
 
-							let e1 = render2::edge(e1, screen);
-							let e2 = render2::edge(e2, screen);
-							let e3 = render2::edge(e3, screen);
+							let e1 = render2::interpolate(e1, screen);
+							let e2 = render2::interpolate(e2, screen);
+							let e3 = render2::interpolate(e3, screen);
 
 							if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
-								let w = 1.0 / render2::edge(w, screen);
+								let w = 1.0 / render2::interpolate(w, screen);
 								let weights = vector![e1, e2, e3] * w;
 								let z = weights.dot(vector![p1[2], p2[2], p3[2]]);
 								let z_index = y * width + x;
