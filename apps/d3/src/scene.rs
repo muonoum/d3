@@ -53,10 +53,8 @@ fn read_lights(table: &toml::Table) -> Vec<Light> {
 	table
 		.get("lights")
 		.and_then(|v| v.as_array())
-		.unwrap()
-		.iter()
-		.map(read_light)
-		.collect()
+		.map(|vs| vs.iter().map(read_light).collect())
+		.unwrap_or_default()
 }
 
 fn read_objects(table: &toml::Table) -> Vec<Object> {

@@ -16,6 +16,7 @@ mod camera;
 mod light;
 mod object;
 mod render;
+mod render2;
 mod scene;
 mod varying;
 

@@ -46,7 +46,7 @@ impl Camera {
 
 		self.yaw += orientation[0] * self.sensitivity * dt;
 		self.pitch -= orientation[1] * self.sensitivity * dt;
-		self.pitch = self.pitch.clamp(-90.0, 90.0);
+		self.pitch = self.pitch.clamp(-89.0, 89.0);
 
 		self.update_matrix();
 	}

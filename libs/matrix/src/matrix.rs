@@ -1,7 +1,7 @@
 use num::traits::{FromPrimitive, Num, NumAssignOps};
 use std::ops::{Div, Index, IndexMut, Mul};
 
-use crate::{Vector, vector};
+use crate::Vector;
 
 pub trait Cell = Copy + Num + PartialOrd + FromPrimitive + NumAssignOps;
 
@@ -17,8 +17,20 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 		self.0.map(|row| Vector::new([row]))
 	}
 
+	pub fn from_rows(vs: [[T; C]; R]) -> Matrix<T, R, C> {
+		Self::from_fn(|row, column| vs[row][column])
+	}
+
 	pub fn from_row_vectors(vs: [crate::Vector<T, C>; R]) -> Matrix<T, R, C> {
 		Self::from_fn(|row, column| vs[row][column])
+	}
+
+	pub fn column_vectors(&self) -> [Vector<T, R>; C] {
+		self.transpose().0.map(|row| Vector::new([row]))
+	}
+
+	pub fn from_columns(vs: [[T; R]; C]) -> Matrix<T, R, C> {
+		Self::from_fn(|row, column| vs[column][row])
 	}
 
 	pub fn from_column_vectors(vs: [crate::Vector<T, R>; C]) -> Matrix<T, R, C> {
@@ -155,29 +167,71 @@ mod tests {
 	}
 
 	#[test]
-	fn from_vectors_test() {
+	fn rows_and_columns_constructor_test() {
 		let v1 = crate::vector![1.1, 1.2, 1.3];
 		let v2 = crate::vector![2.1, 2.2, 2.3];
 		let v3 = crate::vector![3.1, 3.2, 3.3];
 
+		let a1 = [1.1, 1.2, 1.3];
+		let a2 = [2.1, 2.2, 2.3];
+		let a3 = [3.1, 3.2, 3.3];
+
 		#[rustfmt::skip]
-		let want1 = Matrix::new([
+		let want_rows= Matrix::new([
 			[1.1, 1.2, 1.3],
 			[2.1, 2.2, 2.3],
 			[3.1, 3.2, 3.3]
 		]);
 
-		let have1 = Matrix::from_row_vectors([v1, v2, v3]);
-		assert_eq!(want1, have1);
-
 		#[rustfmt::skip]
-		let want2 = Matrix::new([
+		let want_columns = Matrix::new([
 			[1.1, 2.1, 3.1],
 			[1.2, 2.2, 3.2],
 			[1.3, 2.3, 3.3]
 		]);
 
-		let have2 = Matrix::from_column_vectors([v1, v2, v3]);
-		assert_eq!(want2, have2);
+		assert_eq!(want_rows, Matrix::from_row_vectors([v1, v2, v3]));
+		assert_eq!(want_rows, Matrix::from_rows([a1, a2, a3]));
+
+		assert_eq!(want_columns, Matrix::from_column_vectors([v1, v2, v3]));
+		assert_eq!(want_columns, Matrix::from_columns([a1, a2, a3]));
+	}
+
+	#[test]
+	fn row_vectors_test() {
+		#[rustfmt::skip]
+		let m = Matrix::new([
+			[1.1, 2.1, 3.1],
+			[1.2, 2.2, 3.2],
+			[1.3, 2.3, 3.3]
+		]);
+
+		#[rustfmt::skip]
+		let want1 = [
+			crate::vector![1.1, 2.1, 3.1],
+			crate::vector![1.2, 2.2, 3.2],
+			crate::vector![1.3, 2.3, 3.3],
+		];
+
+		assert_eq!(m.row_vectors(), want1);
+	}
+
+	#[test]
+	fn column_vectors_test() {
+		#[rustfmt::skip]
+		let m = Matrix::new([
+			[1.1, 2.1, 3.1],
+			[1.2, 2.2, 3.2],
+			[1.3, 2.3, 3.3]
+		]);
+
+		#[rustfmt::skip]
+		let want1 = [
+			crate::vector![1.1, 1.2, 1.3],
+			crate::vector![2.1, 2.2, 2.3],
+			crate::vector![3.1, 3.2, 3.3],
+		];
+
+		assert_eq!(m.column_vectors(), want1);
 	}
 }

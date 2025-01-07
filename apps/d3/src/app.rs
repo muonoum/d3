@@ -5,12 +5,12 @@ use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
+use matrix::{Matrix, Vector, transform, vector};
+
 use crate::args::Args;
 use crate::buffer::{Buffer, PixelsBuffer};
-use crate::render;
+use crate::render2 as render;
 use crate::scene::Scene;
-use crate::varying::Varying;
-use matrix::{Matrix, Vector, transform};
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -29,6 +29,17 @@ pub struct App {
 	scene: Scene,
 	window: Window,
 	projection: Matrix<f32, 4, 4>,
+	debug: bool,
+	// colors: [[f32; 3]; 3],
+}
+
+fn maybe3<A, B, C, D>(
+	a: Option<A>,
+	b: Option<B>,
+	c: Option<C>,
+	f: impl Fn(A, B, C) -> D,
+) -> Option<D> {
+	a.and_then(|a| b.and_then(|b| c.map(|c| f(a, b, c))))
 }
 
 impl App {
@@ -50,21 +61,20 @@ impl App {
 		};
 
 		window.request_redraw();
-
-		// window
-		// 	.set_cursor_position(PhysicalPosition::new(size.width / 2, size.height / 2))
-		// 	.unwrap();
+		window.set_cursor_visible(false);
 
 		let mut app = App {
 			frame,
 			window,
+			fov: 60.0,
 			last_frame: time::Instant::now(),
 			movement: Vector::zero(),
 			orientation: Vector::zero(),
 			state: State::Initial,
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
-			fov: 1.0,
+			debug: args.debug,
+			// colors: [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
 		};
 
 		app.update_projection();
@@ -74,7 +84,7 @@ impl App {
 	pub fn update_projection(&mut self) {
 		let size = self.window.inner_size();
 		let aspect_ratio = size.width as f32 / size.height as f32;
-		self.projection = transform::perspective_near_far(aspect_ratio, self.fov, 0.1, 100.0);
+		self.projection = transform::perspective(aspect_ratio, self.fov.to_radians());
 	}
 
 	pub fn grab(&mut self) {
@@ -111,7 +121,7 @@ impl App {
 			MouseScrollDelta::LineDelta(..) => {}
 
 			MouseScrollDelta::PixelDelta(PhysicalPosition { y, .. }) => {
-				self.fov = (self.fov + y as f32 / 1000.0).clamp(0.1, 1.0);
+				self.fov = (self.fov + y as f32 / 10.0).clamp(10.0, 60.0);
 				self.update_projection();
 			}
 		}
@@ -162,8 +172,8 @@ impl App {
 
 		self.scene.update(dt, self.movement, self.orientation);
 		self.orientation = Vector::zero();
-
 		self.draw();
+
 		self.window.pre_present_notify();
 		self.frame.render();
 		self.window.request_redraw();
@@ -174,9 +184,19 @@ impl App {
 		let width = self.frame.width();
 		let height = self.frame.height();
 
-		let mut depth = vec![f32::NEG_INFINITY; width * height];
-		let screen_space = |v| render::screen_space(v, width as f32, height as f32);
+		let mut depth_buffer = vec![f32::INFINITY; width * height];
 		let projection = self.scene.camera.view * self.projection;
+		let screen_space = |v: Vector<f32, 4>| {
+			vector![
+				width as f32 * (v[0] + v[3]) / 2.0,
+				height as f32 * (v[3] - v[1]) / 2.0,
+				v[2],
+				v[3]
+			]
+		};
+
+		let mut triangles_drawn = 0;
+		let mut pixels_drawn = 0;
 
 		for object in self.scene.objects.iter() {
 			let clip_space = object.world_space * projection;
@@ -189,72 +209,94 @@ impl App {
 				.map(|v| *v * object.normal_space)
 				.collect();
 
-			let varying = |v: obj::Vertex| {
-				let position = world[v.position];
-				let normal = v.normal.map(|i| normals[i]);
-				let uv = v.uv.map(|i| object.mesh.uvs[i]);
-				(position, normal, uv)
-			};
-
 			for ([v1, v2, v3], material) in object.mesh.triangles() {
 				let clip1 = clip[v1.position];
 				let clip2 = clip[v2.position];
 				let clip3 = clip[v3.position];
 
-				if render::clipped(clip1) && render::clipped(clip2) && render::clipped(clip3) {
+				if render::clipped(clip1, clip2, clip3) {
 					continue;
 				}
 
-				let screen1 = screen_space(clip1.v3());
-				let screen2 = screen_space(clip2.v3());
-				let screen3 = screen_space(clip3.v3());
+				let p1 = screen_space(clip1);
+				let p2 = screen_space(clip2);
+				let p3 = screen_space(clip3);
 
-				let normal = (screen2 - screen1).cross(screen3 - screen1);
-				if normal[2] > 0.0 {
-					continue;
-				}
+				if let Some(mat) = render::adjugate(p1, p2, p3) {
+					triangles_drawn += 1;
 
-				let rz1 = 1.0 / -clip1[3];
-				let rz2 = 1.0 / -clip2[3];
-				let rz3 = 1.0 / -clip3[3];
+					let (min_x, max_x, min_y, max_y) =
+						render::bounding_box(p1, p2, p3, width, height);
+					let [e1, e2, e3] = mat.row_vectors();
+					let w = e1 + e2 + e3;
 
-				let var1 = varying(v1).scale(rz1);
-				let var2 = varying(v2).scale(rz2);
-				let var3 = varying(v3).scale(rz3);
+					// TODO: Parameter
+					let positions = Matrix::from_row_vectors([
+						world[v1.position],
+						world[v2.position],
+						world[v3.position],
+					]);
 
-				render::triangle(screen1, screen2, screen3, width, height, |x, y, u, v, w| {
-					let z = 1.0 / (u * rz1 + v * rz2 + w * rz3);
+					// TODO: Parameter
+					let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
+						Matrix::from_row_vectors([
+							object.mesh.uvs[uv1],
+							object.mesh.uvs[uv2],
+							object.mesh.uvs[uv3],
+						])
+					});
 
-					let z_index = y * width + x;
-					if depth[z_index] < z {
-						depth[z_index] = z;
-					} else {
-						return;
+					// TODO: Parameter
+					let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
+						Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
+					});
+
+					// TODO: Parameter
+					// let colors = Matrix::new(self.colors);
+
+					for y in min_y..=max_y {
+						for x in min_x..=max_x {
+							let screen = vector![x as f32 + 0.5, y as f32 + 0.5];
+
+							let e1 = render::edge(e1, screen);
+							let e2 = render::edge(e2, screen);
+							let e3 = render::edge(e3, screen);
+
+							if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
+								let w = 1.0 / render::edge(w, screen);
+								let weights = vector![e1, e2, e3] * w;
+								let z = weights.dot(vector![p1[2], p2[2], p3[2]]);
+								let z_index = y * width + x;
+								if z >= depth_buffer[z_index] {
+									continue;
+								}
+
+								let color = render::material_color(
+									self.scene.camera.position, // TODO: light position
+									self.scene.camera.position,
+									// TODO: Parameters
+									weights * positions,
+									normals.map(|v| (weights * v).normalize()),
+									uvs.map(|v| weights * v),
+									material.and_then(|name| object.mesh.materials.get(name)),
+								);
+
+								// let color = weights * colors * 255.0;
+								// let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
+
+								depth_buffer[z_index] = z;
+								self.frame.put(x, y, color.unwrap_or([255, 0, 255, 255]));
+								// self.frame.put(x, y, color);
+								pixels_drawn += 1;
+							}
+						}
 					}
-
-					let (position, normal, uv) =
-						Varying::barycentric(var1, u, var2, v, var3, w).scale(z);
-
-					let color = if let Some(material) = material
-						&& let Some(normal) = normal
-					{
-						let color = render::blinn_phong(
-							position,
-							normal.normalize(),
-							uv,
-							self.scene.camera.position,
-							&self.scene.lights,
-							material,
-						);
-
-						[color[0] as u8, color[1] as u8, color[2] as u8, 255]
-					} else {
-						[255, 0, 255, 255]
-					};
-
-					self.frame.put(x, y, color);
-				});
+				}
 			}
+		}
+
+		if self.debug {
+			log::info!("triangles={}; pixels={}", triangles_drawn, pixels_drawn);
 		}
 	}
 }

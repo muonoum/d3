@@ -39,8 +39,8 @@ pub fn rotate_x(a: f32) -> Matrix<f32, 4, 4> {
 
 	Matrix::new([
 		[1.0, 0.0, 0.0, 0.0],
-		[0.0, cos, -sin, 0.0],
-		[0.0, sin, cos, 0.0],
+		[0.0, cos, sin, 0.0],
+		[0.0, -sin, cos, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
 }
@@ -49,9 +49,9 @@ pub fn rotate_y(a: f32) -> Matrix<f32, 4, 4> {
 	let (sin, cos) = a.sin_cos();
 
 	Matrix::new([
-		[cos, 0.0, sin, 0.0],
+		[cos, 0.0, -sin, 0.0],
 		[0.0, 1.0, 0.0, 0.0],
-		[-sin, 0.0, cos, 0.0],
+		[sin, 0.0, cos, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
 }
@@ -60,8 +60,8 @@ pub fn rotate_z(a: f32) -> Matrix<f32, 4, 4> {
 	let (sin, cos) = a.sin_cos();
 
 	Matrix::new([
-		[cos, -sin, 0.0, 0.0],
-		[sin, cos, 0.0, 0.0],
+		[cos, sin, 0.0, 0.0],
+		[-sin, cos, 0.0, 0.0],
 		[0.0, 0.0, 1.0, 0.0],
 		[0.0, 0.0, 0.0, 1.0],
 	])
@@ -80,15 +80,21 @@ pub fn look_at(from: Vector<f32, 3>, to: Vector<f32, 3>, up: Vector<f32, 3>) -> 
 	])
 }
 
-pub fn perspective_near(ratio: f32, fov_y: f32, near: f32) -> Matrix<f32, 4, 4> {
+pub fn perspective(ratio: f32, fov_y: f32) -> Matrix<f32, 4, 4> {
 	let fov = (fov_y / 2.0).tan().recip();
 
 	Matrix::new([
 		[fov / ratio, 0.0, 0.0, 0.0],
 		[0.0, fov, 0.0, 0.0],
-		[0.0, 0.0, 0.0, -1.0],
-		[0.0, 0.0, -near, 0.0],
+		[0.0, 0.0, -1.0, -1.0],
+		[0.0, 0.0, 0.0, 0.0],
 	])
+}
+
+pub fn perspective_near(ratio: f32, fov_y: f32, near: f32) -> Matrix<f32, 4, 4> {
+	let mut m = perspective(ratio, fov_y);
+	m[(3, 2)] = -near;
+	m
 }
 
 pub fn perspective_near_far(ratio: f32, fov_y: f32, near: f32, far: f32) -> Matrix<f32, 4, 4> {

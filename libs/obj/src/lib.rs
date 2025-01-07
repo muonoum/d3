@@ -30,15 +30,12 @@ pub struct Mesh {
 }
 
 impl<'a> Mesh {
-	pub fn triangles(&'a self) -> impl Iterator<Item = ([Vertex; 3], Option<&'a Arc<Material>>)> {
+	pub fn triangles(&'a self) -> impl Iterator<Item = ([Vertex; 3], Option<&'a String>)> {
 		std::iter::from_coroutine(
 			#[coroutine]
 			|| {
 				for group in self.groups.iter() {
-					let material = group
-						.material
-						.as_ref()
-						.and_then(|name| self.materials.get(name));
+					let material = group.material.as_ref();
 
 					for [a, b, c] in group.vertices.array_chunks::<3>() {
 						let vs = [self.vertices[*a], self.vertices[*b], self.vertices[*c]];
@@ -248,10 +245,11 @@ fn read_materials(
 }
 
 fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::DynamicImage> {
-	let file = File::open(read_path(terms, location)?)?;
-	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
-	reader.no_limits();
-	Ok(reader.decode()?)
+	// let file = File::open(read_path(terms, location)?)?;
+	// let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
+	// reader.no_limits();
+	// Ok(reader.decode()?)
+	image::open(read_path(terms, location)?).context("asdf")
 }
 
 fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {

@@ -14,4 +14,7 @@ pub struct Args {
 
 	#[arg(long)]
 	pub scene: String,
+
+	#[arg(long, default_value_t = false)]
+	pub debug: bool,
 }
