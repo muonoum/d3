@@ -1,7 +1,16 @@
-use matrix::{Matrix, Vector};
+use matrix::{Matrix, Vector, vector};
 
 pub fn edge(f: Vector<f32, 3>, v: Vector<f32, 2>) -> f32 {
 	v[0] * f[0] + v[1] * f[1] + f[2]
+}
+
+pub fn screen_space(v: Vector<f32, 4>, width: f32, height: f32) -> Vector<f32, 4> {
+	vector![
+		width * (v[0] + v[3]) / 2.0,
+		height * (v[3] - v[1]) / 2.0,
+		v[2],
+		v[3]
+	]
 }
 
 pub fn clipped(v1: Vector<f32, 4>, v2: Vector<f32, 4>, v3: Vector<f32, 4>) -> bool {

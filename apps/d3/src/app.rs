@@ -289,14 +289,7 @@ impl App {
 
 		let mut depth_buffer = vec![f32::INFINITY; width * height];
 		let projection = self.scene.camera.view * self.projection;
-		let screen_space = |v: Vector<f32, 4>| {
-			vector![
-				width as f32 * (v[0] + v[3]) / 2.0,
-				height as f32 * (v[3] - v[1]) / 2.0,
-				v[2],
-				v[3]
-			]
-		};
+		let screen_space = |v| render2::screen_space(v, width as f32, height as f32);
 
 		let mut triangles_drawn = 0;
 		let mut pixels_drawn = 0;
