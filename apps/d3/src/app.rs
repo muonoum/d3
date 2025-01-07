@@ -367,8 +367,8 @@ impl App {
 									continue;
 								}
 
-								let color = if let Some(material) = material
-									&& let Some(material) = object.mesh.materials.get(material)
+								let color = if let Some(name) = material
+									&& let Some(material) = object.mesh.materials.get(name)
 									&& let Some(normals) = normals
 								{
 									let color = render::blinn_phong(
