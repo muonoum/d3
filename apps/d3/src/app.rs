@@ -353,7 +353,6 @@ impl App {
 					for y in min_y..=max_y {
 						for x in min_x..=max_x {
 							let screen = vector![x as f32 + 0.5, y as f32 + 0.5, 1.0];
-
 							let e1 = e1.dot(screen);
 							let e2 = e2.dot(screen);
 							let e3 = e3.dot(screen);
