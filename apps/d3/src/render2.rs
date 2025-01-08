@@ -1,9 +1,5 @@
 use matrix::{Matrix, Vector, vector};
 
-pub fn interpolate(f: Vector<f32, 3>, v: Vector<f32, 2>) -> f32 {
-	v[0] * f[0] + v[1] * f[1] + f[2]
-}
-
 pub fn screen_space(v: Vector<f32, 4>, width: f32, height: f32) -> Vector<f32, 4> {
 	vector![
 		width * (v[0] + v[3]) / 2.0,

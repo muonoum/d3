@@ -32,7 +32,6 @@ pub struct App {
 	window: Window,
 	projection: Matrix<f32, 4, 4>,
 	debug: bool,
-	// colors: [[f32; 3]; 3],
 }
 
 fn maybe3<A, B, C, D>(
@@ -63,7 +62,6 @@ impl App {
 		};
 
 		window.request_redraw();
-		window.set_cursor_visible(false);
 
 		let mut app = App {
 			frame,
@@ -76,9 +74,9 @@ impl App {
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
 			debug: args.debug,
-			// colors: [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
 		};
 
+		app.ungrab();
 		app.update_projection();
 		app
 	}
@@ -305,6 +303,34 @@ impl App {
 				.map(|v| *v * object.normal_space)
 				.collect();
 
+			let varying = |v1: obj::Vertex, v2: obj::Vertex, v3: obj::Vertex| {
+				let world_positions = Matrix::from_row_vectors([
+					world[v1.position],
+					world[v2.position],
+					world[v3.position],
+				]);
+
+				let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
+					Matrix::from_row_vectors([
+						object.mesh.uvs[uv1],
+						object.mesh.uvs[uv2],
+						object.mesh.uvs[uv3],
+					])
+				});
+
+				let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
+					Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
+				});
+
+				let colors = Matrix::new([
+					[0.0, 0.0, 1.0], //
+					[0.0, 1.0, 0.0],
+					[1.0, 0.0, 0.0],
+				]);
+
+				(world_positions, normals, uvs, colors)
+			};
+
 			for ([v1, v2, v3], material) in object.mesh.triangles() {
 				let clip1 = clip[v1.position];
 				let clip2 = clip[v2.position];
@@ -323,58 +349,44 @@ impl App {
 
 					let (min_x, max_x, min_y, max_y) =
 						render2::bounding_box(p1, p2, p3, width, height);
+
 					let [e1, e2, e3] = mat.row_vectors();
 					let w = e1 + e2 + e3;
 
-					// TODO: Parameter
-					let positions = Matrix::from_row_vectors([
-						world[v1.position],
-						world[v2.position],
-						world[v3.position],
-					]);
-
-					// TODO: Parameter
-					let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
-						Matrix::from_row_vectors([
-							object.mesh.uvs[uv1],
-							object.mesh.uvs[uv2],
-							object.mesh.uvs[uv3],
-						])
-					});
-
-					// TODO: Parameter
-					let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
-						Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
-					});
-
-					// TODO: Parameter
-					// let colors = Matrix::new(self.colors);
+					let params = varying(v1, v2, v3);
 
 					for y in min_y..=max_y {
 						for x in min_x..=max_x {
-							let screen = vector![x as f32 + 0.5, y as f32 + 0.5];
+							let screen = vector![x as f32 + 0.5, y as f32 + 0.5, 1.0];
 
-							let e1 = render2::interpolate(e1, screen);
-							let e2 = render2::interpolate(e2, screen);
-							let e3 = render2::interpolate(e3, screen);
+							let e1 = e1.dot(screen);
+							let e2 = e2.dot(screen);
+							let e3 = e3.dot(screen);
 
 							if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
-								let w = 1.0 / render2::interpolate(w, screen);
+								let w = 1.0 / w.dot(screen);
 								let weights = vector![e1, e2, e3] * w;
+
 								let z = weights.dot(vector![p1[2], p2[2], p3[2]]);
 								let z_index = y * width + x;
 								if z >= depth_buffer[z_index] {
 									continue;
 								}
 
+								let (world_positions, normals, uvs, colors) = params;
+								let world = weights * world_positions;
+								let normal = normals.map(|v| weights * v);
+								let uv = uvs.map(|v| weights * v);
+								let color = weights * colors * 255.0;
+
 								let color = if let Some(name) = material
 									&& let Some(material) = object.mesh.materials.get(name)
-									&& let Some(normals) = normals
+									&& let Some(normal) = normal
 								{
 									let color = render::blinn_phong(
-										weights * positions,
-										(weights * normals).normalize(),
-										uvs.map(|v| weights * v),
+										world,
+										normal.normalize(),
+										uv,
 										self.scene.camera.position,
 										&self.scene.lights,
 										material,
@@ -385,7 +397,6 @@ impl App {
 									[255, 0, 255, 255]
 								};
 
-								// let color = weights * colors * 255.0;
 								// let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
 
 								depth_buffer[z_index] = z;
