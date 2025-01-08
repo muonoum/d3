@@ -34,18 +34,78 @@ pub fn clipped(v1: Vector<f32, 4>, v2: Vector<f32, 4>, v3: Vector<f32, 4>) -> bo
 		return true; // far
 	}
 
-	// TODO
 	let left = v1[0] >= -v1[3] && v2[0] >= -v2[3] && v3[0] >= -v3[3];
 	let right = v1[0] <= v1[3] && v2[0] <= v2[3] && v3[0] <= v3[3];
 	let bottom = v1[1] >= -v1[3] && v2[1] >= -v2[3] && v3[1] >= -v3[3];
 	let top = v1[1] <= v1[3] && v2[1] <= v2[3] && v3[1] <= v3[3];
 	let near = v1[2] >= 0.0 && v2[2] >= 0.0 && v3[2] >= 0.0;
-	let far = v1[2] <= v1[3] && v2[2] <= v1[3] && v3[2] <= v1[3];
+	let far = v1[2] <= v1[3] && v2[2] <= v2[3] && v3[2] <= v3[3];
 	if left || right || bottom || top || near || far {
+		// TODO
 		return false;
 	}
 
 	true
+}
+
+pub fn bounds(
+	v1: Vector<f32, 4>,
+	v2: Vector<f32, 4>,
+	v3: Vector<f32, 4>,
+	width: usize,
+	height: usize,
+) -> Option<(usize, usize, usize, usize)> {
+	if v1[0] < -v1[3] && v2[0] < -v2[3] && v3[0] < -v3[3] {
+		return None; // left
+	}
+
+	if v1[0] > v1[3] && v2[0] > v2[3] && v3[0] > v3[3] {
+		return None; // right
+	}
+
+	if v1[1] < -v1[3] && v2[1] < -v2[3] && v3[1] < -v3[3] {
+		return None; // bottom
+	}
+
+	if v1[1] > v1[3] && v2[1] > v2[3] && v3[1] > v3[3] {
+		return None; // top
+	}
+
+	if v1[2] < 0.0 && v2[2] < 0.0 && v3[2] < 0.0 {
+		return None; // near
+	}
+
+	if v1[2] > v1[3] && v2[2] > v2[3] && v3[2] > v3[3] {
+		return None; // far
+	}
+
+	let left = v1[0] >= -v1[3] && v2[0] >= -v2[3] && v3[0] >= -v3[3];
+	let right = v1[0] <= v1[3] && v2[0] <= v2[3] && v3[0] <= v3[3];
+	let top = v1[1] <= v1[3] && v2[1] <= v2[3] && v3[1] <= v3[3];
+	let bottom = v1[1] >= -v1[3] && v2[1] >= -v2[3] && v3[1] >= -v3[3];
+	let near = v1[2] >= 0.0 && v2[2] >= 0.0 && v3[2] >= 0.0;
+	let far = v1[2] <= v1[3] && v2[2] <= v2[3] && v3[2] <= v3[3];
+
+	if left && right && bottom && top && near && far {
+		let v1 = screen_space(v1, width as f32, height as f32).v3();
+		let v2 = screen_space(v2, width as f32, height as f32).v3();
+		let v3 = screen_space(v3, width as f32, height as f32).v3();
+
+		let min_x = v1[0].min(v2[0]).min(v3[0]).max(0.0) as usize;
+		let min_y = v1[1].min(v2[1]).min(v3[1]).max(0.0) as usize;
+		let max_x = v1[0].max(v2[0]).max(v3[0]).min(width as f32 - 1.0) as usize;
+		let max_y = v1[1].max(v2[1]).max(v3[1]).min(height as f32 - 1.0) as usize;
+
+		return Some((min_x, max_x, min_y, max_y));
+	}
+
+	// TODO
+	let min_x = 0.0 as usize;
+	let min_y = 0.0 as usize;
+	let max_x = (width as f32 - 1.0) as usize;
+	let max_y = (height as f32 - 1.0) as usize;
+
+	Some((min_x, max_x, min_y, max_y))
 }
 
 pub fn adjugate(

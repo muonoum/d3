@@ -172,13 +172,13 @@ impl App {
 		self.last_frame = now;
 
 		self.scene.update(dt, self.movement, self.orientation);
+
 		// TODO
-		// use array::array;
-		// self.scene.lights = vec![crate::light::Light {
-		// 	position: self.scene.camera.position,
-		// 	diffuse_color: array![1.0; 3],
-		// 	specular_color: array![0.5; 3],
-		// }];
+		self.scene.lights = vec![crate::light::Light {
+			position: self.scene.camera.position,
+			diffuse_color: array![1.0; 3],
+			specular_color: array![0.5; 3],
+		}];
 
 		self.orientation = Vector::zero();
 		// self.draw1();
@@ -337,20 +337,15 @@ impl App {
 				let clip2 = clip[v2.position];
 				let clip3 = clip[v3.position];
 
-				if render2::clipped(clip1, clip2, clip3) {
-					continue;
-				}
+				let screen1 = screen_space(clip1);
+				let screen2 = screen_space(clip2);
+				let screen3 = screen_space(clip3);
 
-				let p1 = screen_space(clip1);
-				let p2 = screen_space(clip2);
-				let p3 = screen_space(clip3);
-
-				if let Some(mat) = render2::adjugate(p1, p2, p3) {
+				if let Some(mat) = render2::adjugate(screen1, screen2, screen3)
+					&& let Some((min_x, max_x, min_y, max_y)) =
+						render2::bounds(clip1, clip2, clip3, width, height)
+				{
 					triangles_drawn += 1;
-
-					let (min_x, max_x, min_y, max_y) =
-						render2::bounding_box(p1, p2, p3, width, height);
-
 					let [e1, e2, e3] = mat.row_vectors();
 					let w = e1 + e2 + e3;
 					let params = varying(v1, v2, v3);
@@ -367,7 +362,7 @@ impl App {
 								let w = 1.0 / w.dot(screen);
 								let weights = vector![e1, e2, e3] * w;
 
-								let z = weights.dot(vector![p1[2], p2[2], p3[2]]);
+								let z = weights.dot(vector![screen1[2], screen2[2], screen3[2]]);
 								let z_index = y * width + x;
 								if z >= depth_buffer[z_index] {
 									continue;
@@ -383,6 +378,7 @@ impl App {
 									&& let Some(material) = object.mesh.materials.get(name)
 									&& let Some(normal) = normal
 								{
+									// material.diffuse(uv) * 255.0
 									render::blinn_phong(
 										world,
 										normal.normalize(),
