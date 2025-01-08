@@ -352,7 +352,6 @@ impl App {
 
 					let [e1, e2, e3] = mat.row_vectors();
 					let w = e1 + e2 + e3;
-
 					let params = varying(v1, v2, v3);
 
 					for y in min_y..=max_y {
