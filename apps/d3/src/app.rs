@@ -5,6 +5,7 @@ use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
+use array::array;
 use matrix::{Matrix, Vector, transform, vector};
 
 use crate::args::Args;
@@ -382,24 +383,21 @@ impl App {
 									&& let Some(material) = object.mesh.materials.get(name)
 									&& let Some(normal) = normal
 								{
-									let color = render::blinn_phong(
+									render::blinn_phong(
 										world,
 										normal.normalize(),
 										uv,
 										self.scene.camera.position,
 										&self.scene.lights,
 										material,
-									);
-
-									[color[0] as u8, color[1] as u8, color[2] as u8, 255]
+									)
 								} else {
-									[255, 0, 255, 255]
+									array![255.0, 0.0, 255.0]
 								};
 
-								// let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
-
-								depth_buffer[z_index] = z;
+								let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
 								self.frame.put(x, y, color);
+								depth_buffer[z_index] = z;
 								pixels_drawn += 1;
 							}
 						}
