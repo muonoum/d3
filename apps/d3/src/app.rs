@@ -329,7 +329,14 @@ impl App {
 					[1.0, 0.0, 0.0],
 				]);
 
-				(world_positions, normals, uvs, colors)
+				move |weights: Vector<f32, 3>| {
+					(
+						weights * world_positions,
+						normals.map(|v| weights * v),
+						uvs.map(|v| weights * v),
+						weights * colors * 255.0,
+					)
+				}
 			};
 
 			for ([v1, v2, v3], material) in object.mesh.triangles() {
@@ -367,11 +374,7 @@ impl App {
 									continue;
 								}
 
-								let (world_positions, normals, uvs, colors) = params;
-								let world = weights * world_positions;
-								let normal = normals.map(|v| weights * v);
-								let uv = uvs.map(|v| weights * v);
-								let color = weights * colors * 255.0;
+								let (world_position, normal, uv, color) = params(weights);
 
 								let color = if let Some(name) = material
 									&& let Some(material) = object.mesh.materials.get(name)
@@ -379,7 +382,7 @@ impl App {
 								{
 									// material.diffuse(uv) * 255.0
 									render::blinn_phong(
-										world,
+										world_position,
 										normal.normalize(),
 										uv,
 										self.scene.camera.position,
