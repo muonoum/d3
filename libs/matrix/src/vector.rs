@@ -20,7 +20,11 @@ impl<T: Cell + Float, const D: usize> Vector<T, D> {
 	}
 
 	pub fn normalize(self) -> Self {
-		self / self.magnitude()
+		if self.magnitude() > T::zero() {
+			self / self.magnitude()
+		} else {
+			self
+		}
 	}
 }
 
