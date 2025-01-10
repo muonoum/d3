@@ -113,7 +113,15 @@ fn read_triplet<T>(value: &toml::Value, f: impl Fn(f32, f32, f32) -> T) -> Optio
 
 pub fn read_camera(table: &toml::Value) -> Camera {
 	let position = table.get("position").and_then(read_vector).unwrap();
-	Camera::new(position)
+	let pitch = table
+		.get("pitch")
+		.map(|v| v.as_float().unwrap() as f32)
+		.unwrap_or(0.0);
+	let yaw = table
+		.get("yaw")
+		.map(|v| v.as_float().unwrap() as f32)
+		.unwrap_or(-90.0);
+	Camera::new(position, pitch, yaw)
 }
 
 pub fn read_light(table: &toml::Value) -> Light {

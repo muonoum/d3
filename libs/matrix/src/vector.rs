@@ -64,6 +64,10 @@ impl<T: Cell> Vector<T, 4> {
 	pub fn v3(self) -> Vector<T, 3> {
 		vector![self[0] / self[3], self[1] / self[3], self[2] / self[3],]
 	}
+
+	pub fn xyw(self) -> Vector<T, 3> {
+		vector![self[0], self[1], self[3]]
+	}
 }
 
 impl<T: Cell, const D: usize> std::ops::Index<usize> for Vector<T, D> {

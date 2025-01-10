@@ -1,7 +1,129 @@
 use array::{Array, array};
-use matrix::{Vector, vector};
+use matrix::{Matrix, Vector, vector};
 
 use crate::light::Light;
+
+pub fn screen_space2(v: f32, scale: f32, bias: f32) -> usize {
+	(scale * (v + 1.0) / 2.0 + bias).clamp(0.0, scale) as usize
+}
+
+pub fn bounding_box2(vs: [Vector<f32, 4>; 3]) -> Option<(f32, f32, f32, f32)> {
+	let mut left = 1.0;
+	let mut right = -1.0;
+	let mut bottom = 1.0;
+	let mut top = -1.0;
+
+	let mut any_visible = false;
+	let mut outcodes = [0u32; 3];
+	let mut ocumulate = 0u32;
+	let mut acumulate = !0u32;
+
+	for (i, v) in vs.iter().enumerate() {
+		let mut out = 0u32;
+
+		if v[0] < -v[3] {
+			out |= 0x01;
+		}
+
+		if v[0] > v[3] {
+			out |= 0x02;
+		}
+
+		if v[1] < -v[3] {
+			out |= 0x04;
+		}
+
+		if v[1] > v[3] {
+			out |= 0x08;
+		}
+
+		if v[2] < 0.0 {
+			out |= 0x10;
+		}
+
+		if v[2] > v[3] {
+			out |= 0x20;
+		}
+
+		outcodes[i] = out;
+		ocumulate |= out;
+		acumulate &= out;
+
+		if out & 0x03 == 0 {
+			if v[0] - left * v[3] < 0.0 {
+				left = v[0] / v[3];
+			}
+
+			if v[0] - right * v[3] > 0.0 {
+				right = v[0] / v[3];
+			}
+		}
+
+		if out & 0x0c == 0 {
+			if v[1] - bottom * v[3] < 0.0 {
+				bottom = v[1] / v[3];
+			}
+
+			if v[1] - top * v[3] > 0.0 {
+				top = v[1] / v[3];
+			}
+		}
+
+		if out == 0 {
+			any_visible = true;
+		}
+	}
+
+	if ocumulate == 0 {
+		return Some((left, right, bottom, top));
+	} else if acumulate != 0 {
+		return None;
+	} else if !any_visible {
+		return Some((-1.0, 1.0, -1.0, 1.0));
+	}
+
+	for (i, v) in vs.iter().enumerate() {
+		if (outcodes[i] & 0x01 != 0) && v[0] - left * v[3] < 0.0 {
+			left = -1.0;
+		};
+
+		if (outcodes[i] & 0x02 != 0) && v[0] - right * v[3] > 0.0 {
+			right = 1.0;
+		};
+
+		if (outcodes[i] & 0x04 != 0) && v[1] - bottom * v[3] < 0.0 {
+			bottom = -1.0;
+		};
+
+		if (outcodes[i] & 0x08 != 0) && v[1] - top * v[3] > 0.0 {
+			top = 1.0;
+		};
+	}
+
+	Some((left, right, bottom, top))
+}
+
+pub fn inside(e: Vector<f32, 3>, p: Vector<f32, 3>) -> Option<f32> {
+	let v = e.dot(p);
+
+	if v > 0.0 {
+		return Some(v);
+	} else if v < 0.0 {
+		return None;
+	}
+
+	if e[0] > 0.0 {
+		return Some(v);
+	} else if e[0] < 0.0 {
+		return None;
+	}
+
+	if e[0] == 0.0 && e[1] < 0.0 {
+		return None;
+	}
+
+	Some(v)
+}
 
 pub fn clipped(v: Vector<f32, 4>) -> bool {
 	let x = v[0] + v[3] < 0.0 || -v[0] + v[3] < 0.0;
@@ -152,4 +274,38 @@ pub fn blinn_phong(
 	});
 
 	(color * 255.0).clamp(0.0, 255.0)
+}
+
+pub fn inverse(m: Matrix<f32, 3, 3>) -> Option<Matrix<f32, 3, 3>> {
+	let a = m[(1, 1)] * m[(2, 2)] - m[(1, 2)] * m[(2, 1)];
+	let b = m[(1, 2)] * m[(2, 0)] - m[(1, 0)] * m[(2, 2)];
+	let c = m[(1, 0)] * m[(2, 1)] - m[(1, 1)] * m[(2, 0)];
+
+	let det = m[(0, 0)] * a + m[(0, 1)] * b + m[(0, 2)] * c;
+	if det <= 0.0 {
+		return None;
+	}
+
+	let d = m[(0, 2)] * m[(2, 1)] - m[(0, 1)] * m[(2, 2)];
+	let e = m[(0, 0)] * m[(2, 2)] - m[(0, 2)] * m[(2, 0)];
+	let f = m[(0, 1)] * m[(2, 0)] - m[(0, 0)] * m[(2, 1)];
+	let g = m[(0, 1)] * m[(1, 2)] - m[(0, 2)] * m[(1, 1)];
+	let h = m[(0, 2)] * m[(1, 0)] - m[(0, 0)] * m[(1, 2)];
+	let i = m[(0, 0)] * m[(1, 1)] - m[(0, 1)] * m[(1, 0)];
+
+	let mut m = Matrix::zero();
+
+	let s = 1.0 / det;
+
+	m[(0, 0)] = s * a;
+	m[(0, 1)] = s * d;
+	m[(0, 2)] = s * g;
+	m[(1, 0)] = s * b;
+	m[(1, 1)] = s * e;
+	m[(1, 2)] = s * h;
+	m[(2, 0)] = s * c;
+	m[(2, 1)] = s * f;
+	m[(2, 2)] = s * i;
+
+	Some(m)
 }
