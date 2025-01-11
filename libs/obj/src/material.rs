@@ -1,6 +1,11 @@
 use array::{Array, array};
 use matrix::{Vector, vector};
 
+enum Wrap {
+	Clamp,
+	Repeat,
+}
+
 #[derive(Debug, Clone)]
 pub struct Material {
 	pub name: String,
@@ -85,20 +90,28 @@ impl Material {
 		}
 	}
 
+	fn texture_coordinate(uv: Vector<f32, 2>, width: u32, height: u32, wrap: Wrap) -> (u32, u32) {
+		let (x, y) = match wrap {
+			Wrap::Clamp => (uv[0].clamp(0.0, 1.0), uv[1].clamp(0.0, 1.0)),
+			Wrap::Repeat => (uv[0] - uv[0].floor(), uv[1] - uv[1].floor()),
+		};
+
+		let width = width as f32;
+		let height = height as f32;
+		let x = (x * width - 1.0).round() as u32;
+		let y = ((1.0 - y) * height - 1.0).round() as u32;
+		(x, y)
+	}
+
 	pub fn map_scalar(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
-		let width = map.width() as f32;
-		let height = map.height() as f32;
-		let x = (uv[0] * width).clamp(0.0, width - 1.0);
-		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
-		map.get_pixel(x as u32, y as u32)[0] as f32 / 255.0
+		let (x, y) = Self::texture_coordinate(uv, map.width(), map.height(), Wrap::Repeat);
+		let pixel = map.get_pixel(x, y);
+		pixel[0] as f32 / 255.0
 	}
 
 	pub fn map_color(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
-		let width = map.width() as f32;
-		let height = map.height() as f32;
-		let x = (uv[0] * width).clamp(0.0, width - 1.0);
-		let y = ((1.0 - uv[1]) * height).clamp(0.0, height - 1.0);
-		let rgb = map.get_pixel(x as u32, y as u32);
+		let (x, y) = Self::texture_coordinate(uv, map.width(), map.height(), Wrap::Repeat);
+		let rgb = map.get_pixel(x, y);
 
 		array![
 			rgb[0] as f32 / 255.0,
