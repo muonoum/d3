@@ -16,8 +16,8 @@ pub struct Camera {
 impl Camera {
 	pub fn new(position: Vector<f32, 3>, pitch: f32, yaw: f32) -> Self {
 		let mut camera = Camera {
-			speed: 0.25,
-			sensitivity: 0.5,
+			speed: 3.5,
+			sensitivity: 12.0,
 			position,
 			pitch,
 			yaw,
@@ -40,17 +40,12 @@ impl Camera {
 		let right = self.target.cross(self.up).normalize();
 		let forward = self.up.cross(right).normalize();
 
-		self.position += right * movement[0] * self.speed;
-		self.position += self.up * movement[1] * self.speed;
-		self.position += forward * movement[2] * self.speed;
-		// self.position += right * movement[0] * self.speed * dt;
-		// self.position += self.up * movement[1] * self.speed * dt;
-		// self.position += forward * movement[2] * self.speed * dt;
+		self.position += right * movement[0] * self.speed * dt;
+		self.position += self.up * movement[1] * self.speed * dt;
+		self.position += forward * movement[2] * self.speed * dt;
 
-		// self.yaw += orientation[0] * self.sensitivity * dt;
-		// self.pitch -= orientation[1] * self.sensitivity * dt;
-		self.yaw += orientation[0] * self.sensitivity;
-		self.pitch -= orientation[1] * self.sensitivity;
+		self.yaw += orientation[0] * self.sensitivity * dt;
+		self.pitch -= orientation[1] * self.sensitivity * dt;
 		self.pitch = self.pitch.clamp(-89.0, 89.0);
 
 		self.update_matrix();

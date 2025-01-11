@@ -28,7 +28,7 @@ impl PixelsBuffer {
 	}
 }
 
-impl Buffer<[u8; 4]> for PixelsBuffer {
+impl Buffer<[u8; 4]> for &mut PixelsBuffer {
 	fn clear(&mut self, color: [u8; 4]) {
 		let frame = self.buffer.frame_mut();
 		frame.copy_from_slice(&color.repeat(frame.len() / 4));

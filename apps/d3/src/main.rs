@@ -11,11 +11,12 @@ use winit::window::{Fullscreen, Window, WindowId};
 
 mod app;
 mod args;
+mod bounding_box;
 mod buffer;
 mod camera;
 mod light;
 mod object;
-mod render;
+mod render1;
 mod render2;
 mod scene;
 mod varying;
