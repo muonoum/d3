@@ -38,35 +38,39 @@ pub fn draw(
 		]);
 
 		for ([v1, v2, v3], material) in object.mesh.triangles() {
-			let material = material.and_then(|name| object.mesh.materials.get(name));
-
 			let clip1 = clip[v1.position];
 			let clip2 = clip[v2.position];
 			let clip3 = clip[v3.position];
 
-			let world_positions = Matrix::from_row_vectors([
-				world[v1.position],
-				world[v2.position],
-				world[v3.position],
-			]);
-
-			let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
-				Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
-			});
-
-			let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
-				Matrix::from_row_vectors([
-					object.mesh.uvs[uv1],
-					object.mesh.uvs[uv2],
-					object.mesh.uvs[uv3],
-				])
-			});
+			if clip1[3] <= 0.0 && clip2[3] <= 0.0 && clip3[3] <= 0.0 {
+				continue;
+			}
 
 			let m = Matrix::from_column_vectors([clip1.xyw(), clip2.xyw(), clip3.xyw()]);
 
 			if let Some(m) = adjugate(m)
 				&& let Some(bounding_box) = BoundingBox::new([clip1, clip2, clip3])
 			{
+				let material = material.and_then(|name| object.mesh.materials.get(name));
+
+				let world_positions = Matrix::from_row_vectors([
+					world[v1.position],
+					world[v2.position],
+					world[v3.position],
+				]);
+
+				let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
+					Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
+				});
+
+				let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
+					Matrix::from_row_vectors([
+						object.mesh.uvs[uv1],
+						object.mesh.uvs[uv2],
+						object.mesh.uvs[uv3],
+					])
+				});
+
 				let left = screen_space(bounding_box.left, width as f32, 0.0);
 				let right = screen_space(bounding_box.right, width as f32, 1.0);
 				let bottom = screen_space(bounding_box.bottom, height as f32, 0.0);

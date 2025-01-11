@@ -99,7 +99,7 @@ impl Material {
 		let width = width as f32;
 		let height = height as f32;
 		let x = (x * width - 1.0).round() as u32;
-		let y = ((1.0 - y) * height - 1.0).round() as u32;
+		let y = (y * height - 1.0).round() as u32;
 		(x, y)
 	}
 

@@ -249,7 +249,7 @@ fn read_map(terms: SplitWhitespace, location: &Path) -> anyhow::Result<image::Dy
 	let file = File::open(read_path(terms, location)?)?;
 	let mut reader = image::ImageReader::new(BufReader::new(file)).with_guessed_format()?;
 	reader.no_limits();
-	Ok(reader.decode()?)
+	Ok(reader.decode()?.flipv())
 }
 
 fn read_vector<const D: usize>(mut terms: SplitWhitespace) -> anyhow::Result<Vector<f32, D>> {
