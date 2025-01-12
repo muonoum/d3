@@ -1,6 +1,6 @@
 use std::time;
 
-use matrix::{Matrix, Vector, transform};
+use matrix::{Matrix, Vector};
 
 pub struct Object {
 	pub mesh: obj::Mesh,

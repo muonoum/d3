@@ -11,15 +11,13 @@ use winit::window::{Fullscreen, Window, WindowId};
 
 mod app;
 mod args;
-mod bounding_box;
+mod bounds;
 mod buffer;
 mod camera;
 mod light;
 mod object;
-mod render1;
-mod render2;
+mod render;
 mod scene;
-mod varying;
 
 use app::App;
 use args::Args;

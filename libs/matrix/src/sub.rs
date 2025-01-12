@@ -1,34 +1,6 @@
 use crate::matrix::Cell;
 use crate::matrix::Matrix;
 
-// impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
-// 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, { R - 1 }, { C - 1 }>, ()> {
-// 		let mut m = Matrix::zero();
-// 		let mut next_column = 0;
-// 		let mut next_row = 0;
-
-// 		for r in 0..2 {
-// 			if r == row {
-// 				continue;
-// 			}
-
-// 			for c in 0..2 {
-// 				if c == col {
-// 					continue;
-// 				}
-
-// 				m[[next_row, next_column]] = self[[r, c]];
-// 				next_column += 1;
-// 			}
-
-// 			next_column = 0;
-// 			next_row += 1;
-// 		}
-
-// 		return Ok(m);
-// 	}
-// }
-
 impl<T: Cell> Matrix<T, 2, 2> {
 	#[allow(clippy::result_unit_err)]
 	pub fn sub_matrix(self, row: usize, col: usize) -> Result<Matrix<T, 1, 1>, ()> {

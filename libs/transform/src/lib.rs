@@ -1,4 +1,4 @@
-use crate::{Matrix, Vector};
+use matrix::{Matrix, Vector};
 
 pub fn scale_vector(v: Vector<f32, 3>) -> Matrix<f32, 4, 4> {
 	scale(v[0], v[1], v[2])
@@ -102,29 +102,4 @@ pub fn perspective_near_far(ratio: f32, fov_y: f32, near: f32, far: f32) -> Matr
 	m[(2, 2)] = (far + near) / (near - far);
 	m[(3, 2)] = (2.0 * far * near) / (near - far);
 	m
-}
-
-pub fn viewport(width: f32, height: f32) -> Matrix<f32, 4, 4> {
-	let flip = Matrix::new([
-		[1.0, 0.0, 0.0, 0.0],
-		[0.0, -1.0, 0.0, 0.0],
-		[0.0, 0.0, -1.0, 0.0],
-		[0.0, 0.0, 0.0, 1.0],
-	]);
-
-	let translate = Matrix::new([
-		[1.0, 0.0, 0.0, 0.0],
-		[0.0, 1.0, 0.0, 0.0],
-		[0.0, 0.0, 1.0, 0.0],
-		[1.0, 1.0, 0.0, 1.0],
-	]);
-
-	let scale = Matrix::new([
-		[width / 2.0, 0.0, 0.0, 0.0],
-		[0.0, height / 2.0, 0.0, 0.0],
-		[0.0, 0.0, 1.0, 0.0],
-		[0.0, 0.0, 0.0, 1.0],
-	]);
-
-	flip * translate * scale
 }

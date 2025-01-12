@@ -13,6 +13,12 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 		Self(cells)
 	}
 
+	pub fn from_fn(f: impl Fn(usize, usize) -> T) -> Self {
+		Self(std::array::from_fn(|row| {
+			std::array::from_fn(|column| f(row, column))
+		}))
+	}
+
 	pub fn row_vectors(&self) -> [Vector<T, C>; R] {
 		self.0.map(|row| Vector::new([row]))
 	}
@@ -35,12 +41,6 @@ impl<T: Cell, const R: usize, const C: usize> Matrix<T, R, C> {
 
 	pub fn from_column_vectors(vs: [crate::Vector<T, R>; C]) -> Matrix<T, R, C> {
 		Self::from_fn(|row, column| vs[column][row])
-	}
-
-	pub fn from_fn(f: impl Fn(usize, usize) -> T) -> Self {
-		Self(std::array::from_fn(|row| {
-			std::array::from_fn(|column| f(row, column))
-		}))
 	}
 
 	pub fn zero() -> Self {

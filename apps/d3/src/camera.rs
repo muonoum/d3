@@ -1,6 +1,6 @@
 use std::time;
 
-use matrix::{Matrix, Vector, transform, vector};
+use matrix::{Matrix, Vector, vector};
 
 pub struct Camera {
 	pub speed: f32,

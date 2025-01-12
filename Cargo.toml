@@ -5,4 +5,5 @@ members = [
   "libs/array",
   "libs/matrix",
   "libs/obj",
+  "libs/transform",
 ]

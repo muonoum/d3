@@ -1,7 +1,7 @@
 use array::array;
 use matrix::{Matrix, Vector, vector};
 
-use crate::{bounding_box::BoundingBox, buffer::Buffer, light, scene::Scene};
+use crate::{bounds::Bounds, buffer::Buffer, light, scene::Scene};
 
 pub fn draw(
 	mut frame: impl Buffer<[u8; 4]>,
@@ -10,6 +10,7 @@ pub fn draw(
 	debug: bool,
 ) {
 	frame.clear([0, 0, 0, 255]);
+
 	let width = frame.width();
 	let height = frame.height();
 	let half_width = 1.0 / (width as f32 * 0.5);
@@ -46,10 +47,8 @@ pub fn draw(
 				continue;
 			}
 
-			let m = Matrix::from_column_vectors([clip1.xyw(), clip2.xyw(), clip3.xyw()]);
-
-			if let Some(m) = adjugate(m)
-				&& let Some(bounding_box) = BoundingBox::new([clip1, clip2, clip3])
+			if let Some(m) = adjugate(clip1, clip2, clip3)
+				&& let Some(bounds) = Bounds::new([clip1, clip2, clip3])
 			{
 				let material = material.and_then(|name| object.mesh.materials.get(name));
 
@@ -71,22 +70,16 @@ pub fn draw(
 					])
 				});
 
-				let left = screen_space(bounding_box.left, width as f32, 0.0);
-				let right = screen_space(bounding_box.right, width as f32, 1.0);
-				let bottom = screen_space(bounding_box.bottom, height as f32, 0.0);
-				let top = screen_space(bounding_box.top, height as f32, 1.0);
-
-				// for y in bottom..top {
-				// 	for x in left..right {
-				// 		self.frame
-				// 			.put(x as usize, height - 1 - y as usize, [0, 200, 200, 255]);
-				// 	}
-				// }
+				let left = screen_space(bounds.left, width as f32, 0.0);
+				let right = screen_space(bounds.right, width as f32, 1.0);
+				let bottom = screen_space(bounds.bottom, height as f32, 0.0);
+				let top = screen_space(bounds.top, height as f32, 1.0);
 
 				triangles_drawn += 1;
 				let [e1, e2, e3] = m.row_vectors();
-				let mut clip: Vector<f32, 3> = vector![0.0, 0.0, 1.0];
 				let w = e1 + e2 + e3;
+
+				let mut clip: Vector<f32, 3> = vector![0.0, 0.0, 1.0];
 
 				for y in bottom..top {
 					clip[1] = ((0.5 + y as f32) * half_height) - 1.0;
@@ -152,28 +145,33 @@ fn maybe3<A, B, C, D>(
 	a.and_then(|a| b.and_then(|b| c.map(|c| f(a, b, c))))
 }
 
-pub fn adjugate(m: Matrix<f32, 3, 3>) -> Option<Matrix<f32, 3, 3>> {
-	let a = m[(1, 1)] * m[(2, 2)] - m[(1, 2)] * m[(2, 1)];
-	let b = m[(1, 2)] * m[(2, 0)] - m[(1, 0)] * m[(2, 2)];
-	let c = m[(1, 0)] * m[(2, 1)] - m[(1, 1)] * m[(2, 0)];
+pub fn adjugate(
+	v1: Vector<f32, 4>,
+	v2: Vector<f32, 4>,
+	v3: Vector<f32, 4>,
+) -> Option<Matrix<f32, 3, 3>> {
+	let m11 = v2[1] * v3[3] - v3[1] * v2[3];
+	let m21 = v3[1] * v1[3] - v1[1] * v3[3];
+	let m31 = v1[1] * v2[3] - v2[1] * v1[3];
 
-	let det = m[(0, 0)] * a + m[(0, 1)] * b + m[(0, 2)] * c;
+	let det = v1[0] * m11 + v2[0] * m21 + v3[0] * m31;
 	if det <= 0.0 {
 		return None;
 	}
 
-	let d = m[(0, 2)] * m[(2, 1)] - m[(0, 1)] * m[(2, 2)];
-	let e = m[(0, 0)] * m[(2, 2)] - m[(0, 2)] * m[(2, 0)];
-	let f = m[(0, 1)] * m[(2, 0)] - m[(0, 0)] * m[(2, 1)];
-	let g = m[(0, 1)] * m[(1, 2)] - m[(0, 2)] * m[(1, 1)];
-	let h = m[(0, 2)] * m[(1, 0)] - m[(0, 0)] * m[(1, 2)];
-	let i = m[(0, 0)] * m[(1, 1)] - m[(0, 1)] * m[(1, 0)];
+	let m12 = v3[0] * v2[3] - v2[0] * v3[3];
+	let m22 = v1[0] * v3[3] - v3[0] * v1[3];
+	let m32 = v2[0] * v1[3] - v1[0] * v2[3];
 
-	let r1 = [a, d, g];
-	let r2 = [b, e, h];
-	let r3 = [c, f, i];
+	let m13 = v2[0] * v3[1] - v3[0] * v2[1];
+	let m23 = v3[0] * v1[1] - v1[0] * v3[1];
+	let m33 = v1[0] * v2[1] - v2[0] * v1[1];
 
-	Some(Matrix::new([r1, r2, r3]))
+	Some(Matrix::new([
+		[m11, m12, m13], //
+		[m21, m22, m23],
+		[m31, m32, m33],
+	]))
 }
 
 pub fn screen_space(v: f32, scale: f32, bias: f32) -> usize {

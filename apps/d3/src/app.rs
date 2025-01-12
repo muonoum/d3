@@ -6,12 +6,12 @@ use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
 use array::array;
-use matrix::{Matrix, Vector, transform};
+use matrix::{Matrix, Vector};
 
 use crate::args::Args;
 use crate::buffer::PixelsBuffer;
+use crate::render;
 use crate::scene::Scene;
-use crate::{render1, render2};
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -31,7 +31,6 @@ pub struct App {
 	window: Window,
 	projection: Matrix<f32, 4, 4>,
 	debug: bool,
-	render: u32,
 }
 
 impl App {
@@ -65,7 +64,6 @@ impl App {
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
 			debug: args.debug,
-			render: args.render,
 		};
 
 		app.ungrab();
@@ -171,11 +169,7 @@ impl App {
 			specular_color: array![0.5; 3],
 		}];
 
-		if self.render == 1 {
-			render1::draw(&mut self.frame, &self.scene, self.projection);
-		} else if self.render == 2 {
-			render2::draw(&mut self.frame, &self.scene, self.projection, self.debug);
-		}
+		render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
 
 		self.window.pre_present_notify();
 		self.frame.render();

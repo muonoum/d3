@@ -1,13 +1,13 @@
 use matrix::Vector;
 
-pub struct BoundingBox {
+pub struct Bounds {
 	pub left: f32,
 	pub right: f32,
 	pub bottom: f32,
 	pub top: f32,
 }
 
-impl Default for BoundingBox {
+impl Default for Bounds {
 	fn default() -> Self {
 		Self {
 			left: -1.0,
@@ -18,7 +18,7 @@ impl Default for BoundingBox {
 	}
 }
 
-impl BoundingBox {
+impl Bounds {
 	pub fn new(vs: [Vector<f32, 4>; 3]) -> Option<Self> {
 		let mut bounding_box = Self {
 			left: 1.0,

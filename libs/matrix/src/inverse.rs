@@ -5,6 +5,7 @@ impl<T: Cell> Square<T, 3> {
 	#[allow(clippy::result_unit_err)]
 	pub fn inverse(self) -> Result<Self, ()> {
 		let det = self.determinant()?;
+
 		let det = if det == T::zero() {
 			return Err(());
 		} else {
@@ -19,6 +20,7 @@ impl<T: Cell> Square<T, 4> {
 	#[allow(clippy::result_unit_err)]
 	pub fn inverse(self) -> Result<Self, ()> {
 		let det = self.determinant()?;
+
 		let det = if det == T::zero() {
 			return Err(());
 		} else {
