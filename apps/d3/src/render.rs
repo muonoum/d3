@@ -185,15 +185,9 @@ pub fn inside(e: Vector<f32, 3>, p: Vector<f32, 3>) -> Option<f32> {
 		return Some(v);
 	} else if v < 0.0 {
 		return None;
-	}
-
-	if e[0] > 0.0 {
+	} else if e[0] > 0.0 {
 		return Some(v);
-	} else if e[0] < 0.0 {
-		return None;
-	}
-
-	if e[0] == 0.0 && e[1] < 0.0 {
+	} else if e[0] < 0.0 || e[1] < 0.0 {
 		return None;
 	}
 
