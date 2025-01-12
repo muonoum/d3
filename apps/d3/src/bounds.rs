@@ -20,7 +20,7 @@ impl Default for Bounds {
 
 impl Bounds {
 	pub fn new(vs: [Vector<f32, 4>; 3]) -> Option<Self> {
-		let mut bounding_box = Self {
+		let mut bounds = Self {
 			left: 1.0,
 			right: -1.0,
 			bottom: 1.0,
@@ -64,22 +64,22 @@ impl Bounds {
 			acumulate &= out;
 
 			if out & 0x03 == 0 {
-				if v[0] - bounding_box.left * v[3] < 0.0 {
-					bounding_box.left = v[0] / v[3];
+				if v[0] - bounds.left * v[3] < 0.0 {
+					bounds.left = v[0] / v[3];
 				}
 
-				if v[0] - bounding_box.right * v[3] > 0.0 {
-					bounding_box.right = v[0] / v[3];
+				if v[0] - bounds.right * v[3] > 0.0 {
+					bounds.right = v[0] / v[3];
 				}
 			}
 
 			if out & 0x0c == 0 {
-				if v[1] - bounding_box.bottom * v[3] < 0.0 {
-					bounding_box.bottom = v[1] / v[3];
+				if v[1] - bounds.bottom * v[3] < 0.0 {
+					bounds.bottom = v[1] / v[3];
 				}
 
-				if v[1] - bounding_box.top * v[3] > 0.0 {
-					bounding_box.top = v[1] / v[3];
+				if v[1] - bounds.top * v[3] > 0.0 {
+					bounds.top = v[1] / v[3];
 				}
 			}
 
@@ -89,7 +89,7 @@ impl Bounds {
 		}
 
 		if ocumulate == 0 {
-			return Some(bounding_box);
+			return Some(bounds);
 		} else if acumulate != 0 {
 			return None;
 		} else if !any_visible {
@@ -97,23 +97,23 @@ impl Bounds {
 		}
 
 		for (i, v) in vs.iter().enumerate() {
-			if (outcodes[i] & 0x01 != 0) && v[0] - bounding_box.left * v[3] < 0.0 {
-				bounding_box.left = -1.0;
+			if (outcodes[i] & 0x01 != 0) && v[0] - bounds.left * v[3] < 0.0 {
+				bounds.left = -1.0;
 			};
 
-			if (outcodes[i] & 0x02 != 0) && v[0] - bounding_box.right * v[3] > 0.0 {
-				bounding_box.right = 1.0;
+			if (outcodes[i] & 0x02 != 0) && v[0] - bounds.right * v[3] > 0.0 {
+				bounds.right = 1.0;
 			};
 
-			if (outcodes[i] & 0x04 != 0) && v[1] - bounding_box.bottom * v[3] < 0.0 {
-				bounding_box.bottom = -1.0;
+			if (outcodes[i] & 0x04 != 0) && v[1] - bounds.bottom * v[3] < 0.0 {
+				bounds.bottom = -1.0;
 			};
 
-			if (outcodes[i] & 0x08 != 0) && v[1] - bounding_box.top * v[3] > 0.0 {
-				bounding_box.top = 1.0;
+			if (outcodes[i] & 0x08 != 0) && v[1] - bounds.top * v[3] > 0.0 {
+				bounds.top = 1.0;
 			};
 		}
 
-		Some(bounding_box)
+		Some(bounds)
 	}
 }
