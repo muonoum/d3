@@ -10,6 +10,7 @@ use matrix::{Matrix, Vector};
 
 use crate::args::Args;
 use crate::buffer::PixelsBuffer;
+use crate::light::Light;
 use crate::render;
 use crate::scene::Scene;
 
@@ -166,7 +167,7 @@ impl App {
 
 		// TODO
 		if self.camera_light {
-			self.scene.lights = vec![crate::light::Light {
+			self.scene.lights = vec![Light {
 				diffuse_color: array![1.0; 3],
 				specular_color: array![0.5; 3],
 				position: self.scene.camera.position,

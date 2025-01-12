@@ -1,6 +1,7 @@
 *.blend1
 /objects
 /scenes
+!/objects/sponza
 !/objects/ball
 !/objects/colors
 !/objects/dice
