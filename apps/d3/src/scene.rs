@@ -63,35 +63,42 @@ fn read_objects(table: &toml::Table) -> Vec<Object> {
 		.and_then(|v| v.as_array())
 		.unwrap()
 		.iter()
-		.map(|table| {
-			let path = table.get("mesh").unwrap().as_str().unwrap();
-
-			let scale = if let Some(v) = table.get("scale") {
-				read_vector(v).unwrap()
-			} else {
-				vector![1.0; 3]
-			};
-
-			let orientation = if let Some(v) = table.get("orientation") {
-				read_vector(v).unwrap()
-			} else {
-				vector![0.0; 3]
-			};
-
-			let position = if let Some(v) = table.get("position") {
-				read_vector(v).unwrap()
-			} else {
-				vector![0.0; 3]
-			};
-
-			let update = table.get("update").map(|table| {
-				let orientation = table.get("orientation").and_then(read_vector).unwrap();
-				object::Update { orientation }
-			});
-
-			Object::new(path, scale, orientation, position, update)
-		})
+		.map(read_object)
 		.collect()
+}
+
+fn read_object(table: &toml::Value) -> Object {
+	let path = table.get("mesh").unwrap().as_str().unwrap();
+
+	let scale = if let Some(v) = table.get("scale") {
+		read_vector(v).unwrap()
+	} else {
+		vector![1.0; 3]
+	};
+
+	let orientation = if let Some(v) = table.get("orientation") {
+		read_vector(v).unwrap()
+	} else {
+		vector![0.0; 3]
+	};
+
+	let position = if let Some(v) = table.get("position") {
+		read_vector(v).unwrap()
+	} else {
+		vector![0.0; 3]
+	};
+
+	let update = table.get("update").map(|table| {
+		let orientation = if let Some(v) = table.get("orientation") {
+			read_vector(v).unwrap()
+		} else {
+			vector![0.0; 3]
+		};
+
+		object::Update { orientation }
+	});
+
+	Object::new(path, scale, orientation, position, update)
 }
 
 fn read_vector(value: &toml::Value) -> Option<Vector<f32, 3>> {
@@ -139,9 +146,15 @@ pub fn read_light(table: &toml::Value) -> Light {
 		array![0.0; 3]
 	};
 
+	let object = table
+		.get("mesh")
+		.and_then(|v| v.as_str())
+		.map(|path| Object::new(path, vector![1.0; 3], vector![0.0; 3], position, None));
+
 	Light {
-		position,
 		diffuse_color,
 		specular_color,
+		position,
+		object,
 	}
 }

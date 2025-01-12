@@ -30,25 +30,6 @@ impl Object {
 			* transform::translate_vector(position);
 		let normal_space = world_space.sub_matrix(3, 3).unwrap();
 
-		// let normal_space = world_space
-		// 	.cofactor_matrix()
-		// 	.and_then(|m| m.transpose().sub_matrix(3, 3))
-		// 	.unwrap();
-
-		// let normal_space = world_space
-		// 	.inverse()
-		// 	.and_then(|m| m.transpose().sub_matrix(3, 3))
-		// 	.unwrap();
-
-		log::info!(
-			"Load {}: v={}; p={}; n={}; uv={}",
-			path,
-			mesh.groups.iter().map(|g| g.vertices.len()).sum::<usize>(),
-			mesh.positions.len(),
-			mesh.normals.len(),
-			mesh.uvs.len(),
-		);
-
 		Object {
 			mesh,
 			scale,

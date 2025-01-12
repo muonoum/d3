@@ -28,7 +28,7 @@ enum State {
 }
 
 fn main() -> anyhow::Result<()> {
-	env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("d3"))
+	env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("d3,obj"))
 		.format_timestamp(None)
 		.init();
 	let args = Args::parse();

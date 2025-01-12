@@ -21,7 +21,13 @@ pub fn draw(
 	let mut depth_buffer = vec![f32::INFINITY; width * height];
 	let projection = scene.camera.view * projection;
 
-	for object in scene.objects.iter() {
+	let objects = scene
+		.lights
+		.iter()
+		.filter_map(|light| light.object.as_ref())
+		.chain(scene.objects.iter());
+
+	for object in objects {
 		let clip_space = object.world_space * projection;
 
 		let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())

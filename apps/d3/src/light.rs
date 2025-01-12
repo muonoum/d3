@@ -1,10 +1,13 @@
 use array::Array;
 use matrix::Vector;
 
+use crate::object::Object;
+
 pub struct Light {
-	pub position: Vector<f32, 3>,
 	pub diffuse_color: Array<f32, 3>,
 	pub specular_color: Array<f32, 3>,
+	pub position: Vector<f32, 3>,
+	pub object: Option<Object>,
 }
 
 pub fn blinn_phong(

@@ -30,6 +30,7 @@ pub struct App {
 	scene: Scene,
 	window: Window,
 	projection: Matrix<f32, 4, 4>,
+	camera_light: bool,
 	debug: bool,
 }
 
@@ -63,6 +64,7 @@ impl App {
 			state: State::Initial,
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
+			camera_light: args.camera_light,
 			debug: args.debug,
 		};
 
@@ -163,11 +165,14 @@ impl App {
 		self.orientation = Vector::zero();
 
 		// TODO
-		self.scene.lights = vec![crate::light::Light {
-			position: self.scene.camera.position,
-			diffuse_color: array![1.0; 3],
-			specular_color: array![0.5; 3],
-		}];
+		if self.camera_light {
+			self.scene.lights = vec![crate::light::Light {
+				diffuse_color: array![1.0; 3],
+				specular_color: array![0.5; 3],
+				position: self.scene.camera.position,
+				object: None,
+			}];
+		}
 
 		render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
 

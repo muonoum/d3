@@ -80,8 +80,8 @@ impl Group {
 	}
 }
 
-fn read_obj(path: &str) -> anyhow::Result<Mesh> {
-	let path = Path::new(path);
+fn read_obj(path_str: &str) -> anyhow::Result<Mesh> {
+	let path = Path::new(path_str);
 	let file = File::open(path)?;
 	let reader = BufReader::new(file);
 
@@ -160,6 +160,15 @@ fn read_obj(path: &str) -> anyhow::Result<Mesh> {
 	if !default_group.vertices.is_empty() {
 		mesh.groups.push(default_group);
 	}
+
+	log::info!(
+		"Load {}: v={}; p={}; n={}; uv={}",
+		path_str,
+		mesh.groups.iter().map(|g| g.vertices.len()).sum::<usize>(),
+		mesh.positions.len(),
+		mesh.normals.len(),
+		mesh.uvs.len(),
+	);
 
 	Ok(mesh)
 }

@@ -17,4 +17,7 @@ pub struct Args {
 
 	#[arg(long, default_value_t = false)]
 	pub debug: bool,
+
+	#[arg(long, default_value_t = false)]
+	pub camera_light: bool,
 }
