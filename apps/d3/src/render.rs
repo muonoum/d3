@@ -81,8 +81,9 @@ pub fn draw(
 					for x in left..right {
 						let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
 
-						if let e1 = e1.dot(sample)
-							&& e1 > 0.0 && let e2 = e2.dot(sample)
+						let e1 = e1.dot(sample);
+						if e1 > 0.0
+							&& let e2 = e2.dot(sample)
 							&& e2 > 0.0 && let e3 = e3.dot(sample)
 							&& e3 > 0.0
 						{

@@ -24,15 +24,11 @@ pub fn scale(
 }
 
 pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<(f32, f32, f32, f32)> {
-	let mut left = 1.0;
-	let mut right = -1.0;
-	let mut bottom = 1.0;
-	let mut top = -1.0;
-
-	let mut acumulate = !0u8;
-	let mut ocumulate = 0u8;
+	let (mut left, mut right, mut bottom, mut top) = (1.0, -1.0, 1.0, -1.0);
 	let mut outcodes = vec![0u8; vs.len()];
 	let mut visible = false;
+	let mut ocumulate = 0u8;
+	let mut acumulate = !0u8;
 
 	for (i, v) in vs.iter().enumerate() {
 		let mut out = 0u8;
