@@ -1,7 +1,7 @@
 use array::array;
 use matrix::{Matrix, Vector, vector};
 
-use crate::{bounds::Bounds, buffer::Buffer, light, scene::Scene};
+use crate::{bounds, buffer::Buffer, light, scene::Scene};
 
 pub fn draw(
 	mut frame: impl Buffer<[u8; 4]>,
@@ -9,17 +9,22 @@ pub fn draw(
 	projection: Matrix<f32, 4, 4>,
 	debug: bool,
 ) {
+	let mut triangles_drawn = 0;
+	let mut pixels_drawn = 0;
 	frame.clear([0, 0, 0, 255]);
 
 	let width = frame.width();
 	let height = frame.height();
-	let half_width = 1.0 / (width as f32 * 0.5);
-	let half_height = 1.0 / (height as f32 * 0.5);
-	let mut triangles_drawn = 0;
-	let mut pixels_drawn = 0;
-
 	let mut depth_buffer = vec![f32::INFINITY; width * height];
 	let projection = scene.camera.view * projection;
+	let screen = |v: Vector<f32, 4>| {
+		vector![
+			width as f32 * (v[0] + v[3]) / 2.0,
+			height as f32 * (v[3] - v[1]) / 2.0,
+			v[2],
+			v[3]
+		]
+	};
 
 	let objects = scene
 		.lights
@@ -38,25 +43,18 @@ pub fn draw(
 			.map(|v| *v * object.normal_space)
 			.collect();
 
-		let _colors = Matrix::new([
-			[0.0, 0.0, 1.0], //
-			[0.0, 1.0, 0.0],
-			[1.0, 0.0, 0.0],
-		]);
-
 		for ([v1, v2, v3], material) in object.mesh.triangles() {
 			let clip1 = clip[v1.position];
 			let clip2 = clip[v2.position];
 			let clip3 = clip[v3.position];
 
-			if clip1[3] <= 0.0 && clip2[3] <= 0.0 && clip3[3] <= 0.0 {
-				continue;
-			}
-
-			if let Some(m) = adjugate(clip1, clip2, clip3)
-				&& let Some(bounds) = Bounds::new([clip1, clip2, clip3])
+			if let Some(m) = adjugate(screen(clip1), screen(clip2), screen(clip3))
+				&& let Some((left, right, bottom, top)) =
+					bounds::bounds([clip1, clip2, clip3]).map(bounds::scale(width, height))
 			{
+				triangles_drawn += 1;
 				let material = material.and_then(|name| object.mesh.materials.get(name));
+				let zs = vector![clip1[2], clip2[2], clip3[2]];
 
 				let world_positions = Matrix::from_row_vectors([
 					world[v1.position],
@@ -76,37 +74,28 @@ pub fn draw(
 					])
 				});
 
-				let left = screen_space(bounds.left, width as f32, 0.0);
-				let right = screen_space(bounds.right, width as f32, 1.0);
-				let bottom = screen_space(bounds.bottom, height as f32, 0.0);
-				let top = screen_space(bounds.top, height as f32, 1.0);
-
-				triangles_drawn += 1;
 				let [e1, e2, e3] = m.row_vectors();
 				let w = e1 + e2 + e3;
 
-				let mut clip: Vector<f32, 3> = vector![0.0, 0.0, 1.0];
-
-				for y in bottom..top {
-					clip[1] = ((0.5 + y as f32) * half_height) - 1.0;
-
+				for y in top..bottom {
 					for x in left..right {
-						clip[0] = ((0.5 + x as f32) * half_width) - 1.0;
+						let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
 
-						if let Some(e1) = inside(e1, clip)
-							&& let Some(e2) = inside(e2, clip)
-							&& let Some(e3) = inside(e3, clip)
+						#[allow(irrefutable_let_patterns)]
+						if let e1 = e1.dot(sample)
+							&& e1 > 0.0 && let e2 = e2.dot(sample)
+							&& e2 > 0.0 && let e3 = e3.dot(sample)
+							&& e3 > 0.0
 						{
-							let w = 1.0 / w.dot(clip);
+							let w = 1.0 / w.dot(sample);
 							let weights = vector![e1, e2, e3] * w;
 
-							let z = weights.dot(vector![clip1[2], clip2[2], clip3[2]]);
+							let z = weights.dot(zs);
 							let z_index = y * width + x;
 							if z > depth_buffer[z_index] {
 								continue;
 							}
 
-							// let color = weights * colors * 255.0;
 							let world_position = weights * world_positions;
 							let uv = uvs.map(|v| weights * v);
 							let normal = normals.map(|v| weights * v);
@@ -127,7 +116,7 @@ pub fn draw(
 							};
 
 							let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
-							frame.put(x, height - 1 - y, color);
+							frame.put(x, y, color);
 							depth_buffer[z_index] = z;
 							pixels_drawn += 1;
 						}
@@ -156,46 +145,26 @@ pub fn adjugate(
 	v2: Vector<f32, 4>,
 	v3: Vector<f32, 4>,
 ) -> Option<Matrix<f32, 3, 3>> {
-	let m11 = v2[1] * v3[3] - v3[1] * v2[3];
-	let m21 = v3[1] * v1[3] - v1[1] * v3[3];
-	let m31 = v1[1] * v2[3] - v2[1] * v1[3];
+	let m13 = v3[0] * v2[1] - v2[0] * v3[1];
+	let m23 = v1[0] * v3[1] - v3[0] * v1[1];
+	let m33 = v2[0] * v1[1] - v1[0] * v2[1];
 
-	let det = v1[0] * m11 + v2[0] * m21 + v3[0] * m31;
+	let det = v1[3] * m13 + v2[3] * m23 + v3[3] * m33;
 	if det <= 0.0 {
 		return None;
 	}
 
-	let m12 = v3[0] * v2[3] - v2[0] * v3[3];
-	let m22 = v1[0] * v3[3] - v3[0] * v1[3];
-	let m32 = v2[0] * v1[3] - v1[0] * v2[3];
+	let m11 = v3[1] * v2[3] - v2[1] * v3[3];
+	let m21 = v1[1] * v3[3] - v3[1] * v1[3];
+	let m31 = v2[1] * v1[3] - v1[1] * v2[3];
 
-	let m13 = v2[0] * v3[1] - v3[0] * v2[1];
-	let m23 = v3[0] * v1[1] - v1[0] * v3[1];
-	let m33 = v1[0] * v2[1] - v2[0] * v1[1];
+	let m12 = v2[0] * v3[3] - v3[0] * v2[3];
+	let m22 = v3[0] * v1[3] - v1[0] * v3[3];
+	let m32 = v1[0] * v2[3] - v2[0] * v1[3];
 
 	Some(Matrix::new([
 		[m11, m12, m13], //
 		[m21, m22, m23],
 		[m31, m32, m33],
 	]))
-}
-
-pub fn screen_space(v: f32, scale: f32, bias: f32) -> usize {
-	(scale * (v + 1.0) / 2.0 + bias).clamp(0.0, scale) as usize
-}
-
-pub fn inside(e: Vector<f32, 3>, p: Vector<f32, 3>) -> Option<f32> {
-	let v = e.dot(p);
-
-	if v > 0.0 {
-		return Some(v);
-	} else if v < 0.0 {
-		return None;
-	} else if e[0] > 0.0 {
-		return Some(v);
-	} else if e[0] < 0.0 || e[1] < 0.0 {
-		return None;
-	}
-
-	Some(v)
 }

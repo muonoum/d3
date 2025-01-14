@@ -9,8 +9,8 @@ use std::{
 	fs::File,
 	io::{BufRead, BufReader},
 	path::{Path, PathBuf},
+	rc::Rc,
 	str::SplitWhitespace,
-	sync::Arc,
 };
 
 use array::{Array, array};
@@ -25,7 +25,7 @@ pub struct Mesh {
 	pub normals: Vec<Vector<f32, 3>>,
 	pub uvs: Vec<Vector<f32, 2>>,
 	pub vertices: Vec<Vertex>,
-	pub materials: HashMap<String, Arc<Material>>,
+	pub materials: HashMap<String, Rc<Material>>,
 	pub groups: Vec<Group>,
 }
 
@@ -186,7 +186,7 @@ fn read_path(mut terms: SplitWhitespace, location: &Path) -> anyhow::Result<Path
 fn read_materials(
 	path: PathBuf,
 	location: &Path,
-	lib: &mut HashMap<String, Arc<Material>>,
+	lib: &mut HashMap<String, Rc<Material>>,
 ) -> anyhow::Result<()> {
 	let file = File::open(path)?;
 	let reader = BufReader::new(file);
@@ -199,7 +199,7 @@ fn read_materials(
 
 		if let Some("newmtl") = term {
 			if let Some((ref name, ref mtl)) = material {
-				lib.insert(name.clone(), Arc::new(mtl.clone()));
+				lib.insert(name.clone(), Rc::new(mtl.clone()));
 			}
 
 			let name = terms.next().context("newmtl")?;
@@ -247,7 +247,7 @@ fn read_materials(
 	}
 
 	if let Some((ref name, ref mtl)) = material {
-		lib.insert(name.clone(), Arc::new(mtl.clone()));
+		lib.insert(name.clone(), Rc::new(mtl.clone()));
 	}
 
 	Ok(())
