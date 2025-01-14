@@ -55,6 +55,8 @@ pub fn draw(
 				triangles_drawn += 1;
 				let material = material.and_then(|name| object.mesh.materials.get(name));
 				let zs = vector![clip1[2], clip2[2], clip3[2]];
+				let [e1, e2, e3] = m.row_vectors();
+				let w = e1 + e2 + e3;
 
 				let world_positions = Matrix::from_row_vectors([
 					world[v1.position],
@@ -74,9 +76,6 @@ pub fn draw(
 					])
 				});
 
-				let [e1, e2, e3] = m.row_vectors();
-				let w = e1 + e2 + e3;
-
 				for y in top..bottom {
 					for x in left..right {
 						let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
@@ -87,7 +86,6 @@ pub fn draw(
 						{
 							let w = 1.0 / w.dot(sample);
 							let weights = vector![e1, e2, e3] * w;
-
 							let z = weights.dot(zs);
 							let z_index = y * width + x;
 							if z > depth_buffer[z_index] {
