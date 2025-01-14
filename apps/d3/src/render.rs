@@ -81,11 +81,9 @@ pub fn draw(
 					for x in left..right {
 						let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
 
-						let e1 = e1.dot(sample);
-						if e1 > 0.0
-							&& let e2 = e2.dot(sample)
-							&& e2 > 0.0 && let e3 = e3.dot(sample)
-							&& e3 > 0.0
+						if let Some(e1) = edge(e1, sample)
+							&& let Some(e2) = edge(e2, sample)
+							&& let Some(e3) = edge(e3, sample)
 						{
 							let w = 1.0 / w.dot(sample);
 							let weights = vector![e1, e2, e3] * w;
@@ -129,6 +127,11 @@ pub fn draw(
 	if debug {
 		log::info!("triangles={}; pixels={}", triangles_drawn, pixels_drawn);
 	}
+}
+
+fn edge(e: Vector<f32, 3>, v: Vector<f32, 3>) -> Option<f32> {
+	let e = e.dot(v);
+	if e > 0.0 { Some(e) } else { None }
 }
 
 fn maybe3<A, B, C, D>(
