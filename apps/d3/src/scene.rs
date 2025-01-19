@@ -146,10 +146,10 @@ pub fn read_light(table: &toml::Value) -> Light {
 		array![0.0; 3]
 	};
 
-	let object = table
-		.get("mesh")
-		.and_then(|v| v.as_str())
-		.map(|path| Object::new(path, vector![1.0; 3], vector![0.0; 3], position, None));
+	// let object = table
+	// 	.get("mesh")
+	// 	.and_then(|v| v.as_str())
+	// 	.map(|path| Object::new(path, vector![1.0; 3], vector![0.0; 3], position, None));
 
 	Light {
 		diffuse_color,

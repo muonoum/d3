@@ -2,7 +2,7 @@ use pixels::Pixels;
 
 pub trait Buffer<C> {
 	fn clear(&mut self, color: C);
-	fn resize(&mut self, width: usize, height: usize);
+	// fn resize(&mut self, width: usize, height: usize);
 	fn put(&mut self, x: usize, y: usize, color: C);
 	fn height(&self) -> usize;
 	fn width(&self) -> usize;
@@ -48,9 +48,9 @@ impl Buffer<[u8; 4]> for &mut PixelsBuffer {
 		self.width
 	}
 
-	fn resize(&mut self, width: usize, height: usize) {
-		self.buffer
-			.resize_surface(width as u32, height as u32)
-			.unwrap();
-	}
+	// fn resize(&mut self, width: usize, height: usize) {
+	// 	self.buffer
+	// 		.resize_surface(width as u32, height as u32)
+	// 		.unwrap();
+	// }
 }

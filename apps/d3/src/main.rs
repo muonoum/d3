@@ -11,14 +11,14 @@ use winit::window::{Fullscreen, Window, WindowId};
 
 mod app;
 mod args;
-mod bounds;
 mod buffer;
 mod camera;
 mod light;
 mod object;
 mod render;
 mod scene;
-mod tile;
+mod tiled;
+mod util;
 
 use app::App;
 use args::Args;

@@ -15,7 +15,8 @@ use crate::buffer::PixelsBuffer;
 use crate::light::Light;
 use crate::render;
 use crate::scene::Scene;
-use crate::tile::Tile;
+use crate::tiled;
+use crate::tiled::Tile;
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -37,6 +38,7 @@ pub struct App {
 	camera_light: bool,
 	debug: bool,
 	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
+	tiled: bool,
 	tiles: Vec<Tile>,
 }
 
@@ -86,6 +88,7 @@ impl App {
 			camera_light: args.camera_light,
 			debug: args.debug,
 			receive_buffer,
+			tiled: args.tiled,
 			tiles,
 		};
 
@@ -195,15 +198,17 @@ impl App {
 			}];
 		}
 
-		// render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
-
-		render::draw_tiled(
-			&mut self.frame,
-			&self.receive_buffer,
-			&self.tiles,
-			&self.scene,
-			self.projection,
-		);
+		if self.tiled {
+			tiled::draw(
+				&mut self.frame,
+				&self.receive_buffer,
+				&self.tiles,
+				&self.scene,
+				self.projection,
+			);
+		} else {
+			render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
+		}
 
 		if self.debug {
 			println!("frame: {:?}", now.elapsed());

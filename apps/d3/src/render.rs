@@ -1,126 +1,8 @@
-use std::sync::mpsc;
-
 use array::array;
 use matrix::{Matrix, Vector, vector};
-use render::bounds::Bounds;
+use render::bounds;
 
-use crate::{
-	bounds,
-	buffer::Buffer,
-	light,
-	scene::Scene,
-	tile::{self, Tile},
-};
-
-pub fn draw_tiled(
-	mut frame: impl Buffer<[u8; 4]>,
-	receive_buffer: &mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
-	tiles: &[Tile],
-	scene: &Scene,
-	projection: Matrix<f32, 4, 4>,
-) {
-	let width = frame.width();
-	let height = frame.height();
-	let mut depth_buffer = vec![f32::INFINITY; width * height];
-	let projection = scene.camera.view * projection;
-	let scale = bounds::scale(width, height);
-	let screen = |v: Vector<f32, 4>| {
-		vector![
-			width as f32 * (v[0] + v[3]) / 2.0,
-			height as f32 * (v[3] - v[1]) / 2.0,
-			v[2],
-			v[3]
-		]
-	};
-
-	for object in scene.objects.iter() {
-		let clip_space = object.world_space * projection;
-
-		let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
-			.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
-			.unzip();
-
-		let normals: Vec<_> = (object.mesh.normals.iter())
-			.map(|v| *v * object.normal_space)
-			.collect();
-
-		for ([v1, v2, v3], material) in object.mesh.triangles() {
-			let clip1 = clip[v1.position];
-			let clip2 = clip[v2.position];
-			let clip3 = clip[v3.position];
-
-			if let Some(bounds) = render::bounds::bounds([clip1, clip2, clip3])
-				.map(render::bounds::scale(width, height))
-				&& let Some(m) = adjugate(screen(clip1), screen(clip2), screen(clip3))
-			{
-				let material = material.and_then(|name| object.mesh.materials.get(name));
-				let zs = vector![clip1[2], clip2[2], clip3[2]];
-				let [e1, e2, e3] = m.row_vectors();
-				let ws = e1 + e2 + e3;
-
-				let positions = Matrix::from_row_vectors([
-					world[v1.position],
-					world[v2.position],
-					world[v3.position],
-				]);
-
-				let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
-					Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
-				});
-
-				let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
-					Matrix::from_row_vectors([
-						object.mesh.uvs[uv1],
-						object.mesh.uvs[uv2],
-						object.mesh.uvs[uv3],
-					])
-				});
-
-				for tile in tiles.iter() {
-					if bounds.left <= tile.bounds.right
-						&& bounds.right >= tile.bounds.left
-						&& bounds.top <= tile.bounds.bottom
-						&& bounds.bottom >= tile.bounds.top
-					{
-						let prim = tile::Primitive {
-							bounds,
-							e1,
-							e2,
-							e3,
-							ws,
-							zs,
-							positions,
-							normals,
-							uvs,
-							material: material.cloned(),
-							camera_position: scene.camera.position,
-							lights: scene.lights.clone(),
-						};
-
-						tile.send_message
-							.send(tile::Message::Render(Box::new(prim)))
-							.unwrap();
-					}
-				}
-			}
-		}
-	}
-
-	for tile in tiles.iter() {
-		tile.send_message.send(tile::Message::Done).unwrap();
-	}
-
-	for _ in 0..tiles.len() {
-		let (bounds, buffer) = receive_buffer.recv().unwrap();
-		let width = bounds.right - bounds.left;
-
-		for (i, color) in buffer.iter().enumerate() {
-			let x = bounds.left + i % width + 1;
-			let y = bounds.top + i / width + 1;
-			frame.put(x, y, [color[0], color[1], color[2], 255]);
-		}
-	}
-}
+use crate::{buffer::Buffer, light, scene::Scene, util};
 
 pub fn draw(
 	mut frame: impl Buffer<[u8; 4]>,
@@ -136,7 +18,6 @@ pub fn draw(
 	let height = frame.height();
 	let mut depth_buffer = vec![f32::INFINITY; width * height];
 	let projection = scene.camera.view * projection;
-	let scale = bounds::scale(width, height);
 	let screen = |v: Vector<f32, 4>| {
 		vector![
 			width as f32 * (v[0] + v[3]) / 2.0,
@@ -168,11 +49,11 @@ pub fn draw(
 			let clip2 = clip[v2.position];
 			let clip3 = clip[v3.position];
 
-			if let Some(bounds) = bounds::bounds([clip1, clip2, clip3])
-				&& let Some(m) = adjugate(screen(clip1), screen(clip2), screen(clip3))
+			if let Some(bounds) =
+				bounds::bounds([clip1, clip2, clip3]).map(bounds::scale(width, height))
+				&& let Some(m) = render::adjugate(screen(clip1), screen(clip2), screen(clip3))
 			{
 				triangles_drawn += 1;
-				let (left, right, bottom, top) = scale(bounds);
 				let material = material.and_then(|name| object.mesh.materials.get(name));
 				let zs = vector![clip1[2], clip2[2], clip3[2]];
 				let [e1, e2, e3] = m.row_vectors();
@@ -184,11 +65,11 @@ pub fn draw(
 					world[v3.position],
 				]);
 
-				let normals = maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
+				let normals = util::maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
 					Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
 				});
 
-				let uvs = maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
+				let uvs = util::maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
 					Matrix::from_row_vectors([
 						object.mesh.uvs[uv1],
 						object.mesh.uvs[uv2],
@@ -196,13 +77,13 @@ pub fn draw(
 					])
 				});
 
-				for y in top..bottom {
-					for x in left..right {
+				for y in bounds.top..bounds.bottom {
+					for x in bounds.left..bounds.right {
 						let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
 
-						if let Some(e1) = inside(e1, sample)
-							&& let Some(e2) = inside(e2, sample)
-							&& let Some(e3) = inside(e3, sample)
+						if let Some(e1) = render::inside(e1, sample)
+							&& let Some(e2) = render::inside(e2, sample)
+							&& let Some(e3) = render::inside(e3, sample)
 						{
 							let w = 1.0 / w.dot(sample);
 							let weights = vector![e1, e2, e3] * w;
@@ -244,47 +125,4 @@ pub fn draw(
 	if debug {
 		log::info!("triangles={}; pixels={}", triangles_drawn, pixels_drawn);
 	}
-}
-
-fn inside(e: Vector<f32, 3>, v: Vector<f32, 3>) -> Option<f32> {
-	let e = e.dot(v);
-	if e > 0.0 { Some(e) } else { None }
-}
-
-fn maybe3<A, B, C, D>(
-	a: Option<A>,
-	b: Option<B>,
-	c: Option<C>,
-	f: impl Fn(A, B, C) -> D,
-) -> Option<D> {
-	a.and_then(|a| b.and_then(|b| c.map(|c| f(a, b, c))))
-}
-
-pub fn adjugate(
-	v1: Vector<f32, 4>,
-	v2: Vector<f32, 4>,
-	v3: Vector<f32, 4>,
-) -> Option<Matrix<f32, 3, 3>> {
-	let m13 = v3[0] * v2[1] - v2[0] * v3[1];
-	let m23 = v1[0] * v3[1] - v3[0] * v1[1];
-	let m33 = v2[0] * v1[1] - v1[0] * v2[1];
-
-	let det = v1[3] * m13 + v2[3] * m23 + v3[3] * m33;
-	if det <= 0.0 {
-		return None;
-	}
-
-	let m11 = v3[1] * v2[3] - v2[1] * v3[3];
-	let m21 = v1[1] * v3[3] - v3[1] * v1[3];
-	let m31 = v2[1] * v1[3] - v1[1] * v2[3];
-
-	let m12 = v2[0] * v3[3] - v3[0] * v2[3];
-	let m22 = v3[0] * v1[3] - v1[0] * v3[3];
-	let m32 = v1[0] * v2[3] - v2[0] * v1[3];
-
-	Some(Matrix::new([
-		[m11, m12, m13], //
-		[m21, m22, m23],
-		[m31, m32, m33],
-	]))
 }

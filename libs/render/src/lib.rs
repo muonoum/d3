@@ -7,6 +7,7 @@ pub mod pipeline;
 pub mod texture;
 pub mod varying;
 
+pub use bounds::Bounds;
 pub use pipeline::Pipeline;
 
 use matrix::{Matrix, Vector};

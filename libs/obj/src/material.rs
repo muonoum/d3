@@ -2,7 +2,7 @@ use array::{Array, array};
 use matrix::{Vector, vector};
 
 enum Wrap {
-	Clamp,
+	// Clamp,
 	Repeat,
 }
 
@@ -92,7 +92,7 @@ impl Material {
 
 	fn texture_coordinate(uv: Vector<f32, 2>, width: u32, height: u32, wrap: Wrap) -> (u32, u32) {
 		let (x, y) = match wrap {
-			Wrap::Clamp => (uv[0].clamp(0.0, 1.0), uv[1].clamp(0.0, 1.0)),
+			// Wrap::Clamp => (uv[0].clamp(0.0, 1.0), uv[1].clamp(0.0, 1.0)),
 			Wrap::Repeat => (uv[0] - uv[0].floor(), uv[1] - uv[1].floor()),
 		};
 
