@@ -38,7 +38,7 @@ pub struct App {
 	camera_light: bool,
 	debug: bool,
 	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
-	tiled: bool,
+	untiled: bool,
 	tiles: Vec<Tile>,
 }
 
@@ -88,7 +88,7 @@ impl App {
 			camera_light: args.camera_light,
 			debug: args.debug,
 			receive_buffer,
-			tiled: args.tiled,
+			untiled: args.untiled,
 			tiles,
 		};
 
@@ -198,7 +198,9 @@ impl App {
 			}];
 		}
 
-		if self.tiled {
+		if self.untiled {
+			render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
+		} else {
 			tiled::draw(
 				&mut self.frame,
 				&self.receive_buffer,
@@ -206,12 +208,10 @@ impl App {
 				&self.scene,
 				self.projection,
 			);
-		} else {
-			render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
 		}
 
 		if self.debug {
-			println!("frame: {:?}", now.elapsed());
+			log::info!("frame: {:?}", now.elapsed());
 		}
 
 		self.window.pre_present_notify();
