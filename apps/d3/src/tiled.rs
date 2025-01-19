@@ -185,71 +185,77 @@ impl Tile {
 					match receive_message.recv() {
 						Err(_err) => return,
 						Ok(Message::Done) => break,
-
 						Ok(Message::Render(prim)) => {
-							let left = bounds.left.max(prim.bounds.left);
-							let right = bounds.right.min(prim.bounds.right);
-							let top = bounds.top.max(prim.bounds.top);
-							let bottom = bounds.bottom.min(prim.bounds.bottom);
-
-							for y in top..bottom {
-								for x in left..right {
-									let sample: Vector<f32, 3> =
-										vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
-
-									if let Some(e1) = render::inside(prim.e1, sample)
-										&& let Some(e2) = render::inside(prim.e2, sample)
-										&& let Some(e3) = render::inside(prim.e3, sample)
-									{
-										let w = 1.0 / prim.ws.dot(sample);
-										let weights = vector![e1, e2, e3] * w;
-										let x = x - bounds.left;
-										let y = y - bounds.top;
-										let z = weights.dot(prim.zs);
-										let index = y * width + x;
-										if z > depth_buffer[index] {
-											continue;
-										}
-
-										let position = weights * prim.positions;
-										let uv = prim.uvs.map(|v| weights * v);
-										let normal = prim.normals.map(|v| weights * v);
-
-										let color = if let Some(ref material) = prim.material
-											&& let Some(normal) = normal
-										{
-											let color = light::blinn_phong(
-												position,
-												normal.normalize(),
-												uv,
-												prim.camera_position,
-												&prim.lights,
-												material,
-											);
-
-											[color[0] as u8, color[1] as u8, color[2] as u8]
-										} else {
-											[255, 0, 255]
-										};
-
-										frame_buffer[index] = color;
-										depth_buffer[index] = z;
-									}
-								}
-							}
+							rasterize(prim, bounds, &mut depth_buffer, &mut frame_buffer)
 						}
 					}
 				}
 
-				if send_buffer.send((bounds, frame_buffer)).is_err() {
-					return;
-				}
+				send_buffer.send((bounds, frame_buffer)).unwrap();
 			}
 		});
 
 		Self {
 			bounds,
 			send_message,
+		}
+	}
+}
+
+fn rasterize(
+	prim: Box<Primitive>,
+	bounds: Bounds<usize>,
+	depth_buffer: &mut [f32],
+	frame_buffer: &mut [[u8; 3]],
+) {
+	let width = bounds.right - bounds.left;
+	let left = bounds.left.max(prim.bounds.left);
+	let right = bounds.right.min(prim.bounds.right);
+	let top = bounds.top.max(prim.bounds.top);
+	let bottom = bounds.bottom.min(prim.bounds.bottom);
+
+	for y in top..bottom {
+		for x in left..right {
+			let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
+
+			if let Some(e1) = render::inside(prim.e1, sample)
+				&& let Some(e2) = render::inside(prim.e2, sample)
+				&& let Some(e3) = render::inside(prim.e3, sample)
+			{
+				let w = 1.0 / prim.ws.dot(sample);
+				let weights = vector![e1, e2, e3] * w;
+				let x = x - bounds.left;
+				let y = y - bounds.top;
+				let z = weights.dot(prim.zs);
+				let index = y * width + x;
+				if z > depth_buffer[index] {
+					continue;
+				}
+
+				let position = weights * prim.positions;
+				let uv = prim.uvs.map(|v| weights * v);
+				let normal = prim.normals.map(|v| weights * v);
+
+				let color = if let Some(ref material) = prim.material
+					&& let Some(normal) = normal
+				{
+					let color = light::blinn_phong(
+						position,
+						normal.normalize(),
+						uv,
+						prim.camera_position,
+						&prim.lights,
+						material,
+					);
+
+					[color[0] as u8, color[1] as u8, color[2] as u8]
+				} else {
+					[255, 0, 255]
+				};
+
+				frame_buffer[index] = color;
+				depth_buffer[index] = z;
+			}
 		}
 	}
 }
