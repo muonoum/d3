@@ -18,6 +18,7 @@ mod light;
 mod object;
 mod render;
 mod scene;
+mod tile;
 
 use app::App;
 use args::Args;

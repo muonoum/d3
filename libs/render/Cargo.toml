@@ -1,0 +1,10 @@
+[package]
+name = "render"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+array = { version = "0.1.0", path = "../array" }
+image = { version = "0.25.5", default-features = false, features = ["png"] }
+matrix = { version = "0.1.0", path = "../matrix" }
+obj = { version = "0.1.0", path = "../obj" }

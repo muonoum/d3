@@ -1,10 +1,12 @@
 use pixels::{Pixels, SurfaceTexture};
+use std::sync::mpsc;
 use std::time;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
+use ::render::bounds::Bounds;
 use array::array;
 use matrix::{Matrix, Vector};
 
@@ -13,6 +15,7 @@ use crate::buffer::PixelsBuffer;
 use crate::light::Light;
 use crate::render;
 use crate::scene::Scene;
+use crate::tile::Tile;
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -33,6 +36,8 @@ pub struct App {
 	projection: Matrix<f32, 4, 4>,
 	camera_light: bool,
 	debug: bool,
+	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
+	tiles: Vec<Tile>,
 }
 
 impl App {
@@ -55,6 +60,19 @@ impl App {
 
 		window.request_redraw();
 
+		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<[u8; 3]>)>();
+		let tile_size = buffer_width / args.threads;
+		let tiles = (0..args.threads)
+			.map(|i| {
+				Tile::new(send_buffer.clone(), Bounds {
+					left: (tile_size - 1) * i,
+					right: (tile_size * i + tile_size) - 1,
+					top: 0,
+					bottom: buffer_height - 1,
+				})
+			})
+			.collect();
+
 		let mut app = App {
 			frame,
 			window,
@@ -67,6 +85,8 @@ impl App {
 			projection: Matrix::identity(),
 			camera_light: args.camera_light,
 			debug: args.debug,
+			receive_buffer,
+			tiles,
 		};
 
 		app.ungrab();
@@ -171,11 +191,21 @@ impl App {
 				diffuse_color: array![1.0; 3],
 				specular_color: array![0.5; 3],
 				position: self.scene.camera.position,
-				object: None,
+				// object: None,
 			}];
 		}
 
-		render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
+		// render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
+
+		render::draw_tiled(
+			&mut self.frame,
+			&self.receive_buffer,
+			&self.tiles,
+			&self.scene,
+			self.projection,
+		);
+
+		// println!("frame: {:?}", now.elapsed());
 
 		self.window.pre_present_notify();
 		self.frame.render();

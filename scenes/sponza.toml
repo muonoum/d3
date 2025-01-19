@@ -17,23 +17,23 @@ position = [-0.5, 20.0, -0.5]
 diffuse_color = [0.25, 0.25, 0.25]
 specular_color = [0.1, 0.1, 0.1]
 mesh = "objects/light/light.obj"
-position = [4.88, 1.4, 1.45]
+position = [4.88, 1.3, 1.45]
 
 [[lights]]
 diffuse_color = [0.25, 0.25, 0.25]
 specular_color = [0.1, 0.1, 0.1]
 mesh = "objects/light/light.obj"
-position = [4.88, 1.4, -2.2]
+position = [4.88, 1.3, -2.2]
 
 [[lights]]
 diffuse_color = [0.25, 0.25, 0.25]
 specular_color = [0.1, 0.1, 0.1]
 mesh = "objects/light/light.obj"
-position = [-6.2, 1.4, 1.45]
+position = [-6.2, 1.3, 1.45]
 
 [[lights]]
 diffuse_color = [0.25, 0.25, 0.25]
 specular_color = [0.1, 0.1, 0.1]
 mesh = "objects/light/light.obj"
-position = [-6.2, 1.4, -2.2]
+position = [-6.2, 1.3, -2.2]
 

@@ -1,3 +1,6 @@
+# [profile.release]
+# lto = true
+
 [workspace]
 resolver = "2"
 members = [
@@ -6,4 +9,5 @@ members = [
   "libs/matrix",
   "libs/obj",
   "libs/transform",
+  "libs/render",
 ]

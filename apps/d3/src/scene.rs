@@ -155,6 +155,6 @@ pub fn read_light(table: &toml::Value) -> Light {
 		diffuse_color,
 		specular_color,
 		position,
-		object,
+		// object,
 	}
 }

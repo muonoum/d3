@@ -7,7 +7,15 @@ const OUT_TOP: u8 = 1 << 3;
 const OUT_NEAR: u8 = 1 << 4;
 const OUT_FAR: u8 = 1 << 5;
 
-pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<(f32, f32, f32, f32)> {
+#[derive(Copy, Clone, Debug)]
+pub struct Bounds<T> {
+	pub left: T,
+	pub right: T,
+	pub bottom: T,
+	pub top: T,
+}
+
+pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<Bounds<f32>> {
 	let (mut left, mut right, mut bottom, mut top) = (1.0, -1.0, 1.0, -1.0);
 	let mut outcodes = vec![0u8; vs.len()];
 	let mut visible = false;
@@ -58,11 +66,21 @@ pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<(f32, f32, f32, f32)> {
 	}
 
 	if ocumulate == 0 {
-		return Some((left, right, bottom, top));
+		return Some(Bounds {
+			left,
+			right,
+			bottom,
+			top,
+		});
 	} else if acumulate != 0 {
 		return None;
 	} else if !visible {
-		return Some((-1.0, 1.0, -1.0, 1.0));
+		return Some(Bounds {
+			left: -1.0,
+			right: 1.0,
+			bottom: -1.0,
+			top: 1.0,
+		});
 	}
 
 	for (i, v) in vs.iter().enumerate() {
@@ -83,21 +101,22 @@ pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<(f32, f32, f32, f32)> {
 		}
 	}
 
-	Some((left, right, bottom, top))
+	Some(Bounds {
+		left,
+		right,
+		bottom,
+		top,
+	})
 }
 
-pub fn scale(
-	width: usize,
-	height: usize,
-) -> impl Fn((f32, f32, f32, f32)) -> (usize, usize, usize, usize) {
+pub fn scale(width: usize, height: usize) -> impl Fn(Bounds<f32>) -> Bounds<usize> {
 	let half_width = width as f32 / 2.0;
 	let half_height = height as f32 / 2.0;
 
-	move |(left, right, bottom, top)| {
-		let left = ((half_width * (1.0 + left)) as usize).clamp(0, width);
-		let right = ((half_width * (1.0 + right) + 1.0) as usize).clamp(0, width);
-		let bottom = ((half_height * (1.0 - bottom) + 1.0) as usize).clamp(0, height);
-		let top = ((half_height * (1.0 - top)) as usize).clamp(0, height);
-		(left, right, bottom, top)
+	move |bounds| Bounds {
+		left: ((half_width * (1.0 + bounds.left)) as usize).clamp(0, width),
+		right: ((half_width * (1.0 + bounds.right) + 1.0) as usize).clamp(0, width),
+		bottom: ((half_height * (1.0 - bounds.bottom) + 1.0) as usize).clamp(0, height),
+		top: ((half_height * (1.0 - bounds.top)) as usize).clamp(0, height),
 	}
 }

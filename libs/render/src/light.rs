@@ -1,14 +1,11 @@
 use array::Array;
 use matrix::Vector;
 
-// use crate::object::Object;
-
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Light {
 	pub diffuse_color: Array<f32, 3>,
 	pub specular_color: Array<f32, 3>,
 	pub position: Vector<f32, 3>,
-	// pub object: Option<Object>,
 }
 
 pub fn blinn_phong(
