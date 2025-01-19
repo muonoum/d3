@@ -28,117 +28,143 @@ pub enum Message {
 	Done,
 }
 
-pub struct Tile {
-	pub bounds: Bounds<usize>,
-	pub send_message: mpsc::Sender<Message>,
+pub struct Tiled {
+	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
+	tiles: Vec<Tile>,
 }
 
-pub fn draw(
-	mut frame: impl Buffer<[u8; 4]>,
-	receive_buffer: &mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
-	tiles: &[Tile],
-	scene: &Scene,
-	projection: Matrix<f32, 4, 4>,
-) {
-	let width = frame.width();
-	let height = frame.height();
-	let projection = scene.camera.view * projection;
-	let screen = |v: Vector<f32, 4>| {
-		vector![
-			width as f32 * (v[0] + v[3]) / 2.0,
-			height as f32 * (v[3] - v[1]) / 2.0,
-			v[2],
-			v[3]
-		]
-	};
-
-	for object in scene.objects.iter() {
-		let clip_space = object.world_space * projection;
-
-		let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
-			.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
-			.unzip();
-
-		let normals: Vec<_> = (object.mesh.normals.iter())
-			.map(|v| *v * object.normal_space)
+impl Tiled {
+	pub fn new(count: usize, width: usize, height: usize) -> Self {
+		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<[u8; 3]>)>();
+		let tile_size = width / count;
+		let tiles = (0..count)
+			.map(|i| {
+				Tile::new(send_buffer.clone(), Bounds {
+					left: (tile_size - 1) * i,
+					right: (tile_size * i + tile_size) - 1,
+					top: 0,
+					bottom: height - 1,
+				})
+			})
 			.collect();
 
-		for ([v1, v2, v3], material) in object.mesh.triangles() {
-			let clip1 = clip[v1.position];
-			let clip2 = clip[v2.position];
-			let clip3 = clip[v3.position];
+		Self {
+			receive_buffer,
+			tiles,
+		}
+	}
 
-			if let Some(bounds) =
-				bounds::bounds([clip1, clip2, clip3]).map(bounds::scale(width, height))
-				&& let Some(m) = render::adjugate(screen(clip1), screen(clip2), screen(clip3))
-			{
-				let material = material.and_then(|name| object.mesh.materials.get(name));
-				let zs = vector![clip1[2], clip2[2], clip3[2]];
-				let [e1, e2, e3] = m.row_vectors();
-				let ws = e1 + e2 + e3;
+	pub fn draw(
+		&self,
+		mut frame: impl Buffer<[u8; 4]>,
+		scene: &Scene,
+		projection: Matrix<f32, 4, 4>,
+	) {
+		let width = frame.width();
+		let height = frame.height();
+		let projection = scene.camera.view * projection;
+		let screen = |v: Vector<f32, 4>| {
+			vector![
+				width as f32 * (v[0] + v[3]) / 2.0,
+				height as f32 * (v[3] - v[1]) / 2.0,
+				v[2],
+				v[3]
+			]
+		};
 
-				let positions = Matrix::from_row_vectors([
-					world[v1.position],
-					world[v2.position],
-					world[v3.position],
-				]);
+		for object in scene.objects.iter() {
+			let clip_space = object.world_space * projection;
 
-				let normals = util::maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
-					Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
-				});
+			let (world, clip): (Vec<_>, Vec<_>) = (object.mesh.positions.iter())
+				.map(|v| ((v.v4() * object.world_space).v3(), v.v4() * clip_space))
+				.unzip();
 
-				let uvs = util::maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
-					Matrix::from_row_vectors([
-						object.mesh.uvs[uv1],
-						object.mesh.uvs[uv2],
-						object.mesh.uvs[uv3],
-					])
-				});
+			let normals: Vec<_> = (object.mesh.normals.iter())
+				.map(|v| *v * object.normal_space)
+				.collect();
 
-				for tile in tiles.iter() {
-					if bounds.left <= tile.bounds.right
-						&& bounds.right >= tile.bounds.left
-						&& bounds.top <= tile.bounds.bottom
-						&& bounds.bottom >= tile.bounds.top
-					{
-						let prim = Primitive {
-							bounds,
-							e1,
-							e2,
-							e3,
-							ws,
-							zs,
-							positions,
-							uvs,
-							normals,
-							material: material.cloned(),
-							camera_position: scene.camera.position,
-							lights: scene.lights.clone(),
-						};
+			for ([v1, v2, v3], material) in object.mesh.triangles() {
+				let clip1 = clip[v1.position];
+				let clip2 = clip[v2.position];
+				let clip3 = clip[v3.position];
 
-						tile.send_message
-							.send(Message::Render(Box::new(prim)))
-							.unwrap();
+				if let Some(bounds) =
+					bounds::bounds([clip1, clip2, clip3]).map(bounds::scale(width, height))
+					&& let Some(m) = render::adjugate(screen(clip1), screen(clip2), screen(clip3))
+				{
+					let material = material.and_then(|name| object.mesh.materials.get(name));
+					let zs = vector![clip1[2], clip2[2], clip3[2]];
+					let [e1, e2, e3] = m.row_vectors();
+					let ws = e1 + e2 + e3;
+
+					let positions = Matrix::from_row_vectors([
+						world[v1.position],
+						world[v2.position],
+						world[v3.position],
+					]);
+
+					let normals = util::maybe3(v1.normal, v2.normal, v3.normal, |n1, n2, n3| {
+						Matrix::from_row_vectors([normals[n1], normals[n2], normals[n3]])
+					});
+
+					let uvs = util::maybe3(v1.uv, v2.uv, v3.uv, |uv1, uv2, uv3| {
+						Matrix::from_row_vectors([
+							object.mesh.uvs[uv1],
+							object.mesh.uvs[uv2],
+							object.mesh.uvs[uv3],
+						])
+					});
+
+					for tile in self.tiles.iter() {
+						if bounds.left <= tile.bounds.right
+							&& bounds.right >= tile.bounds.left
+							&& bounds.top <= tile.bounds.bottom
+							&& bounds.bottom >= tile.bounds.top
+						{
+							let prim = Primitive {
+								bounds,
+								e1,
+								e2,
+								e3,
+								ws,
+								zs,
+								positions,
+								uvs,
+								normals,
+								material: material.cloned(),
+								camera_position: scene.camera.position,
+								lights: scene.lights.clone(),
+							};
+
+							tile.send_message
+								.send(Message::Render(Box::new(prim)))
+								.unwrap();
+						}
 					}
 				}
 			}
 		}
-	}
 
-	for tile in tiles.iter() {
-		tile.send_message.send(Message::Done).unwrap();
-	}
+		for tile in self.tiles.iter() {
+			tile.send_message.send(Message::Done).unwrap();
+		}
 
-	for _ in 0..tiles.len() {
-		let (bounds, buffer) = receive_buffer.recv().unwrap();
-		let width = bounds.right - bounds.left;
+		for _ in 0..self.tiles.len() {
+			let (bounds, buffer) = self.receive_buffer.recv().unwrap();
+			let width = bounds.right - bounds.left;
 
-		for (i, color) in buffer.iter().enumerate() {
-			let x = bounds.left + i % width + 1;
-			let y = bounds.top + i / width + 1;
-			frame.put(x, y, [color[0], color[1], color[2], 255]);
+			for (i, color) in buffer.iter().enumerate() {
+				let x = bounds.left + i % width + 1;
+				let y = bounds.top + i / width + 1;
+				frame.put(x, y, [color[0], color[1], color[2], 255]);
+			}
 		}
 	}
+}
+
+pub struct Tile {
+	pub bounds: Bounds<usize>,
+	pub send_message: mpsc::Sender<Message>,
 }
 
 impl Tile {

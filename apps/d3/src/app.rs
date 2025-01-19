@@ -1,12 +1,11 @@
 use pixels::{Pixels, SurfaceTexture};
-use std::sync::{Arc, mpsc};
+use std::sync::Arc;
 use std::time;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
-use ::render::bounds::Bounds;
 use array::array;
 use matrix::{Matrix, Vector};
 
@@ -15,8 +14,7 @@ use crate::buffer::PixelsBuffer;
 use crate::light::Light;
 use crate::render;
 use crate::scene::Scene;
-use crate::tiled;
-use crate::tiled::Tile;
+use crate::tiled::Tiled;
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -36,8 +34,7 @@ pub struct App {
 	scene: Scene,
 	window: Arc<Window>,
 	projection: Matrix<f32, 4, 4>,
-	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
-	tiles: Vec<Tile>,
+	tiled: Tiled,
 }
 
 impl App {
@@ -61,19 +58,6 @@ impl App {
 
 		window.request_redraw();
 
-		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<[u8; 3]>)>();
-		let tile_size = buffer_width / args.threads;
-		let tiles = (0..args.threads)
-			.map(|i| {
-				Tile::new(send_buffer.clone(), Bounds {
-					left: (tile_size - 1) * i,
-					right: (tile_size * i + tile_size) - 1,
-					top: 0,
-					bottom: buffer_height - 1,
-				})
-			})
-			.collect();
-
 		let mut app = App {
 			args: args.clone(),
 			frame,
@@ -85,8 +69,7 @@ impl App {
 			state: State::Initial,
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
-			receive_buffer,
-			tiles,
+			tiled: Tiled::new(args.threads, buffer_width, buffer_height),
 		};
 
 		app.ungrab();
@@ -198,13 +181,8 @@ impl App {
 		if self.args.untiled {
 			render::draw(&mut self.frame, &self.scene, self.projection);
 		} else {
-			tiled::draw(
-				&mut self.frame,
-				&self.receive_buffer,
-				&self.tiles,
-				&self.scene,
-				self.projection,
-			);
+			self.tiled
+				.draw(&mut self.frame, &self.scene, self.projection);
 		}
 
 		if self.args.debug {
