@@ -1,5 +1,5 @@
 use pixels::{Pixels, SurfaceTexture};
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
 use std::time;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
@@ -28,13 +28,13 @@ enum State {
 pub struct App {
 	args: Args,
 	last_frame: time::Instant,
-	frame: PixelsBuffer,
+	frame: PixelsBuffer<'static>,
 	movement: Vector<f32, 3>,
 	orientation: Vector<f32, 2>,
 	state: State,
 	fov: f32,
 	scene: Scene,
-	window: Window,
+	window: Arc<Window>,
 	projection: Matrix<f32, 4, 4>,
 	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
 	tiles: Vec<Tile>,
@@ -42,6 +42,7 @@ pub struct App {
 
 impl App {
 	pub fn new(args: &Args, window: Window) -> App {
+		let window = Arc::new(window);
 		let size = window.inner_size();
 		let buffer_height = (size.height / args.scale) as usize;
 		let buffer_width = (size.width / args.scale) as usize;
@@ -53,7 +54,7 @@ impl App {
 		);
 
 		let frame = {
-			let surface = SurfaceTexture::new(size.width, size.height, &window);
+			let surface = SurfaceTexture::new(size.width, size.height, window.clone());
 			let buffer = Pixels::new(buffer_width as u32, buffer_height as u32, surface).unwrap();
 			PixelsBuffer::new(buffer, buffer_width, buffer_height)
 		};

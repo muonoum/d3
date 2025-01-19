@@ -8,14 +8,14 @@ pub trait Buffer<C> {
 	fn width(&self) -> usize;
 }
 
-pub struct PixelsBuffer {
-	buffer: Pixels,
+pub struct PixelsBuffer<'a> {
+	buffer: Pixels<'a>,
 	width: usize,
 	height: usize,
 }
 
-impl PixelsBuffer {
-	pub fn new(buffer: Pixels, width: usize, height: usize) -> Self {
+impl PixelsBuffer<'_> {
+	pub fn new(buffer: Pixels<'static>, width: usize, height: usize) -> Self {
 		Self {
 			buffer,
 			width,
@@ -28,7 +28,7 @@ impl PixelsBuffer {
 	}
 }
 
-impl Buffer<[u8; 4]> for &mut PixelsBuffer {
+impl Buffer<[u8; 4]> for &mut PixelsBuffer<'_> {
 	fn clear(&mut self, color: [u8; 4]) {
 		let frame = self.buffer.frame_mut();
 		frame.copy_from_slice(&color.repeat(frame.len() / 4));

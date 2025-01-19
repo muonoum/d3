@@ -13,7 +13,7 @@ log = "0.4.22"
 matrix = { version = "0.1.0", path = "../../libs/matrix" }
 num = "0.4.3"
 obj = { version = "0.1.0", path = "../../libs/obj" }
-pixels = "0.14.0"
+pixels = "0.15.0"
 render = { version = "0.1.0", path = "../../libs/render" }
 toml = "0.8.19"
 transform = { version = "0.1.0", path = "../../libs/transform" }
