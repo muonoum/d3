@@ -1,4 +1,4 @@
-#[derive(clap::Parser, Debug)]
+#[derive(clap::Parser, Debug, Clone)]
 pub struct Args {
 	#[arg(long, default_value_t = 500)]
 	pub width: u32,

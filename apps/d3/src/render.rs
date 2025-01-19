@@ -4,14 +4,7 @@ use render::bounds;
 
 use crate::{buffer::Buffer, light, scene::Scene, util};
 
-pub fn draw(
-	mut frame: impl Buffer<[u8; 4]>,
-	scene: &Scene,
-	projection: Matrix<f32, 4, 4>,
-	debug: bool,
-) {
-	let mut triangles_drawn = 0;
-	let mut pixels_drawn = 0;
+pub fn draw(mut frame: impl Buffer<[u8; 4]>, scene: &Scene, projection: Matrix<f32, 4, 4>) {
 	frame.clear([0, 0, 0, 255]);
 
 	let width = frame.width();
@@ -53,7 +46,6 @@ pub fn draw(
 				bounds::bounds([clip1, clip2, clip3]).map(bounds::scale(width, height))
 				&& let Some(m) = render::adjugate(screen(clip1), screen(clip2), screen(clip3))
 			{
-				triangles_drawn += 1;
 				let material = material.and_then(|name| object.mesh.materials.get(name));
 				let zs = vector![clip1[2], clip2[2], clip3[2]];
 				let [e1, e2, e3] = m.row_vectors();
@@ -114,15 +106,10 @@ pub fn draw(
 							let color = [color[0] as u8, color[1] as u8, color[2] as u8, 255];
 							frame.put(x, y, color);
 							depth_buffer[z_index] = z;
-							pixels_drawn += 1;
 						}
 					}
 				}
 			}
 		}
-	}
-
-	if debug {
-		log::info!("triangles={}; pixels={}", triangles_drawn, pixels_drawn);
 	}
 }

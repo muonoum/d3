@@ -26,6 +26,7 @@ enum State {
 }
 
 pub struct App {
+	args: Args,
 	last_frame: time::Instant,
 	frame: PixelsBuffer,
 	movement: Vector<f32, 3>,
@@ -35,10 +36,7 @@ pub struct App {
 	scene: Scene,
 	window: Window,
 	projection: Matrix<f32, 4, 4>,
-	camera_light: bool,
-	debug: bool,
 	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
-	untiled: bool,
 	tiles: Vec<Tile>,
 }
 
@@ -76,6 +74,7 @@ impl App {
 			.collect();
 
 		let mut app = App {
+			args: args.clone(),
 			frame,
 			window,
 			fov: 60.0,
@@ -85,10 +84,7 @@ impl App {
 			state: State::Initial,
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
-			camera_light: args.camera_light,
-			debug: args.debug,
 			receive_buffer,
-			untiled: args.untiled,
 			tiles,
 		};
 
@@ -189,7 +185,7 @@ impl App {
 		self.orientation = Vector::zero();
 
 		// TODO
-		if self.camera_light {
+		if self.args.camera_light {
 			self.scene.lights = vec![Light {
 				diffuse_color: array![1.0; 3],
 				specular_color: array![0.5; 3],
@@ -198,8 +194,8 @@ impl App {
 			}];
 		}
 
-		if self.untiled {
-			render::draw(&mut self.frame, &self.scene, self.projection, self.debug);
+		if self.args.untiled {
+			render::draw(&mut self.frame, &self.scene, self.projection);
 		} else {
 			tiled::draw(
 				&mut self.frame,
@@ -210,7 +206,7 @@ impl App {
 			);
 		}
 
-		if self.debug {
+		if self.args.debug {
 			log::info!("frame: {:?}", now.elapsed());
 		}
 
