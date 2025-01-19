@@ -19,7 +19,7 @@ pub struct Primitive {
 	pub normals: Option<Matrix<f32, 3, 3>>,
 	pub uvs: Option<Matrix<f32, 3, 2>>,
 	pub bounds: Bounds<usize>,
-	pub camera: Vector<f32, 3>,
+	pub camera_position: Vector<f32, 3>,
 	pub material: Option<Arc<obj::Material>>,
 	pub lights: Vec<light::Light>,
 }
@@ -89,7 +89,7 @@ impl Tile {
 												position,
 												normal.normalize(),
 												uv,
-												prim.camera,
+												prim.camera_position,
 												&prim.lights,
 												material,
 											);

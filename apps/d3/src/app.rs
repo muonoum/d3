@@ -205,7 +205,9 @@ impl App {
 			self.projection,
 		);
 
-		// println!("frame: {:?}", now.elapsed());
+		if self.debug {
+			println!("frame: {:?}", now.elapsed());
+		}
 
 		self.window.pre_present_notify();
 		self.frame.render();

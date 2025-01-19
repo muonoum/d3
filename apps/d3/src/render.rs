@@ -93,7 +93,7 @@ pub fn draw_tiled(
 							normals,
 							uvs,
 							material: material.cloned(),
-							camera: scene.camera.position,
+							camera_position: scene.camera.position,
 							lights: scene.lights.clone(),
 						};
 
