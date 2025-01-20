@@ -1,11 +1,12 @@
 use std::time;
 
-use crate::camera::Camera;
-use crate::light::Light;
-use crate::object;
-use crate::object::Object;
 use array::{Array, array};
 use matrix::{Vector, vector};
+use render::light::Light;
+
+use crate::camera::Camera;
+use crate::object;
+use crate::object::Object;
 
 pub struct Scene {
 	pub objects: Vec<Object>,

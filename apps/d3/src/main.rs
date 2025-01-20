@@ -13,7 +13,6 @@ mod app;
 mod args;
 mod buffer;
 mod camera;
-mod light;
 mod object;
 mod render;
 mod scene;

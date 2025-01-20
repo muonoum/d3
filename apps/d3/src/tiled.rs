@@ -4,9 +4,12 @@ use std::{
 };
 
 use matrix::{Matrix, Vector, vector};
-use render::bounds::{self, Bounds};
+use render::{
+	bounds::{self, Bounds},
+	light,
+};
 
-use crate::{buffer::Buffer, light, scene::Scene, util};
+use crate::{buffer::Buffer, scene::Scene, util};
 
 pub struct Primitive {
 	pub e1: Vector<f32, 3>,

@@ -1,8 +1,8 @@
 use array::array;
 use matrix::{Matrix, Vector, vector};
-use render::bounds;
+use render::{bounds, light};
 
-use crate::{buffer::Buffer, light, scene::Scene, util};
+use crate::{buffer::Buffer, scene::Scene, util};
 
 pub fn draw(mut frame: impl Buffer<[u8; 4]>, scene: &Scene, projection: Matrix<f32, 4, 4>) {
 	frame.clear([0, 0, 0, 255]);

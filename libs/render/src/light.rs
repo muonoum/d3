@@ -8,6 +8,7 @@ pub struct Light {
 	pub position: Vector<f32, 3>,
 }
 
+#[inline]
 pub fn blinn_phong(
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
