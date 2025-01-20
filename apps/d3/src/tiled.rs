@@ -28,7 +28,7 @@ pub struct Primitive {
 
 pub enum Message {
 	Render(Box<Primitive>),
-	Done,
+	Reset,
 }
 
 pub struct Tiled {
@@ -149,7 +149,7 @@ impl Tiled {
 		}
 
 		for tile in self.tiles.iter() {
-			tile.send_message.send(Message::Done).unwrap();
+			tile.send_message.send(Message::Reset).unwrap();
 		}
 
 		for _ in 0..self.tiles.len() {
@@ -187,9 +187,9 @@ impl Tile {
 				loop {
 					match receive_message.recv() {
 						Err(_err) => return,
-						Ok(Message::Done) => break,
+						Ok(Message::Reset) => break,
 						Ok(Message::Render(prim)) => {
-							rasterize(prim, bounds, &mut depth_buffer, &mut frame_buffer)
+							rasterize(prim, &bounds, &mut depth_buffer, &mut frame_buffer)
 						}
 					}
 				}
@@ -207,7 +207,7 @@ impl Tile {
 
 fn rasterize(
 	prim: Box<Primitive>,
-	bounds: Bounds<usize>,
+	bounds: &Bounds<usize>,
 	depth_buffer: &mut [f32],
 	frame_buffer: &mut [[u8; 3]],
 ) {
