@@ -256,7 +256,8 @@ fn fragments(
 
 				for x in bounds.left..bounds.right {
 					if e1 >= 0.0 && e2 >= 0.0 && e3 >= 0.0 {
-						let w = 1.0 / ws.dot(vector![0.5 + x as f32, 0.5 + y as f32, 1.0]);
+						let sample = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
+						let w = 1.0 / ws.dot(sample);
 						let weights = vector![e1, e2, e3] * w;
 						yield (x, y, weights);
 						inside = true;
