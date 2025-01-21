@@ -6,9 +6,9 @@ use winit::event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{CursorGrabMode, Window};
 
-use ::render::light::Light;
 use array::array;
 use matrix::{Matrix, Vector};
+use render::light::Light;
 
 use crate::args::Args;
 use crate::buffer::PixelsBuffer;
