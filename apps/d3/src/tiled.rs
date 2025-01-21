@@ -243,9 +243,11 @@ fn fragments(
 	std::iter::from_coroutine(
 		#[coroutine]
 		move || {
-			let mut r1 = f1[0] * bounds.left as f32 + f1[1] * bounds.top as f32 + f1[2];
-			let mut r2 = f2[0] * bounds.left as f32 + f2[1] * bounds.top as f32 + f2[2];
-			let mut r3 = f3[0] * bounds.left as f32 + f3[1] * bounds.top as f32 + f3[2];
+			let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
+
+			let mut r1 = f1.dot(origin);
+			let mut r2 = f2.dot(origin);
+			let mut r3 = f3.dot(origin);
 
 			for y in bounds.top..bounds.bottom {
 				let mut inside = false;
