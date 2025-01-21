@@ -10,7 +10,17 @@ pub mod varying;
 pub use bounds::Bounds;
 pub use pipeline::Pipeline;
 
-use matrix::{Matrix, Vector};
+use matrix::{Matrix, Vector, vector};
+
+#[inline]
+pub fn screen_space(v: Vector<f32, 4>, width: f32, height: f32) -> Vector<f32, 4> {
+	vector![
+		width * (v[0] + v[3]) / 2.0,
+		height * (v[3] - v[1]) / 2.0,
+		v[2],
+		v[3]
+	]
+}
 
 #[inline]
 pub fn inside(e: Vector<f32, 3>, v: Vector<f32, 3>) -> Option<f32> {

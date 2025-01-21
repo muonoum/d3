@@ -11,7 +11,7 @@ use render::{
 
 use crate::{buffer::Buffer, scene::Scene, util};
 
-pub struct Primitive {
+pub struct Rasterize {
 	pub e1: Vector<f32, 3>,
 	pub e2: Vector<f32, 3>,
 	pub e3: Vector<f32, 3>,
@@ -27,7 +27,7 @@ pub struct Primitive {
 }
 
 pub enum Message {
-	Render(Box<Primitive>),
+	Rasterize(Box<Rasterize>),
 	Reset,
 }
 
@@ -39,6 +39,7 @@ pub struct Tiled {
 impl Tiled {
 	pub fn new(count: usize, width: usize, height: usize) -> Self {
 		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<[u8; 3]>)>();
+
 		let tile_size = width / count;
 		let tiles = (0..count)
 			.map(|i| {
@@ -65,15 +66,8 @@ impl Tiled {
 	) {
 		let width = frame.width();
 		let height = frame.height();
+		let screen = |v| render::screen_space(v, width as f32, height as f32);
 		let projection = scene.camera.view * projection;
-		let screen = |v: Vector<f32, 4>| {
-			vector![
-				width as f32 * (v[0] + v[3]) / 2.0,
-				height as f32 * (v[3] - v[1]) / 2.0,
-				v[2],
-				v[3]
-			]
-		};
 
 		for object in scene.objects.iter() {
 			let clip_space = object.world_space * projection;
@@ -124,7 +118,7 @@ impl Tiled {
 							&& bounds.top <= tile.bounds.bottom
 							&& bounds.bottom >= tile.bounds.top
 						{
-							let prim = Primitive {
+							let r = Rasterize {
 								bounds,
 								e1,
 								e2,
@@ -140,7 +134,7 @@ impl Tiled {
 							};
 
 							tile.send_message
-								.send(Message::Render(Box::new(prim)))
+								.send(Message::Rasterize(Box::new(r)))
 								.unwrap();
 						}
 					}
@@ -188,8 +182,8 @@ impl Tile {
 					match receive_message.recv() {
 						Err(_err) => return,
 						Ok(Message::Reset) => break,
-						Ok(Message::Render(prim)) => {
-							rasterize(prim, &bounds, &mut depth_buffer, &mut frame_buffer)
+						Ok(Message::Rasterize(r)) => {
+							rasterize(r, &bounds, &mut depth_buffer, &mut frame_buffer)
 						}
 					}
 				}
@@ -206,59 +200,84 @@ impl Tile {
 }
 
 fn rasterize(
-	prim: Box<Primitive>,
+	r: Box<Rasterize>,
 	bounds: &Bounds<usize>,
 	depth_buffer: &mut [f32],
 	frame_buffer: &mut [[u8; 3]],
 ) {
+	let left = bounds.left.max(r.bounds.left);
+	let right = bounds.right.min(r.bounds.right);
+	let top = bounds.top.max(r.bounds.top);
+	let bottom = bounds.bottom.min(r.bounds.bottom);
 	let width = bounds.right - bounds.left;
-	let left = bounds.left.max(prim.bounds.left);
-	let right = bounds.right.min(prim.bounds.right);
-	let top = bounds.top.max(prim.bounds.top);
-	let bottom = bounds.bottom.min(prim.bounds.bottom);
 
-	for y in top..bottom {
-		for x in left..right {
-			let sample: Vector<f32, 3> = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
+	for (x, y, e1, e2, e3) in fragments(r.e1, r.e2, r.e3, left, right, top, bottom) {
+		let index = (y - bounds.top) * width + (x - bounds.left);
+		let w = 1.0 / r.ws.dot(vector![0.5 + x as f32, 0.5 + y as f32, 1.0]);
+		let weights = vector![e1, e2, e3] * w;
+		let z = weights.dot(r.zs);
 
-			if let Some(e1) = render::inside(prim.e1, sample)
-				&& let Some(e2) = render::inside(prim.e2, sample)
-				&& let Some(e3) = render::inside(prim.e3, sample)
-			{
-				let w = 1.0 / prim.ws.dot(sample);
-				let weights = vector![e1, e2, e3] * w;
-				let x = x - bounds.left;
-				let y = y - bounds.top;
-				let z = weights.dot(prim.zs);
-				let index = y * width + x;
-				if z > depth_buffer[index] {
-					continue;
+		if z > depth_buffer[index] {
+			continue;
+		}
+
+		let color = if let Some(ref material) = r.material
+			&& let Some(normal) = r.normals.map(|v| weights * v)
+		{
+			let color = light::blinn_phong(
+				weights * r.positions,
+				normal.normalize(),
+				r.uvs.map(|v| weights * v),
+				r.camera_position,
+				&r.lights,
+				material,
+			);
+
+			[color[0] as u8, color[1] as u8, color[2] as u8]
+		} else {
+			[255, 0, 255]
+		};
+
+		frame_buffer[index] = color;
+		depth_buffer[index] = z;
+	}
+}
+
+fn fragments(
+	f1: Vector<f32, 3>,
+	f2: Vector<f32, 3>,
+	f3: Vector<f32, 3>,
+	left: usize,
+	right: usize,
+	top: usize,
+	bottom: usize,
+) -> impl Iterator<Item = (usize, usize, f32, f32, f32)> {
+	std::iter::from_coroutine(
+		#[coroutine]
+		move || {
+			let mut r1 = f1[0] * left as f32 + f1[1] * top as f32 + f1[2];
+			let mut r2 = f2[0] * left as f32 + f2[1] * top as f32 + f2[2];
+			let mut r3 = f3[0] * left as f32 + f3[1] * top as f32 + f3[2];
+
+			for y in top..bottom {
+				let mut e1 = r1;
+				let mut e2 = r2;
+				let mut e3 = r3;
+
+				for x in left..right {
+					if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
+						yield (x, y, e1, e2, e3);
+					}
+
+					e1 += f1[0];
+					e2 += f2[0];
+					e3 += f3[0];
 				}
 
-				let position = weights * prim.positions;
-				let uv = prim.uvs.map(|v| weights * v);
-				let normal = prim.normals.map(|v| weights * v);
-
-				let color = if let Some(ref material) = prim.material
-					&& let Some(normal) = normal
-				{
-					let color = light::blinn_phong(
-						position,
-						normal.normalize(),
-						uv,
-						prim.camera_position,
-						&prim.lights,
-						material,
-					);
-
-					[color[0] as u8, color[1] as u8, color[2] as u8]
-				} else {
-					[255, 0, 255]
-				};
-
-				frame_buffer[index] = color;
-				depth_buffer[index] = z;
+				r1 += f1[1];
+				r2 += f2[1];
+				r3 += f3[1];
 			}
-		}
-	}
+		},
+	)
 }

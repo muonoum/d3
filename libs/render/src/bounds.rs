@@ -15,6 +15,7 @@ pub struct Bounds<T> {
 	pub top: T,
 }
 
+#[inline]
 pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<Bounds<f32>> {
 	let (mut left, mut right, mut bottom, mut top) = (1.0, -1.0, 1.0, -1.0);
 	let mut outcodes = vec![0u8; vs.len()];
@@ -109,6 +110,7 @@ pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<Bounds<f32>> {
 	})
 }
 
+#[inline]
 pub fn scale(width: usize, height: usize) -> impl Fn(Bounds<f32>) -> Bounds<usize> {
 	let half_width = width as f32 / 2.0;
 	let half_height = height as f32 / 2.0;
