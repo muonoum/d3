@@ -43,7 +43,7 @@ impl Tiled {
 		let tile_size = width / count;
 		let tiles = (0..count)
 			.map(|i| {
-				Tile::new(send_buffer.clone(), Bounds {
+				Tile::new([0, 0, 0], send_buffer.clone(), Bounds {
 					left: (tile_size - 1) * i,
 					right: (tile_size * i + tile_size) - 1,
 					top: 0,
@@ -162,6 +162,7 @@ pub struct Tile {
 
 impl Tile {
 	pub fn new(
+		clear_color: [u8; 3],
 		send_buffer: mpsc::Sender<(Bounds<usize>, Vec<[u8; 3]>)>,
 		bounds: Bounds<usize>,
 	) -> Self {
@@ -172,7 +173,7 @@ impl Tile {
 		thread::spawn(move || {
 			loop {
 				let mut depth_buffer = vec![f32::INFINITY; width * height];
-				let mut frame_buffer = vec![[0, 0, 0]; width * height];
+				let mut frame_buffer = vec![clear_color; width * height];
 
 				loop {
 					match receive_message.recv() {
@@ -240,15 +241,15 @@ fn fragments(
 	f3: Vector<f32, 3>,
 	ws: Vector<f32, 3>,
 ) -> impl Iterator<Item = (usize, usize, Vector<f32, 3>)> {
+	let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
+
+	let mut r1 = f1.dot(origin);
+	let mut r2 = f2.dot(origin);
+	let mut r3 = f3.dot(origin);
+
 	std::iter::from_coroutine(
 		#[coroutine]
 		move || {
-			let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
-
-			let mut r1 = f1.dot(origin);
-			let mut r2 = f2.dot(origin);
-			let mut r3 = f3.dot(origin);
-
 			for y in bounds.top..bounds.bottom {
 				let mut inside = false;
 
