@@ -205,11 +205,8 @@ fn rasterize(
 	let index = |x, y| (y - bounds.top) * width + (x - bounds.left);
 	let bounds = bounds.clamp(r.bounds);
 
-	for (x, y, e1, e2, e3) in fragments(bounds, r.e1, r.e2, r.e3) {
-		let w = 1.0 / r.ws.dot(vector![0.5 + x as f32, 0.5 + y as f32, 1.0]);
-		let weights = vector![e1, e2, e3] * w;
-		let z = weights.dot(r.zs);
-
+	for (x, y, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws) {
+		let z = weights[0] * r.zs[0] + weights[1] * r.zs[1] + weights[2] * r.zs[2];
 		if z > depth_buffer[index(x, y)] {
 			continue;
 		}
@@ -241,7 +238,8 @@ fn fragments(
 	f1: Vector<f32, 3>,
 	f2: Vector<f32, 3>,
 	f3: Vector<f32, 3>,
-) -> impl Iterator<Item = (usize, usize, f32, f32, f32)> {
+	ws: Vector<f32, 3>,
+) -> impl Iterator<Item = (usize, usize, Vector<f32, 3>)> {
 	std::iter::from_coroutine(
 		#[coroutine]
 		move || {
@@ -258,7 +256,9 @@ fn fragments(
 
 				for x in bounds.left..bounds.right {
 					if e1 >= 0.0 && e2 >= 0.0 && e3 >= 0.0 {
-						yield (x, y, e1, e2, e3);
+						let w = 1.0 / ws.dot(vector![0.5 + x as f32, 0.5 + y as f32, 1.0]);
+						let weights = vector![e1, e2, e3] * w;
+						yield (x, y, weights);
 						inside = true;
 					} else if inside {
 						break;
