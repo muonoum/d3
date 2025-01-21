@@ -17,4 +17,5 @@ pixels = "0.15.0"
 render = { version = "0.1.0", path = "../../libs/render" }
 toml = "0.8.19"
 transform = { version = "0.1.0", path = "../../libs/transform" }
+util = { version = "0.1.0", path = "../../libs/util" }
 winit = { version = "0.30.5", default-features = false, features = ["rwh_05", "rwh_06"] }

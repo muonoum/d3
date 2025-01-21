@@ -16,7 +16,6 @@ mod camera;
 mod object;
 mod scene;
 mod tiled;
-mod util;
 
 use app::App;
 use args::Args;

@@ -1,6 +1,7 @@
 use pixels::Pixels;
 
 pub trait Buffer<C> {
+	#[allow(dead_code)]
 	fn clear(&mut self, color: C);
 	fn put(&mut self, x: usize, y: usize, color: C);
 	fn height(&self) -> usize;

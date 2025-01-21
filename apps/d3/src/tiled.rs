@@ -9,7 +9,7 @@ use render::{
 	light,
 };
 
-use crate::{buffer::Buffer, scene::Scene, util};
+use crate::{buffer::Buffer, scene::Scene};
 
 pub struct Rasterize {
 	pub e1: Vector<f32, 3>,
