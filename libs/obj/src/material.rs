@@ -1,5 +1,5 @@
 use array::{Array, array};
-use matrix::{Vector, vector};
+use matrix::Vector;
 
 enum Wrap {
 	// Clamp,
@@ -40,6 +40,7 @@ impl Material {
 		}
 	}
 
+	#[inline]
 	pub fn ambient(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.ambient_map
@@ -50,6 +51,7 @@ impl Material {
 		}
 	}
 
+	#[inline]
 	pub fn emissive(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.emissive_map
@@ -60,6 +62,7 @@ impl Material {
 		}
 	}
 
+	#[inline]
 	pub fn diffuse(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.diffuse_map
@@ -70,6 +73,7 @@ impl Material {
 		}
 	}
 
+	#[inline]
 	pub fn specular(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.specular_map
@@ -80,6 +84,7 @@ impl Material {
 		}
 	}
 
+	#[inline]
 	pub fn specular_exponent(&self, uv: Option<Vector<f32, 2>>) -> f32 {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.specular_exponent_map
@@ -103,13 +108,13 @@ impl Material {
 		(x, y)
 	}
 
-	pub fn map_scalar(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
+	fn map_scalar(map: &image::GrayImage, uv: Vector<f32, 2>) -> f32 {
 		let (x, y) = Self::texture_coordinate(uv, map.width(), map.height(), Wrap::Repeat);
 		let pixel = map.get_pixel(x, y);
 		pixel[0] as f32 / 255.0
 	}
 
-	pub fn map_color(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
+	fn map_color(map: &image::RgbImage, uv: Vector<f32, 2>) -> Array<f32, 3> {
 		let (x, y) = Self::texture_coordinate(uv, map.width(), map.height(), Wrap::Repeat);
 		let rgb = map.get_pixel(x, y);
 
@@ -118,10 +123,5 @@ impl Material {
 			rgb[1] as f32 / 255.0,
 			rgb[2] as f32 / 255.0
 		]
-	}
-
-	pub fn map_vector(texture: &image::RgbImage, uv: Vector<f32, 2>) -> Vector<f32, 3> {
-		let array = Self::map_color(texture, uv);
-		vector![array[0], array[1], array[2]]
 	}
 }

@@ -113,11 +113,7 @@ impl Tiled {
 					});
 
 					for tile in self.tiles.iter() {
-						if bounds.left <= tile.bounds.right
-							&& bounds.right >= tile.bounds.left
-							&& bounds.top <= tile.bounds.bottom
-							&& bounds.bottom >= tile.bounds.top
-						{
+						if bounds.intersects(tile.bounds) {
 							let r = Rasterize {
 								bounds,
 								e1,
@@ -205,19 +201,16 @@ fn rasterize(
 	depth_buffer: &mut [f32],
 	frame_buffer: &mut [[u8; 3]],
 ) {
-	let left = bounds.left.max(r.bounds.left);
-	let right = bounds.right.min(r.bounds.right);
-	let top = bounds.top.max(r.bounds.top);
-	let bottom = bounds.bottom.min(r.bounds.bottom);
 	let width = bounds.right - bounds.left;
+	let index = |x, y| (y - bounds.top) * width + (x - bounds.left);
+	let bounds = bounds.clamp(r.bounds);
 
-	for (x, y, e1, e2, e3) in fragments(r.e1, r.e2, r.e3, left, right, top, bottom) {
-		let index = (y - bounds.top) * width + (x - bounds.left);
+	for (x, y, e1, e2, e3) in fragments(bounds, r.e1, r.e2, r.e3) {
 		let w = 1.0 / r.ws.dot(vector![0.5 + x as f32, 0.5 + y as f32, 1.0]);
 		let weights = vector![e1, e2, e3] * w;
 		let z = weights.dot(r.zs);
 
-		if z > depth_buffer[index] {
+		if z > depth_buffer[index(x, y)] {
 			continue;
 		}
 
@@ -238,35 +231,37 @@ fn rasterize(
 			[255, 0, 255]
 		};
 
-		frame_buffer[index] = color;
-		depth_buffer[index] = z;
+		frame_buffer[index(x, y)] = color;
+		depth_buffer[index(x, y)] = z;
 	}
 }
 
 fn fragments(
+	bounds: Bounds<usize>,
 	f1: Vector<f32, 3>,
 	f2: Vector<f32, 3>,
 	f3: Vector<f32, 3>,
-	left: usize,
-	right: usize,
-	top: usize,
-	bottom: usize,
 ) -> impl Iterator<Item = (usize, usize, f32, f32, f32)> {
 	std::iter::from_coroutine(
 		#[coroutine]
 		move || {
-			let mut r1 = f1[0] * left as f32 + f1[1] * top as f32 + f1[2];
-			let mut r2 = f2[0] * left as f32 + f2[1] * top as f32 + f2[2];
-			let mut r3 = f3[0] * left as f32 + f3[1] * top as f32 + f3[2];
+			let mut r1 = f1[0] * bounds.left as f32 + f1[1] * bounds.top as f32 + f1[2];
+			let mut r2 = f2[0] * bounds.left as f32 + f2[1] * bounds.top as f32 + f2[2];
+			let mut r3 = f3[0] * bounds.left as f32 + f3[1] * bounds.top as f32 + f3[2];
 
-			for y in top..bottom {
+			for y in bounds.top..bounds.bottom {
+				let mut inside = false;
+
 				let mut e1 = r1;
 				let mut e2 = r2;
 				let mut e3 = r3;
 
-				for x in left..right {
-					if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
+				for x in bounds.left..bounds.right {
+					if e1 >= 0.0 && e2 >= 0.0 && e3 >= 0.0 {
 						yield (x, y, e1, e2, e3);
+						inside = true;
+					} else if inside {
+						break;
 					}
 
 					e1 += f1[0];

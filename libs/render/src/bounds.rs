@@ -15,6 +15,26 @@ pub struct Bounds<T> {
 	pub top: T,
 }
 
+impl Bounds<usize> {
+	#[inline]
+	pub fn clamp(&self, other: Self) -> Self {
+		Self {
+			left: self.left.max(other.left),
+			right: self.right.min(other.right),
+			top: self.top.max(other.top),
+			bottom: self.bottom.min(other.bottom),
+		}
+	}
+
+	#[inline]
+	pub fn intersects(&self, other: Self) -> bool {
+		self.left <= other.right
+			&& self.right >= other.left
+			&& self.top <= other.bottom
+			&& self.bottom >= other.top
+	}
+}
+
 #[inline]
 pub fn bounds(vs: [Vector<f32, 4>; 3]) -> Option<Bounds<f32>> {
 	let (mut left, mut right, mut bottom, mut top) = (1.0, -1.0, 1.0, -1.0);
