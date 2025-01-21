@@ -206,7 +206,7 @@ fn rasterize(
 	let bounds = bounds.clamp(r.bounds);
 
 	for (x, y, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws) {
-		let z = weights[0] * r.zs[0] + weights[1] * r.zs[1] + weights[2] * r.zs[2];
+		let z = weights.dot(r.zs);
 		if z > depth_buffer[index(x, y)] {
 			continue;
 		}
