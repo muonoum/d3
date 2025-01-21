@@ -12,7 +12,6 @@ use matrix::{Matrix, Vector};
 
 use crate::args::Args;
 use crate::buffer::PixelsBuffer;
-use crate::render;
 use crate::scene::Scene;
 use crate::tiled::Tiled;
 
@@ -178,12 +177,8 @@ impl App {
 			}];
 		}
 
-		if self.args.untiled {
-			render::draw(&mut self.frame, &self.scene, self.projection);
-		} else {
-			self.tiled
-				.draw(&mut self.frame, &self.scene, self.projection);
-		}
+		self.tiled
+			.draw(&mut self.frame, &self.scene, self.projection);
 
 		if self.args.debug {
 			log::info!("frame: {:?}", now.elapsed());

@@ -14,7 +14,6 @@ mod args;
 mod buffer;
 mod camera;
 mod object;
-mod render;
 mod scene;
 mod tiled;
 mod util;

@@ -23,7 +23,4 @@ pub struct Args {
 
 	#[arg(long, default_value_t = 8)]
 	pub threads: usize,
-
-	#[arg(long, default_value_t = false)]
-	pub untiled: bool,
 }
