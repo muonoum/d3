@@ -206,13 +206,14 @@ fn rasterize(
 	let index = |x, y| (y - bounds.top) * width + (x - bounds.left);
 	let bounds = bounds.clamp(r.bounds);
 
-	for (x, y, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws) {
-		let z = weights.dot(r.zs);
-		if z > depth_buffer[index(x, y)] {
+	for (x, y, z, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws, r.zs) {
+		if z < depth_buffer[index(x, y)] {
+			depth_buffer[index(x, y)] = z;
+		} else {
 			continue;
 		}
 
-		let color = if let Some(ref material) = r.material
+		frame_buffer[index(x, y)] = if let Some(ref material) = r.material
 			&& let Some(normal) = r.normals.map(|v| weights * v)
 		{
 			let color = light::blinn_phong(
@@ -228,9 +229,6 @@ fn rasterize(
 		} else {
 			[255, 0, 255]
 		};
-
-		frame_buffer[index(x, y)] = color;
-		depth_buffer[index(x, y)] = z;
 	}
 }
 
@@ -240,7 +238,8 @@ fn fragments(
 	f2: Vector<f32, 3>,
 	f3: Vector<f32, 3>,
 	ws: Vector<f32, 3>,
-) -> impl Iterator<Item = (usize, usize, Vector<f32, 3>)> {
+	zs: Vector<f32, 3>,
+) -> impl Iterator<Item = (usize, usize, f32, Vector<f32, 3>)> {
 	let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
 
 	let mut r1 = f1.dot(origin);
@@ -258,12 +257,13 @@ fn fragments(
 				let mut e3 = r3;
 
 				for x in bounds.left..bounds.right {
-					if e1 >= 0.0 && e2 >= 0.0 && e3 >= 0.0 {
+					if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
 						let sample = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
 						let w = 1.0 / ws.dot(sample);
 						let weights = vector![e1, e2, e3] * w;
-						yield (x, y, weights);
+						let z = weights.dot(zs);
 						inside = true;
+						yield (x, y, z, weights);
 					} else if inside {
 						break;
 					}
