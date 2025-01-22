@@ -207,13 +207,11 @@ fn rasterize(
 	let bounds = bounds.clamp(r.bounds);
 
 	for (x, y, z, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws, r.zs) {
-		if z < depth_buffer[index(x, y)] {
-			depth_buffer[index(x, y)] = z;
-		} else {
+		if z >= depth_buffer[index(x, y)] {
 			continue;
 		}
 
-		frame_buffer[index(x, y)] = if let Some(ref material) = r.material
+		let color = if let Some(ref material) = r.material
 			&& let Some(normal) = r.normals.map(|v| weights * v)
 		{
 			let color = light::blinn_phong(
@@ -229,6 +227,9 @@ fn rasterize(
 		} else {
 			[255, 0, 255]
 		};
+
+		depth_buffer[index(x, y)] = z;
+		frame_buffer[index(x, y)] = color;
 	}
 }
 
