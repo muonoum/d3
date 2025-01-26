@@ -180,7 +180,7 @@ impl Tile {
 						Err(_err) => return,
 						Ok(Message::Reset) => break,
 						Ok(Message::Rasterize(r)) => {
-							rasterize(r, &bounds, &mut depth_buffer, &mut frame_buffer)
+							rasterize(&r, &bounds, &mut depth_buffer, &mut frame_buffer)
 						}
 					}
 				}
@@ -197,7 +197,7 @@ impl Tile {
 }
 
 fn rasterize(
-	r: Box<Rasterize>,
+	r: &Rasterize,
 	bounds: &Bounds<usize>,
 	depth_buffer: &mut [f32],
 	frame_buffer: &mut [[u8; 3]],
@@ -206,12 +206,12 @@ fn rasterize(
 	let index = |x, y| (y - bounds.top) * width + (x - bounds.left);
 	let bounds = bounds.clamp(r.bounds);
 
-	for (x, y, z, weights) in fragments(bounds, r.e1, r.e2, r.e3, r.ws, r.zs) {
+	for (x, y, z, weights) in fragments(bounds, r) {
 		if z >= depth_buffer[index(x, y)] {
 			continue;
 		}
 
-		let color = if let Some(ref material) = r.material
+		let color = if let Some(material) = &r.material
 			&& let Some(normal) = r.normals.map(|v| weights * v)
 		{
 			let color = light::blinn_phong(
@@ -228,24 +228,20 @@ fn rasterize(
 			[255, 0, 255]
 		};
 
-		depth_buffer[index(x, y)] = z;
 		frame_buffer[index(x, y)] = color;
+		depth_buffer[index(x, y)] = z;
 	}
 }
 
 fn fragments(
 	bounds: Bounds<usize>,
-	f1: Vector<f32, 3>,
-	f2: Vector<f32, 3>,
-	f3: Vector<f32, 3>,
-	ws: Vector<f32, 3>,
-	zs: Vector<f32, 3>,
+	r: &Rasterize,
 ) -> impl Iterator<Item = (usize, usize, f32, Vector<f32, 3>)> {
 	let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
 
-	let mut r1 = f1.dot(origin);
-	let mut r2 = f2.dot(origin);
-	let mut r3 = f3.dot(origin);
+	let mut r1 = r.e1.dot(origin);
+	let mut r2 = r.e2.dot(origin);
+	let mut r3 = r.e3.dot(origin);
 
 	std::iter::from_coroutine(
 		#[coroutine]
@@ -260,23 +256,23 @@ fn fragments(
 				for x in bounds.left..bounds.right {
 					if e1 > 0.0 && e2 > 0.0 && e3 > 0.0 {
 						let sample = vector![0.5 + x as f32, 0.5 + y as f32, 1.0];
-						let w = 1.0 / ws.dot(sample);
+						let w = 1.0 / r.ws.dot(sample);
 						let weights = vector![e1, e2, e3] * w;
-						let z = weights.dot(zs);
+						let z = weights.dot(r.zs);
 						inside = true;
 						yield (x, y, z, weights);
 					} else if inside {
 						break;
 					}
 
-					e1 += f1[0];
-					e2 += f2[0];
-					e3 += f3[0];
+					e1 += r.e1[0];
+					e2 += r.e2[0];
+					e3 += r.e3[0];
 				}
 
-				r1 += f1[1];
-				r2 += f2[1];
-				r3 += f3[1];
+				r1 += r.e1[1];
+				r2 += r.e2[1];
+				r3 += r.e3[1];
 			}
 		},
 	)

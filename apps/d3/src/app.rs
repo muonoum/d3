@@ -18,8 +18,8 @@ use crate::tiled::Tiled;
 #[derive(Debug, PartialEq)]
 enum State {
 	Initial,
-	Active,
-	Inactive,
+	Grabbed,
+	Ungrabbed,
 }
 
 pub struct App {
@@ -85,13 +85,13 @@ impl App {
 	pub fn grab(&mut self) {
 		self.window.set_cursor_visible(false);
 		self.window.set_cursor_grab(CursorGrabMode::Locked).unwrap();
-		self.state = State::Active;
+		self.state = State::Grabbed;
 	}
 
 	pub fn ungrab(&mut self) {
 		self.window.set_cursor_visible(true);
 		self.window.set_cursor_grab(CursorGrabMode::None).unwrap();
-		self.state = State::Inactive;
+		self.state = State::Ungrabbed;
 	}
 
 	pub fn set_focused(&mut self, focused: bool) {
@@ -108,7 +108,7 @@ impl App {
 	}
 
 	pub fn mouse_wheel(&mut self, delta: MouseScrollDelta) {
-		if self.state != State::Active {
+		if self.state != State::Grabbed {
 			return;
 		}
 
@@ -123,7 +123,7 @@ impl App {
 	}
 
 	pub fn mouse_motion(&mut self, (dx, dy): (f64, f64)) {
-		if self.state != State::Active {
+		if self.state != State::Grabbed {
 			return;
 		}
 
@@ -138,7 +138,7 @@ impl App {
 	}
 
 	pub fn keyboard_input(&mut self, event: KeyEvent) {
-		if self.state != State::Active {
+		if self.state != State::Grabbed {
 			return;
 		}
 
@@ -173,7 +173,6 @@ impl App {
 				diffuse_color: array![1.0; 3],
 				specular_color: array![0.5; 3],
 				position: self.scene.camera.position,
-				// object: None,
 			}];
 		}
 
