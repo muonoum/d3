@@ -241,6 +241,10 @@ fn read_materials(
 					mtl.normal_map = Some(read_map(terms, location).context("map_Bump")?.to_rgb8());
 				}
 
+				Some("map_d") => {
+					mtl.alpha_map = Some(read_map(terms, location).context("map_d")?.to_rgb8());
+				}
+
 				Some(_) | None => {}
 			}
 		}

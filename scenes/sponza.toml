@@ -7,33 +7,33 @@ yaw = 0.0
 mesh = "objects/sponza/sponza.obj"
 scale = [0.01, 0.01, 0.01]
 
-[[lights]]
-diffuse_color = [0.5, 0.5, 0.5]
-specular_color = [0.1, 0.1, 0.1]
+# [[lights]]
+# diffuse_color = [0.5, 0.5, 0.5]
+# specular_color = [0.1, 0.1, 0.1]
+# # mesh = "objects/light/light.obj"
+# position = [-0.5, 20.0, -0.5]
+
+# [[lights]]
+# diffuse_color = [0.25, 0.25, 0.25]
+# specular_color = [0.1, 0.1, 0.1]
 # mesh = "objects/light/light.obj"
-position = [-0.5, 20.0, -0.5]
+# position = [4.88, 1.3, 1.45]
 
-[[lights]]
-diffuse_color = [0.25, 0.25, 0.25]
-specular_color = [0.1, 0.1, 0.1]
-mesh = "objects/light/light.obj"
-position = [4.88, 1.3, 1.45]
+# [[lights]]
+# diffuse_color = [0.25, 0.25, 0.25]
+# specular_color = [0.1, 0.1, 0.1]
+# mesh = "objects/light/light.obj"
+# position = [4.88, 1.3, -2.2]
 
-[[lights]]
-diffuse_color = [0.25, 0.25, 0.25]
-specular_color = [0.1, 0.1, 0.1]
-mesh = "objects/light/light.obj"
-position = [4.88, 1.3, -2.2]
+# [[lights]]
+# diffuse_color = [0.25, 0.25, 0.25]
+# specular_color = [0.1, 0.1, 0.1]
+# mesh = "objects/light/light.obj"
+# position = [-6.2, 1.3, 1.45]
 
-[[lights]]
-diffuse_color = [0.25, 0.25, 0.25]
-specular_color = [0.1, 0.1, 0.1]
-mesh = "objects/light/light.obj"
-position = [-6.2, 1.3, 1.45]
-
-[[lights]]
-diffuse_color = [0.25, 0.25, 0.25]
-specular_color = [0.1, 0.1, 0.1]
-mesh = "objects/light/light.obj"
-position = [-6.2, 1.3, -2.2]
+# [[lights]]
+# diffuse_color = [0.25, 0.25, 0.25]
+# specular_color = [0.1, 0.1, 0.1]
+# mesh = "objects/light/light.obj"
+# position = [-6.2, 1.3, -2.2]
 

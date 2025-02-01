@@ -1,4 +1,4 @@
-use array::Array;
+use array::{Array, array};
 use matrix::Vector;
 
 #[derive(Copy, Clone)]
@@ -23,6 +23,12 @@ pub fn blinn_phong(
 	let specular_exponent = material.specular_exponent(uv);
 
 	let color = (lights.iter()).fold(material.emissive(uv), |sum, light| {
+		// TODO
+		let alpha = material.alpha(uv);
+		if alpha[0] == 0.0 && alpha[1] == 0.0 && alpha[2] == 0.0 {
+			return array![0.0; 3];
+		}
+
 		let light_dir = (light.position - position).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 		let halfway_vector = (light_dir + camera_dir).normalize();
