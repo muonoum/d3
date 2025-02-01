@@ -16,11 +16,11 @@ pub fn blinn_phong(
 	camera: Vector<f32, 3>,
 	lights: &[Light],
 	material: &obj::Material,
-) -> Array<f32, 3> {
+) -> Option<Array<f32, 3>> {
 	// TODO
 	let alpha = material.alpha(uv);
 	if alpha[0] == 0.0 && alpha[1] == 0.0 && alpha[2] == 0.0 {
-		return array![0.0; 3];
+		return None;
 	}
 
 	let camera_dir = (camera - position).normalize();
@@ -38,5 +38,5 @@ pub fn blinn_phong(
 			+ specular_reflection * specular * light.specular_color
 	});
 
-	(color * 255.0).clamp(0.0, 255.0)
+	Some((color * 255.0).clamp(0.0, 255.0))
 }

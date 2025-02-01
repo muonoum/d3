@@ -211,25 +211,24 @@ fn rasterize(
 			continue;
 		}
 
-		let color = if let Some(material) = &r.material
+		if let Some(material) = &r.material
 			&& let Some(normal) = r.normals.map(|v| weights * v)
 		{
-			let color = light::blinn_phong(
+			if let Some(color) = light::blinn_phong(
 				weights * r.positions,
 				normal.normalize(),
 				r.uvs.map(|v| weights * v),
 				r.camera_position,
 				&r.lights,
 				material,
-			);
-
-			[color[0] as u8, color[1] as u8, color[2] as u8]
+			) {
+				frame_buffer[index(x, y)] = [color[0] as u8, color[1] as u8, color[2] as u8];
+				depth_buffer[index(x, y)] = z;
+			}
 		} else {
-			[255, 0, 255]
+			frame_buffer[index(x, y)] = [255, 0, 255];
+			depth_buffer[index(x, y)] = z;
 		};
-
-		frame_buffer[index(x, y)] = color;
-		depth_buffer[index(x, y)] = z;
 	}
 }
 
