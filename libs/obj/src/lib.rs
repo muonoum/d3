@@ -211,6 +211,15 @@ fn read_materials(
 						terms.next().context("Ns")?.parse::<f32>().context("Ns")?
 				}
 
+				Some("d") => {
+					mtl.alpha = terms
+						.next()
+						.context("d")?
+						.parse::<f32>()
+						.context("d")
+						.map(|alpha| array![alpha; 3])?
+				}
+
 				Some("Ka") => mtl.ambient = read_color(terms).context("Ka")?,
 				Some("Kd") => mtl.diffuse = read_color(terms).context("Kd")?,
 				Some("Ke") => mtl.emissive = read_color(terms).context("Ke")?,

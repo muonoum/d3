@@ -3,6 +3,7 @@ use std::{
 	thread,
 };
 
+use array::{Array, array};
 use matrix::{Matrix, Vector, vector};
 use render::{
 	bounds::{self, Bounds},
@@ -32,18 +33,18 @@ pub enum Message {
 }
 
 pub struct Tiled {
-	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<[u8; 3]>)>,
+	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<Array<f32, 3>>)>,
 	tiles: Vec<Tile>,
 }
 
 impl Tiled {
 	pub fn new(count: usize, width: usize, height: usize) -> Self {
-		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<[u8; 3]>)>();
+		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<Array<f32, 3>>)>();
 
 		let tile_size = width / count;
 		let tiles = (0..count)
 			.map(|i| {
-				Tile::new([0, 0, 0], send_buffer.clone(), Bounds {
+				Tile::new(array![0.0, 0.0, 0.0], send_buffer.clone(), Bounds {
 					left: (tile_size - 1) * i,
 					right: (tile_size * i + tile_size) - 1,
 					top: 0,
@@ -149,7 +150,13 @@ impl Tiled {
 			for (i, color) in buffer.iter().enumerate() {
 				let x = bounds.left + i % width + 1;
 				let y = bounds.top + i / width + 1;
-				frame.put(x, y, [color[0], color[1], color[2], 255]);
+
+				frame.put(x, y, [
+					(color[0] * 255.0) as u8,
+					(color[1] * 255.0) as u8,
+					(color[2] * 255.0) as u8,
+					255,
+				]);
 			}
 		}
 	}
@@ -162,8 +169,8 @@ pub struct Tile {
 
 impl Tile {
 	pub fn new(
-		clear_color: [u8; 3],
-		send_buffer: mpsc::Sender<(Bounds<usize>, Vec<[u8; 3]>)>,
+		clear_color: Array<f32, 3>,
+		send_buffer: mpsc::Sender<(Bounds<usize>, Vec<Array<f32, 3>>)>,
 		bounds: Bounds<usize>,
 	) -> Self {
 		let (send_message, receive_message) = mpsc::channel::<Message>();
@@ -200,7 +207,7 @@ fn rasterize(
 	r: &Rasterize,
 	bounds: &Bounds<usize>,
 	depth_buffer: &mut [f32],
-	frame_buffer: &mut [[u8; 3]],
+	frame_buffer: &mut [Array<f32, 3>],
 ) {
 	let width = bounds.right - bounds.left;
 	let index = |x, y| (y - bounds.top) * width + (x - bounds.left);
@@ -215,6 +222,7 @@ fn rasterize(
 			&& let Some(normal) = r.normals.map(|v| weights * v)
 		{
 			if let Some(color) = light::blinn_phong(
+				frame_buffer[index(x, y)],
 				weights * r.positions,
 				normal.normalize(),
 				r.uvs.map(|v| weights * v),
@@ -222,11 +230,11 @@ fn rasterize(
 				&r.lights,
 				material,
 			) {
-				frame_buffer[index(x, y)] = [color[0] as u8, color[1] as u8, color[2] as u8];
+				frame_buffer[index(x, y)] = color;
 				depth_buffer[index(x, y)] = z;
 			}
 		} else {
-			frame_buffer[index(x, y)] = [255, 0, 255];
+			frame_buffer[index(x, y)] = array![1.0, 0.0, 1.0];
 			depth_buffer[index(x, y)] = z;
 		};
 	}
@@ -236,7 +244,7 @@ fn fragments(
 	bounds: Bounds<usize>,
 	r: &Rasterize,
 ) -> impl Iterator<Item = (usize, usize, f32, Vector<f32, 3>)> {
-	let origin = vector![bounds.left as f32, bounds.top as f32, 1.0];
+	let origin = vector![bounds.left as f32 + 0.5, bounds.top as f32 + 0.5, 1.0];
 
 	let mut r1 = r.e1.dot(origin);
 	let mut r2 = r.e2.dot(origin);

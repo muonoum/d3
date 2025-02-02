@@ -10,6 +10,7 @@ pub struct Light {
 
 #[inline]
 pub fn blinn_phong(
+	current: Array<f32, 3>,
 	position: Vector<f32, 3>,
 	normal: Vector<f32, 3>,
 	uv: Option<Vector<f32, 2>>,
@@ -19,7 +20,7 @@ pub fn blinn_phong(
 ) -> Option<Array<f32, 3>> {
 	// TODO
 	let alpha = material.alpha(uv);
-	if alpha[0] == 0.0 && alpha[1] == 0.0 && alpha[2] == 0.0 {
+	if alpha == array![0.0; 3] {
 		return None;
 	}
 
@@ -38,5 +39,6 @@ pub fn blinn_phong(
 			+ specular_reflection * specular * light.specular_color
 	});
 
-	Some((color * 255.0).clamp(0.0, 255.0))
+	let color = color * alpha + current * (array![1.0; 3] - alpha);
+	Some(color.clamp(0.0, 1.0))
 }

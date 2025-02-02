@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Sub};
 
 pub trait Cell = Copy + Num + PartialOrd + FromPrimitive + NumAssignOps;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Array<T: Cell, const D: usize>([T; D]);
 
 #[macro_export]
@@ -70,6 +70,14 @@ impl<T: Cell, const D: usize> Sub for Array<T, D> {
 	}
 }
 
+impl<T: Cell, const D: usize> Sub<T> for Array<T, D> {
+	type Output = Self;
+
+	fn sub(self, other: T) -> Self {
+		Self::from_fn(|i| self[i] - other)
+	}
+}
+
 impl<T: Cell, const D: usize> Add<T> for Array<T, D> {
 	type Output = Self;
 
@@ -98,6 +106,13 @@ impl<T: Cell, const D: usize> Mul<Array<T, D>> for Array<T, D> {
 	type Output = Self;
 	fn mul(self, other: Array<T, D>) -> Self {
 		Self::from_fn(|i| self[i] * other[i])
+	}
+}
+
+impl<T: Cell, const D: usize> Div<Array<T, D>> for Array<T, D> {
+	type Output = Self;
+	fn div(self, other: Array<T, D>) -> Self {
+		Self::from_fn(|i| self[i] / other[i])
 	}
 }
 
