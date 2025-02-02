@@ -6,11 +6,13 @@
 !/objects/colors
 !/objects/dice
 !/objects/torus
+!/objects/alpha
 !/scenes/sponza.toml
 !/scenes/ball.toml
 !/scenes/colors.toml
 !/scenes/dice.toml
 !/scenes/torus.toml
+!/scenes/alpha.toml
 /target
 /temp
 /work
