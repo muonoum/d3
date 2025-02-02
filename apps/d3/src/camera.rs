@@ -51,7 +51,7 @@ impl Camera {
 		self.update_matrix();
 	}
 
-	pub fn update_matrix(&mut self) {
+	fn update_matrix(&mut self) {
 		let (sin_yaw, cos_yaw) = self.yaw.to_radians().sin_cos();
 		let (sin_pitch, cos_pitch) = self.pitch.to_radians().sin_cos();
 		self.target = vector![cos_yaw * cos_pitch, sin_pitch, sin_yaw * cos_pitch].normalize();

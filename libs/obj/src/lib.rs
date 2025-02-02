@@ -212,6 +212,7 @@ fn read_materials(
 				}
 
 				Some("d") => {
+					// TODO alpha
 					mtl.alpha = terms
 						.next()
 						.context("d")?

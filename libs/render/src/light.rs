@@ -18,7 +18,7 @@ pub fn blinn_phong(
 	lights: &[Light],
 	material: &obj::Material,
 ) -> Option<Array<f32, 3>> {
-	// TODO
+	// TODO alpha
 	let alpha = material.alpha(uv);
 	if alpha == array![0.0; 3] {
 		return None;
