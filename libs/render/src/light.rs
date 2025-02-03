@@ -20,7 +20,7 @@ pub fn blinn_phong(
 ) -> Option<Array<f32, 3>> {
 	// TODO alpha
 	let alpha = material.alpha(uv);
-	if alpha == array![0.0; 3] {
+	if alpha == 0.0 {
 		return None;
 	}
 
@@ -39,6 +39,6 @@ pub fn blinn_phong(
 			+ specular_reflection * specular * light.specular_color
 	});
 
-	let color = color * alpha + current * (array![1.0; 3] - alpha);
+	let color = color * alpha + current * (1.0 - alpha);
 	Some(color.clamp(0.0, 1.0))
 }

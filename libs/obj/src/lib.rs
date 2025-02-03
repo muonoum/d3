@@ -213,12 +213,7 @@ fn read_materials(
 
 				Some("d") => {
 					// TODO alpha
-					mtl.alpha = terms
-						.next()
-						.context("d")?
-						.parse::<f32>()
-						.context("d")
-						.map(|alpha| array![alpha; 3])?
+					mtl.alpha = terms.next().context("d")?.parse::<f32>().context("d")?
 				}
 
 				Some("Ka") => mtl.ambient = read_color(terms).context("Ka")?,
@@ -252,7 +247,7 @@ fn read_materials(
 				}
 
 				Some("map_d") => {
-					mtl.alpha_map = Some(read_map(terms, location).context("map_d")?.to_rgb8());
+					mtl.alpha_map = Some(read_map(terms, location).context("map_d")?.to_luma8());
 				}
 
 				Some(_) | None => {}

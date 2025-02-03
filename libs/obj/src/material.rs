@@ -20,8 +20,8 @@ pub struct Material {
 	pub specular_exponent: f32,
 	pub specular_exponent_map: Option<image::GrayImage>,
 	pub normal_map: Option<image::RgbImage>,
-	pub alpha: Array<f32, 3>,
-	pub alpha_map: Option<image::RgbImage>,
+	pub alpha: f32,
+	pub alpha_map: Option<image::GrayImage>,
 }
 
 impl Material {
@@ -39,7 +39,7 @@ impl Material {
 			specular_map: None,
 			specular_exponent: 0.0,
 			specular_exponent_map: None,
-			alpha: array![1.0; 3],
+			alpha: 1.0,
 			alpha_map: None,
 		}
 	}
@@ -100,11 +100,11 @@ impl Material {
 	}
 
 	#[inline]
-	pub fn alpha(&self, uv: Option<Vector<f32, 2>>) -> Array<f32, 3> {
+	pub fn alpha(&self, uv: Option<Vector<f32, 2>>) -> f32 {
 		if let Some(uv) = uv
 			&& let Some(ref map) = self.alpha_map
 		{
-			self.alpha * Self::map_color(map, uv)
+			self.alpha * Self::map_scalar(map, uv)
 		} else {
 			self.alpha
 		}
