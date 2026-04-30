@@ -1,7 +1,5 @@
-#![feature(array_chunks)]
 #![feature(coroutines)]
 #![feature(iter_from_coroutine)]
-#![feature(let_chains)]
 
 use anyhow::Context;
 use std::{
@@ -36,8 +34,9 @@ impl<'a> Mesh {
 			|| {
 				for group in self.groups.iter() {
 					let material = group.material.as_ref();
+					let (chunks, _) = group.vertices.as_chunks::<3>();
 
-					for [a, b, c] in group.vertices.array_chunks::<3>() {
+					for [a, b, c] in chunks.iter() {
 						let vs = [self.vertices[*a], self.vertices[*b], self.vertices[*c]];
 						yield (vs, material);
 					}

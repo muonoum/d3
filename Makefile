@@ -7,6 +7,9 @@ sponza-fullscreen:
 dice:
 	cargo run --release --package d3  -- --scene scenes/dice.toml
 
+dice-fullscreen:
+	cargo run --release --package d3  -- --scene scenes/dice.toml --fullscreen
+
 .PHONY: commit
 commit: message ?= $(shell git diff --name-only --cached | sed -r 's;([^ /]+/)+([^/ ]+);\2;g')
 commit:

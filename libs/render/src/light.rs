@@ -29,7 +29,7 @@ pub fn blinn_phong(
 	let specular_reflection = material.specular(uv);
 	let specular_exponent = material.specular_exponent(uv);
 
-	let color = (lights.iter()).fold(material.emissive(uv), |sum, light| {
+	let color = lights.iter().fold(material.emissive(uv), |sum, light| {
 		let light_dir = (light.position - position).normalize();
 		let diffuse = light_dir.dot(normal).clamp(0.0, 1.0);
 		let halfway_vector = (light_dir + camera_dir).normalize();
