@@ -87,8 +87,8 @@ pub fn bounding_box(
 	let x3 = p3[0] as usize;
 	let y3 = p3[1] as usize;
 
-	let min_x = x1.min(x2.min(x3)).max(0);
-	let min_y = y1.min(y2.min(y3)).max(0);
+	let min_x = x1.min(x2.min(x3));
+	let min_y = y1.min(y2.min(y3));
 	let max_x = x1.max(x2.max(x3)).min(width - 1);
 	let max_y = y1.max(y2.max(y3)).min(height - 1);
 

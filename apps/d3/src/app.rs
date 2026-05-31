@@ -12,8 +12,8 @@ use render::light::Light;
 
 use crate::args::Args;
 use crate::buffer::PixelsBuffer;
+use crate::renderer::Renderer;
 use crate::scene::Scene;
-use crate::tiled::Tiled;
 
 #[derive(Debug, PartialEq)]
 enum State {
@@ -33,7 +33,7 @@ pub struct App {
 	scene: Scene,
 	window: Arc<Window>,
 	projection: Matrix<f32, 4, 4>,
-	tiled: Tiled,
+	renderer: Renderer,
 }
 
 impl App {
@@ -68,7 +68,7 @@ impl App {
 			state: State::Initial,
 			scene: Scene::new(&args.scene),
 			projection: Matrix::identity(),
-			tiled: Tiled::new(args.threads, buffer_width, buffer_height),
+			renderer: Renderer::new(args.threads, buffer_width, buffer_height),
 		};
 
 		app.ungrab();
@@ -176,7 +176,7 @@ impl App {
 			}];
 		}
 
-		self.tiled
+		self.renderer
 			.draw(&mut self.frame, &self.scene, self.projection);
 
 		if self.args.debug {

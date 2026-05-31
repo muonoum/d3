@@ -32,24 +32,28 @@ pub enum Message {
 	Reset,
 }
 
-pub struct Tiled {
+pub struct Renderer {
 	receive_buffer: mpsc::Receiver<(Bounds<usize>, Vec<Array<f32, 3>>)>,
 	tiles: Vec<Tile>,
 }
 
-impl Tiled {
+impl Renderer {
 	pub fn new(count: usize, width: usize, height: usize) -> Self {
 		let (send_buffer, receive_buffer) = mpsc::channel::<(Bounds<usize>, Vec<Array<f32, 3>>)>();
 
 		let tile_size = width / count;
 		let tiles = (0..count)
 			.map(|i| {
-				Tile::new(array![0.0, 0.0, 0.0], send_buffer.clone(), Bounds {
-					left: (tile_size - 1) * i,
-					right: (tile_size * i + tile_size) - 1,
-					top: 0,
-					bottom: height - 1,
-				})
+				Tile::new(
+					array![0.0, 0.0, 0.0],
+					send_buffer.clone(),
+					Bounds {
+						left: (tile_size - 1) * i,
+						right: (tile_size * i + tile_size) - 1,
+						top: 0,
+						bottom: height - 1,
+					},
+				)
 			})
 			.collect();
 
@@ -151,12 +155,16 @@ impl Tiled {
 				let x = bounds.left + i % width + 1;
 				let y = bounds.top + i / width + 1;
 
-				frame.put(x, y, [
-					(color[0] * 255.0) as u8,
-					(color[1] * 255.0) as u8,
-					(color[2] * 255.0) as u8,
-					255,
-				]);
+				frame.put(
+					x,
+					y,
+					[
+						(color[0] * 255.0) as u8,
+						(color[1] * 255.0) as u8,
+						(color[2] * 255.0) as u8,
+						255,
+					],
+				);
 			}
 		}
 	}

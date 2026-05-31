@@ -1,4 +1,4 @@
-use matrix::Vector;
+use matrix::{Vector, vector};
 
 const OUT_LEFT: u8 = 1 << 0;
 const OUT_RIGHT: u8 = 1 << 1;

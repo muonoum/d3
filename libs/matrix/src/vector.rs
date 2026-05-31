@@ -1,5 +1,4 @@
 use crate::matrix::{Cell, Matrix};
-use crate::vector;
 use num::traits::Float;
 
 #[macro_export]

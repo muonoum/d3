@@ -1,6 +1,5 @@
 #![feature(coroutines)]
 #![feature(iter_from_coroutine)]
-#![feature(let_chains)]
 
 use clap::Parser;
 use winit::application::ApplicationHandler;
@@ -14,15 +13,15 @@ mod args;
 mod buffer;
 mod camera;
 mod object;
+mod renderer;
 mod scene;
-mod tiled;
 
 use app::App;
 use args::Args;
 
 enum State {
 	Starting(Args),
-	Running(App),
+	Running(Box<App>),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -56,7 +55,7 @@ impl ApplicationHandler for State {
 				.unwrap();
 
 			let app = App::new(args, window);
-			*self = State::Running(app);
+			*self = State::Running(Box::new(app));
 		}
 	}
 
